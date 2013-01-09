@@ -1,188 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab3AIR1t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 12:27:49 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:40696 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab3AIR1s (ORCPT
+	id S1758054Ab3AIRaA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 12:30:00 -0500
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:40537 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab3AIR37 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 12:27:48 -0500
+	Wed, 9 Jan 2013 12:29:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130109132409.GB18395@phenom.dumpdata.com>
-References: <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
-	<8762382z2c.fsf@xmission.com>
-	<CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
-	<87y5g4z7rp.fsf@xmission.com>
-	<CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
-	<CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
-	<20130109004340.GA12234@konrad-lan.dumpdata.com>
-	<87txqruq8p.fsf@xmission.com>
-	<CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
-	<CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
-	<20130109132409.GB18395@phenom.dumpdata.com>
-Date: Wed, 9 Jan 2013 09:27:46 -0800
-X-Google-Sender-Auth: H9wOvfUjfeMgxz5tNjnT086cJr4
-Message-ID: <CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Content-Type: multipart/mixed; boundary=0015174be45c7a50c004d2de61d5
+In-Reply-To: <CAKgNAkggu9+AuMRqTFeNy9sJVCMcZVRZx43t=svF=gm+P4DnuQ@mail.gmail.com>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
+ <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
+ <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
+ <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au>
+ <CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
+ <87ipa8o4mn.fsf@rustcorp.com.au> <CAKgNAkiVxUiqJ1pYNq3wW_yQxcyhqntUzcEWscFOhJ3GaVn1aQ@mail.gmail.com>
+ <87sj97hs5e.fsf@rustcorp.com.au> <CAHO5Pa29_=3HNLG-qtULZ2fmkgPJ6JCZ0LTv9m=UowfvFufhMw@mail.gmail.com>
+ <87fw2j5dlj.fsf@rustcorp.com.au> <CAKgNAkggu9+AuMRqTFeNy9sJVCMcZVRZx43t=svF=gm+P4DnuQ@mail.gmail.com>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Wed, 9 Jan 2013 15:29:37 -0200
+Message-ID: <CAMOw1v6Jk7adSeppunBe0GaW3w3MREU0_hW68_Fbh2599jctkg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+To: mtk.manpages@gmail.com
+Cc: Rusty Russell <rusty@rustcorp.com.au>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        jonathon@jonmasters.org, linux-man@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015174be45c7a50c004d2de61d5
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Wed, Jan 9, 2013 at 5:24 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Tue, Jan 08, 2013 at 05:12:02PM -0800, Yinghai Lu wrote:
->> On Tue, Jan 8, 2013 at 5:07 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> > On Tue, Jan 8, 2013 at 4:58 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> >
->> >>
->> >> So instead we need to say?
->> >>
->> >> +       if (no_iotlb_memory)
->> >> +               panic("Cannot allocate SWIOTLB buffer");
->> >> +
->> >>
->> >> Which is just making the panic a little later than it used to be and
->> >> seems completely reasonable.
->> >
->> > yes, looks some driver just use map_single without checking results.
+On Sun, Jan 6, 2013 at 4:59 PM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
+> Hi Rusty, (and Lucas, and Kees)
+>
+> On Thu, Jan 3, 2013 at 1:12 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> Michael Kerrisk <mtk.manpages@gmail.com> writes:
+>>> Hi Rusty,
 >>
->> update one.
+>> Hi Michael,
+>>
+>>> The description here is rather thin. Could you supply a sentence or
+>>> two for each of MODULE_INIT_IGNORE_MODVERSIONS and
+>>> MODULE_INIT_IGNORE_VERMAGIC that would be suitable for the manual
+>>> page?
+>>>
+>>> Thanks,
+>>
+>> There are one or two safety checks built into a module, which are
+>> checked to match the kernel on module load.  The first is a "vermagic"
+>> string containing the kernel version number and prominent features (such
+>> as CPU type).  If the module was built with CONFIG_MODVERSIONS set, a
+>> version hash is recorded for each symbol the module uses based on the
+>> types it refers to: in this case, the kernel version number within the
+>> "vermagic" string is ignored, as the symbol version hashes are assumed
+>> to be sufficiently reliable.
+>>
+>> Using the MODULE_INIT_IGNORE_VERMAGIC flag indicates that the vermagic
+>> is to be ignored, and the MODULE_INIT_IGNORE_MODVERSIONS flag indicates
+>> that the version hashes are to be ignored.  If the kernel is built to
+>> permit such forced loading (ie. CONFIG_MODULE_FORCE_LOAD is set) then
+>> loading will continue, otherwise it will fail with ENOEXEC as expected
+>> for malformed modules.
+>>
+>> Hope that is more usable?
 >
-> Please make it inline.
+> Yes, that helps. I did some reworking of that text. Hopefully, I did
+> not introduce any errors.
+>
+> Below is the text that is proposed to document finit_module() in the
+> man pages. I'd appreciate any review (Kees, Lucas, Rusty?)
+>
+> Thanks,
+>
+> Michael
+>
+>    finit_module()
+>        The finit_module() system call is like init_module(), but reads
+>        the module to be loaded from the file  descriptor  fd.   It  is
+>        useful  when  the authenticity of a kernel module can be deter‐
+>        mined from its location in the file system; in cases where that
+>        is  possible,  the  overhead  of using cryptographically signed
+>        modules to determine  the  authenticity  of  a  module  can  be
+>        avoided.  The param_values argument is as for init_module().
+>
+>        The  flags  argument  modifies the operation of finit_module().
+>        It is a bit mask value created by ORing together zero  or  more
+>        of the following flags:
+>
+>        MODULE_INIT_IGNORE_MODVERSIONS
+>               Ignore symbol version hashes.
+>
+>        MODULE_INIT_IGNORE_VERMAGIC
+>               Ignore kernel version magic.
+>
+>        There are some safety checks built into a module to ensure that
+>        it matches the kernel against which it is loaded.  These checks
+>        are  recorded  when  the  module is built and verified when the
+>        module is loaded.   First,  the  module  records  a  "vermagic"
+>        string  containing the kernel version number and prominent fea‐
+>        tures (such as the CPU type).  Second, if the module was  built
+>        with  the  CONFIG_MODVERSIONS  configuration  option enabled, a
+>        version hash is recorded for each symbol the module uses.  This
+>        hash  is  based  on the types of the arguments and return value
+>        for the function named by the symbol.  In this case, the kernel
+>        version  number within the "vermagic" string is ignored, as the
+>        symbol version hashes are assumed to be sufficiently reliable.
+>
+>        Using the MODULE_INIT_IGNORE_VERMAGIC flag indicates  that  the
+>        "vermagic"   string   is   to   be   ignored,   and   the  MOD‐
+>        ULE_INIT_IGNORE_MODVERSIONS flag indicates that the symbol ver‐
+>        sion  hashes are to be ignored.  If the kernel is built to per‐
+>        mit  forced  loading   (i.e.,   configured   with   CONFIG_MOD‐
+>        ULE_FORCE_LOAD),  then loading will continue, otherwise it will
+>        fail with ENOEXEC as expected for malformed modules.
+> ...
+>    ERRORS
+> ...
+>        The following errors may additionally occur for finit_module():
+>
+>        EBADF  The file referred to by fd is not opened for reading.
+>
+>        EFBIG  The file referred to by fd is too large.
+>
+>        EINVAL flags is invalid.
+>
+>        ENOEXEC
+>               fd does not refer to an open file.
+>
 >
 
-please check updated attached. It should address all your request.
 
-Thanks
+Looks good to me.
 
-Yinghai
 
---0015174be45c7a50c004d2de61d5
-Content-Type: application/octet-stream; name="swiotlb.patch"
-Content-Disposition: attachment; filename="swiotlb.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hbqqr4yn0
-
-U3ViamVjdDogW1BBVENIXSB4ODY6IERvbid0IHBhbmljIGlmIGNhbiBub3QgYWxsb2MgYnVmZmVy
-IGZvciBzd2lvdGxiCgpOb3JtYWwgYm9vdCBwYXRoIG9uIHN5c3RlbSB3aXRoIGlvbW11IHN1cHBv
-cnQ6CnN3aW90bGIgYnVmZmVyIHdpbGwgYmUgYWxsb2NhdGVkIGVhcmx5IGF0IGZpcnN0IGFuZCB0
-aGVuIHRyeSB0byBpbml0aWFsaXplCmlvbW11LCBpZiBpb21tdSBmb3IgaW50ZWwgb3IgQU1EIGNv
-dWxkIHNldHVwIHByb3Blcmx5LCBzd2lvdGxiIGJ1ZmZlcgp3aWxsIGJlIGZyZWVkLgoKVGhlIGVh
-cmx5IGFsbG9jYXRpbmcgaXMgd2l0aCBib290bWVtLCBhbmQgY291bGQgcGFuaWMgd2hlbiB3ZSB0
-cnkgdG8gdXNlCmtkdW1wIHdpdGggYnVmZmVyIGFib3ZlIDRHIG9ubHksIG9yIHdpdGggbWVtbWFw
-IHRvIGxpbWl0IG1lbSB1bmRlciA0Ry4KZm9yIGV4YW1wbGU6IG1lbW1hcD00MDk1TSQxTSB0byBy
-ZW1vdmUgbWVtb3J5IHVuZGVyIDRHLgoKQWNjb3JkaW5nIHRvIEVyaWMsIGFkZCBfbm9wYW5pYyB2
-ZXJzaW9uIGFuZCBub19pb3RsYl9tZW1vcnkgdG8gZmFpbAptYXAgc2luZ2xlIGxhdGVyIGlmIHN3
-aW90bGIgaXMgc3RpbGwgbmVlZGVkLgoKLXYyOiBkb24ndCBwYXNzIG5vcGFuaWMsIGFuZCB1c2Ug
-LUVOT01FTSByZXR1cm4gdmFsdWUgYWNjb3JkaW5nIHRvIEVyaWMuCiAgICAgcGFuaWMgZWFybHkg
-aW5zdGVhZCBvZiB1c2luZyBzd2lvdGxiX2Z1bGwgdG8gcGFuaWMuLi5hY2NvcmRpbmcgdG8gRXJp
-Yy9Lb25yYWQuCi12MzogbWFrZSBzd2lvdGxiX2luaXQgdG8gYmUgbm90cGFuaWMsIGJ1dCB3aWxs
-IGFmZmVjdDoKICAgICBhcm02NCwgaWE2NCwgcG93ZXJwYywgdGlsZSwgdW5pY29yZTMyLCB4ODYu
-CgpTdWdnZXN0ZWQtYnk6IEVyaWMgVy4gQmllZGVybWFuIDxlYmllZGVybUB4bWlzc2lvbi5jb20+
-ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KQ2M6IEtvbnJh
-ZCBSemVzenV0ZWsgV2lsayA8a29ucmFkLndpbGtAb3JhY2xlLmNvbT4KQ2M6IEpvZXJnIFJvZWRl
-bCA8am9yb0A4Ynl0ZXMub3JnPgoKLS0tCiBhcmNoL21pcHMvY2F2aXVtLW9jdGVvbi9kbWEtb2N0
-ZW9uLmMgfCAgICAzICstCiBkcml2ZXJzL3hlbi9zd2lvdGxiLXhlbi5jICAgICAgICAgICAgfCAg
-ICA0ICsrLQogaW5jbHVkZS9saW51eC9zd2lvdGxiLmggICAgICAgICAgICAgIHwgICAgMiAtCiBs
-aWIvc3dpb3RsYi5jICAgICAgICAgICAgICAgICAgICAgICAgfCAgIDQxICsrKysrKysrKysrKysr
-KysrKysrKysrKysrKy0tLS0tLS0tCiA0IGZpbGVzIGNoYW5nZWQsIDM4IGluc2VydGlvbnMoKyks
-IDEyIGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9saWIvc3dpb3RsYi5jCj09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2xpYi9zd2lvdGxiLmMKKysrIGxpbnV4LTIuNi9saWIvc3dp
-b3RsYi5jCkBAIC0xMjIsMTEgKzEyMiwxOCBAQCBzdGF0aWMgZG1hX2FkZHJfdCBzd2lvdGxiX3Zp
-cnRfdG9fYnVzKHN0CiAJcmV0dXJuIHBoeXNfdG9fZG1hKGh3ZGV2LCB2aXJ0X3RvX3BoeXMoYWRk
-cmVzcykpOwogfQogCitzdGF0aWMgYm9vbCBub19pb3RsYl9tZW1vcnk7CisKIHZvaWQgc3dpb3Rs
-Yl9wcmludF9pbmZvKHZvaWQpCiB7CiAJdW5zaWduZWQgbG9uZyBieXRlcyA9IGlvX3RsYl9uc2xh
-YnMgPDwgSU9fVExCX1NISUZUOwogCXVuc2lnbmVkIGNoYXIgKnZzdGFydCwgKnZlbmQ7CiAKKwlp
-ZiAobm9faW90bGJfbWVtb3J5KSB7CisJCXByX3dhcm4oInNvZnR3YXJlIElPIFRMQjogTm8gbG93
-IG1lbVxuIik7CisJCXJldHVybjsKKwl9CisKIAl2c3RhcnQgPSBwaHlzX3RvX3ZpcnQoaW9fdGxi
-X3N0YXJ0KTsKIAl2ZW5kID0gcGh5c190b192aXJ0KGlvX3RsYl9lbmQpOwogCkBAIC0xMzYsNyAr
-MTQzLDcgQEAgdm9pZCBzd2lvdGxiX3ByaW50X2luZm8odm9pZCkKIAkgICAgICAgYnl0ZXMgPj4g
-MjAsIHZzdGFydCwgdmVuZCAtIDEpOwogfQogCi12b2lkIF9faW5pdCBzd2lvdGxiX2luaXRfd2l0
-aF90YmwoY2hhciAqdGxiLCB1bnNpZ25lZCBsb25nIG5zbGFicywgaW50IHZlcmJvc2UpCitpbnQg
-X19pbml0IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICp0bGIsIHVuc2lnbmVkIGxvbmcgbnNs
-YWJzLCBpbnQgdmVyYm9zZSkKIHsKIAl2b2lkICp2X292ZXJmbG93X2J1ZmZlcjsKIAl1bnNpZ25l
-ZCBsb25nIGksIGJ5dGVzOwpAQCAtMTUwLDkgKzE1NywxMCBAQCB2b2lkIF9faW5pdCBzd2lvdGxi
-X2luaXRfd2l0aF90YmwoY2hhciAqCiAJLyoKIAkgKiBHZXQgdGhlIG92ZXJmbG93IGVtZXJnZW5j
-eSBidWZmZXIKIAkgKi8KLQl2X292ZXJmbG93X2J1ZmZlciA9IGFsbG9jX2Jvb3RtZW1fbG93X3Bh
-Z2VzKFBBR0VfQUxJR04oaW9fdGxiX292ZXJmbG93KSk7CisJdl9vdmVyZmxvd19idWZmZXIgPSBh
-bGxvY19ib290bWVtX2xvd19wYWdlc19ub3BhbmljKAorCQkJCQkJUEFHRV9BTElHTihpb190bGJf
-b3ZlcmZsb3cpKTsKIAlpZiAoIXZfb3ZlcmZsb3dfYnVmZmVyKQotCQlwYW5pYygiQ2Fubm90IGFs
-bG9jYXRlIFNXSU9UTEIgb3ZlcmZsb3cgYnVmZmVyIVxuIik7CisJCXJldHVybiAtRU5PTUVNOwog
-CiAJaW9fdGxiX292ZXJmbG93X2J1ZmZlciA9IF9fcGEodl9vdmVyZmxvd19idWZmZXIpOwogCkBA
-IC0xNjksMTQgKzE3NywxNiBAQCB2b2lkIF9faW5pdCBzd2lvdGxiX2luaXRfd2l0aF90YmwoY2hh
-ciAqCiAKIAlpZiAodmVyYm9zZSkKIAkJc3dpb3RsYl9wcmludF9pbmZvKCk7CisKKwlyZXR1cm4g
-MDsKIH0KIAogLyoKICAqIFN0YXRpY2FsbHkgcmVzZXJ2ZSBib3VuY2UgYnVmZmVyIHNwYWNlIGFu
-ZCBpbml0aWFsaXplIGJvdW5jZSBidWZmZXIgZGF0YQogICogc3RydWN0dXJlcyBmb3IgdGhlIHNv
-ZnR3YXJlIElPIFRMQiB1c2VkIHRvIGltcGxlbWVudCB0aGUgRE1BIEFQSS4KICAqLwotc3RhdGlj
-IHZvaWQgX19pbml0Ci1zd2lvdGxiX2luaXRfd2l0aF9kZWZhdWx0X3NpemUoc2l6ZV90IGRlZmF1
-bHRfc2l6ZSwgaW50IHZlcmJvc2UpCitzdGF0aWMgIF9faW5pdAoraW50IHN3aW90bGJfaW5pdF93
-aXRoX2RlZmF1bHRfc2l6ZShzaXplX3QgZGVmYXVsdF9zaXplLCBpbnQgdmVyYm9zZSkKIHsKIAl1
-bnNpZ25lZCBjaGFyICp2c3RhcnQ7CiAJdW5zaWduZWQgbG9uZyBieXRlczsKQEAgLTE5MSwxNyAr
-MjAxLDI3IEBAIHN3aW90bGJfaW5pdF93aXRoX2RlZmF1bHRfc2l6ZShzaXplX3QgZGUKIAkvKgog
-CSAqIEdldCBJTyBUTEIgbWVtb3J5IGZyb20gdGhlIGxvdyBwYWdlcwogCSAqLwotCXZzdGFydCA9
-IGFsbG9jX2Jvb3RtZW1fbG93X3BhZ2VzKFBBR0VfQUxJR04oYnl0ZXMpKTsKKwl2c3RhcnQgPSBh
-bGxvY19ib290bWVtX2xvd19wYWdlc19ub3BhbmljKFBBR0VfQUxJR04oYnl0ZXMpKTsKIAlpZiAo
-IXZzdGFydCkKLQkJcGFuaWMoIkNhbm5vdCBhbGxvY2F0ZSBTV0lPVExCIGJ1ZmZlciIpOworCQly
-ZXR1cm4gLUVOT01FTTsKKworCWlmIChzd2lvdGxiX2luaXRfd2l0aF90YmwodnN0YXJ0LCBpb190
-bGJfbnNsYWJzLCB2ZXJib3NlKSA9PSAtRU5PTUVNKSB7CisJCWZyZWVfYm9vdG1lbShpb190bGJf
-c3RhcnQsCisJCQkJICAgICBQQUdFX0FMSUdOKGlvX3RsYl9uc2xhYnMgPDwgSU9fVExCX1NISUZU
-KSk7CisJCXJldHVybiAtRU5PTUVNOworCX0KIAotCXN3aW90bGJfaW5pdF93aXRoX3RibCh2c3Rh
-cnQsIGlvX3RsYl9uc2xhYnMsIHZlcmJvc2UpOworCXJldHVybiAwOwogfQogCiB2b2lkIF9faW5p
-dAogc3dpb3RsYl9pbml0KGludCB2ZXJib3NlKQogewotCXN3aW90bGJfaW5pdF93aXRoX2RlZmF1
-bHRfc2l6ZSg2NCAqICgxPDwyMCksIHZlcmJvc2UpOwkvKiBkZWZhdWx0IHRvIDY0TUIgKi8KKwkv
-KiBkZWZhdWx0IHRvIDY0TUIgKi8KKwlpZiAoc3dpb3RsYl9pbml0X3dpdGhfZGVmYXVsdF9zaXpl
-KDY0VUw8PDIwLCB2ZXJib3NlKSA9PSAtRU5PTUVNKSB7CisJCXByX3dhcm4oIkNhbm5vdCBhbGxv
-Y2F0ZSBTV0lPVExCIGJ1ZmZlciIpOworCQlub19pb3RsYl9tZW1vcnkgPSB0cnVlOworCX0KIH0K
-IAogLyoKQEAgLTQwNSw2ICs0MjUsOSBAQCBwaHlzX2FkZHJfdCBzd2lvdGxiX3RibF9tYXBfc2lu
-Z2xlKHN0cnVjCiAJdW5zaWduZWQgbG9uZyBvZmZzZXRfc2xvdHM7CiAJdW5zaWduZWQgbG9uZyBt
-YXhfc2xvdHM7CiAKKwlpZiAobm9faW90bGJfbWVtb3J5KQorCQlwYW5pYygiQ2FuIG5vdCBhbGxv
-Y2F0ZSBTV0lPVExCIGJ1ZmZlciBlYXJsaWVyIGFuZCBjYW4ndCBub3cgcHJvdmlkZSB5b3Ugd2l0
-aCB0aGUgRE1BIGJvdW5jZSBidWZmZXIiKTsKKwogCW1hc2sgPSBkbWFfZ2V0X3NlZ19ib3VuZGFy
-eShod2Rldik7CiAKIAl0YmxfZG1hX2FkZHIgJj0gbWFzazsKSW5kZXg6IGxpbnV4LTIuNi9hcmNo
-L21pcHMvY2F2aXVtLW9jdGVvbi9kbWEtb2N0ZW9uLmMKPT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42
-Lm9yaWcvYXJjaC9taXBzL2Nhdml1bS1vY3Rlb24vZG1hLW9jdGVvbi5jCisrKyBsaW51eC0yLjYv
-YXJjaC9taXBzL2Nhdml1bS1vY3Rlb24vZG1hLW9jdGVvbi5jCkBAIC0zMTcsNyArMzE3LDggQEAg
-dm9pZCBfX2luaXQgcGxhdF9zd2lvdGxiX3NldHVwKHZvaWQpCiAKIAlvY3Rlb25fc3dpb3RsYiA9
-IGFsbG9jX2Jvb3RtZW1fbG93X3BhZ2VzKHN3aW90bGJzaXplKTsKIAotCXN3aW90bGJfaW5pdF93
-aXRoX3RibChvY3Rlb25fc3dpb3RsYiwgc3dpb3RsYl9uc2xhYnMsIDEpOworCWlmIChzd2lvdGxi
-X2luaXRfd2l0aF90Ymwob2N0ZW9uX3N3aW90bGIsIHN3aW90bGJfbnNsYWJzLCAxKSA9PSAtRU5P
-TUVNKQorCQlwYW5pYygiQ2Fubm90IGFsbG9jYXRlIFNXSU9UTEIgYnVmZmVyIik7CiAKIAltaXBz
-X2RtYV9tYXBfb3BzID0gJm9jdGVvbl9saW5lYXJfZG1hX21hcF9vcHMuZG1hX21hcF9vcHM7CiB9
-CkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy94ZW4vc3dpb3RsYi14ZW4uYwo9PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0t
-LSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3hlbi9zd2lvdGxiLXhlbi5jCisrKyBsaW51eC0yLjYv
-ZHJpdmVycy94ZW4vc3dpb3RsYi14ZW4uYwpAQCAtMjMxLDcgKzIzMSw5IEBAIHJldHJ5OgogCX0K
-IAlzdGFydF9kbWFfYWRkciA9IHhlbl92aXJ0X3RvX2J1cyh4ZW5faW9fdGxiX3N0YXJ0KTsKIAlp
-ZiAoZWFybHkpIHsKLQkJc3dpb3RsYl9pbml0X3dpdGhfdGJsKHhlbl9pb190bGJfc3RhcnQsIHhl
-bl9pb190bGJfbnNsYWJzLCB2ZXJib3NlKTsKKwkJaWYgKHN3aW90bGJfaW5pdF93aXRoX3RibCh4
-ZW5faW9fdGxiX3N0YXJ0LCB4ZW5faW9fdGxiX25zbGFicywKKwkJCSB2ZXJib3NlKSkKKwkJCXBh
-bmljKCJDYW5ub3QgYWxsb2NhdGUgU1dJT1RMQiBidWZmZXIiKTsKIAkJcmMgPSAwOwogCX0gZWxz
-ZQogCQlyYyA9IHN3aW90bGJfbGF0ZV9pbml0X3dpdGhfdGJsKHhlbl9pb190bGJfc3RhcnQsIHhl
-bl9pb190bGJfbnNsYWJzKTsKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L3N3aW90bGIu
-aAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9pbmNsdWRlL2xpbnV4L3N3aW90bGIuaAor
-KysgbGludXgtMi42L2luY2x1ZGUvbGludXgvc3dpb3RsYi5oCkBAIC0yMyw3ICsyMyw3IEBAIGV4
-dGVybiBpbnQgc3dpb3RsYl9mb3JjZTsKICNkZWZpbmUgSU9fVExCX1NISUZUIDExCiAKIGV4dGVy
-biB2b2lkIHN3aW90bGJfaW5pdChpbnQgdmVyYm9zZSk7Ci1leHRlcm4gdm9pZCBzd2lvdGxiX2lu
-aXRfd2l0aF90YmwoY2hhciAqdGxiLCB1bnNpZ25lZCBsb25nIG5zbGFicywgaW50IHZlcmJvc2Up
-OworaW50IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICp0bGIsIHVuc2lnbmVkIGxvbmcgbnNs
-YWJzLCBpbnQgdmVyYm9zZSk7CiBleHRlcm4gdW5zaWduZWQgbG9uZyBzd2lvdGxiX25yX3RibCh2
-b2lkKTsKIGV4dGVybiBpbnQgc3dpb3RsYl9sYXRlX2luaXRfd2l0aF90YmwoY2hhciAqdGxiLCB1
-bnNpZ25lZCBsb25nIG5zbGFicyk7CiAK
---0015174be45c7a50c004d2de61d5--
+regards,
+Lucas De Marchi
