@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757694Ab3AIWKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:10:20 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:64163 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab3AIWKS (ORCPT
+	id S1757969Ab3AIWK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:10:59 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:57688 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757582Ab3AIWK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 17:10:18 -0500
-Date: Wed, 9 Jan 2013 14:06:41 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-Message-ID: <20130109220641.GA12865@lizard.fhda.edu>
-References: <20130104082751.GA22227@lizard.gateway.2wire.net>
- <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
- <20130109203731.GA20454@htj.dyndns.org>
- <50EDDF1E.6010705@parallels.com>
- <20130109213604.GA9475@lizard.fhda.edu>
- <20130109215514.GD20454@htj.dyndns.org>
+	Wed, 9 Jan 2013 17:10:57 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
+Date: Wed, 9 Jan 2013 22:10:49 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <201301092119.57067.arnd@arndb.de> <20130109215428.GA13648@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20130109215428.GA13648@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130109215514.GD20454@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301092210.49452.arnd@arndb.de>
+X-Provags-ID: V02:K0:lnZuufGrKHWySZhPl1YJjUhwiuAIQrfKDf1XjiaOGX0
+ MvkPEGX73Tc11ZRWJusuKlLj9KhhM/OA/N2hlQwcxp9kjBILmT
+ iN6hucjDcDypsVTJ3eTZok4bK7e+AAg79uG5BD8QHm2wHNG5ad
+ uHrjqrCDlF4avjSUCGXe6ctAUveyzYqGa1uTH1d9nS6vFHaHr2
+ LlChKHCxkyivVKMdmQk3FJ5BqZWIeNxh8RzFalVTjusTshHvQ0
+ 13euIIVEqLJbNzghMkEG53dFCmKlNuPEqomkCs9MQNO/145NrX
+ JSW0Y435G2/iwBINuUDissb2Q7JKvooYNSuVF2R5GS0cKHhSIA
+ npbWSELVPiHWmbd5uKXk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 01:55:14PM -0800, Tejun Heo wrote:
-[...]
-> > We can use mempressure w/o memcg, and even then it can (or should :) be
-> > useful (for cpuset, for example).
+On Wednesday 09 January 2013, Thierry Reding wrote:
+> What happens on Tegra is that we need to map 256 MiB of physical memory
+> to access all the PCIe extended configuration space. However, ioremap()
+> on such a large region fails if not enough vmalloc() space is available.
 > 
-> The problem is that you end with, at the very least, duplicate
-> hierarchical accounting mechanisms which overlap with each other
-> while, most likely, being slightly different.  About the same thing
-> happened with cpu and cpuacct controllers and we're now trying to
-> deprecate the latter.
+> This was observed when somebody tested this on CardHu which has a 1 GiB
+> of RAM and therefore remapping the full 256 MiB fails.
 
-Yeah. I started answering your comments about hierarchical accounting,
-looked into the memcg code, and realized that *this* is where I need the
-memcg stuff. :)
+Hmm, config space accesses are fairly rare and generally not expected
+to be fast, and 256 MB is really a huge waste of virtual address space,
+so I agree that just ioremapping the entire space is not a good
+solution.
 
-Thus yes, I guess I'll have to integrate it with memcg, or sort of.
+However, it's not clear that a cache is necessary. Have you measured
+a significant performance benefit of this implementation over just
+iorempping and unmapping a single page for every config space access?
+Have you checked if the hardware supports an alternative config
+space access mechanism that does not depend on a huge address range?
+A lot of them provide an index/data register pair somewhere, as the
+original PC implementation did.
 
-I will surely Cc you on the next interations.
+Even if we actually want a cache, how about a private implementation
+that just remembers a single page in LRU? I doubt that there are
+more drivers that would benefit from a generalized version that you
+provide.
 
-Thanks,
-Anton
+	Arnd
