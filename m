@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933848Ab3AIUk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:40:26 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43326 "EHLO mail.kernel.org"
+	id S933901Ab3AIUki (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:40:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43431 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933806Ab3AIUkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:23 -0500
+	id S933852Ab3AIUka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Florian Fainelli <florian@openwrt.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 68/80] ARM: 7607/1: realview: fix private peripheral memory base for EB rev. B boards
-Date: Wed,  9 Jan 2013 12:36:00 -0800
-Message-Id: <20130109201509.124623383@linuxfoundation.org>
+        Corey Minyard <cminyard@mvista.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 75/80] CRIS: fix I/O macros
+Date: Wed,  9 Jan 2013 12:36:07 -0800
+Message-Id: <20130109201510.019191038@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -28,37 +30,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Corey Minyard <cminyard@mvista.com>
 
-commit e6ee4b2b57a8e0d8e551031173de080b338d3969 upstream.
+commit c24bf9b4cc6a0f330ea355d73bfdf1dae7e63a05 upstream.
 
-Commit 34ae6c96a6a7 ("ARM: 7298/1: realview: fix mapping of MPCore
-private memory region") accidentally broke the definition for the base
-address of the private peripheral region on revision B Realview-EB
-boards.
+The inb/outb macros for CRIS are broken from a number of points of view,
+missing () around parameters and they have an unprotected if statement
+in them.  This was breaking the compile of IPMI on CRIS and thus I was
+being annoyed by build regressions, so I fixed them.
 
-This patch uses the correct address for REALVIEW_EB11MP_PRIV_MEM_BASE.
+Plus I don't think they would have worked at all, since the data values
+were missing "&" and the outsl had a "3" instead of a "4" for the size.
+>From what I can tell, this stuff is not used at all, so this can't be
+any more broken than it was before, anyway.
 
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-Tested-by: Florian Fainelli <florian@openwrt.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-realview/include/mach/board-eb.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/cris/include/asm/io.h |   39 +++++++++++++++++++++++++++++++++------
+ 1 file changed, 33 insertions(+), 6 deletions(-)
 
---- a/arch/arm/mach-realview/include/mach/board-eb.h
-+++ b/arch/arm/mach-realview/include/mach/board-eb.h
-@@ -47,7 +47,7 @@
- #define REALVIEW_EB_USB_BASE		0x4F000000	/* USB */
+--- a/arch/cris/include/asm/io.h
++++ b/arch/cris/include/asm/io.h
+@@ -133,12 +133,39 @@ static inline void writel(unsigned int b
+ #define insb(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,1,count) : 0)
+ #define insw(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,2,count) : 0)
+ #define insl(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,4,count) : 0)
+-#define outb(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,1,1)
+-#define outw(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,2,1)
+-#define outl(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,4,1)
+-#define outsb(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,1,count)
+-#define outsw(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,2,count)
+-#define outsl(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,3,count)
++static inline void outb(unsigned char data, unsigned int port)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *) &data, 1, 1);
++}
++static inline void outw(unsigned short data, unsigned int port)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *) &data, 2, 1);
++}
++static inline void outl(unsigned int data, unsigned int port)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *) &data, 4, 1);
++}
++static inline void outsb(unsigned int port, const void *addr,
++			 unsigned long count)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *)addr, 1, count);
++}
++static inline void outsw(unsigned int port, const void *addr,
++			 unsigned long count)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *)addr, 2, count);
++}
++static inline void outsl(unsigned int port, const void *addr,
++			 unsigned long count)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *)addr, 4, count);
++}
  
- #ifdef CONFIG_REALVIEW_EB_ARM11MP_REVB
--#define REALVIEW_EB11MP_PRIV_MEM_BASE	0x1F000000
-+#define REALVIEW_EB11MP_PRIV_MEM_BASE	0x10100000
- #define REALVIEW_EB11MP_L220_BASE	0x10102000	/* L220 registers */
- #define REALVIEW_EB11MP_SYS_PLD_CTRL1	0xD8		/* Register offset for MPCore sysctl */
- #else
+ /*
+  * Convert a physical pointer to a virtual kernel pointer for /dev/mem
 
 
