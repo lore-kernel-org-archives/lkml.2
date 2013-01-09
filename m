@@ -1,81 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933435Ab3AIUi5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:38:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42418 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933418Ab3AIUiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933420Ab3AIUiy (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 Jan 2013 15:38:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42387 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933384Ab3AIUiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 048/123] nfsd4: fix oops on unusual readlike compound
-Date: Wed,  9 Jan 2013 12:34:47 -0800
-Message-Id: <20130109201504.740269498@linuxfoundation.org>
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 36/80] NFS: Add sequence_priviliged_ops for nfs4_proc_sequence()
+Date: Wed,  9 Jan 2013 12:35:28 -0800
+Message-Id: <20130109201505.026990887@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit d5f50b0c290431c65377c4afa1c764e2c3fe5305 upstream.
+commit 6bdb5f213c4344324f600dde885f25768fbd14db upstream.
 
-If the argument and reply together exceed the maximum payload size, then
-a reply with a read-like operation can overlow the rq_pages array.
+If I mount an NFS v4.1 server to a single client multiple times and then
+run xfstests over each mountpoint I usually get the client into a state
+where recovery deadlocks.  The server informs the client of a
+cb_path_down sequence error, the client then does a
+bind_connection_to_session and checks the status of the lease.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+I found that bind_connection_to_session sets the NFS4_SESSION_DRAINING
+flag on the client, but this flag is never unset before
+nfs4_check_lease() reaches nfs4_proc_sequence().  This causes the client
+to deadlock, halting all NFS activity to the server.  nfs4_proc_sequence()
+is only called by the state manager, so I can change it to run in privileged
+mode to bypass the NFS4_SESSION_DRAINING check and avoid the deadlock.
+
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c |   21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2946,11 +2946,16 @@ nfsd4_encode_read(struct nfsd4_compoundr
- 	len = maxcount;
- 	v = 0;
- 	while (len > 0) {
--		pn = resp->rqstp->rq_resused++;
-+		pn = resp->rqstp->rq_resused;
-+		if (!resp->rqstp->rq_respages[pn]) { /* ran out of pages */
-+			maxcount -= len;
-+			break;
-+		}
- 		resp->rqstp->rq_vec[v].iov_base =
- 			page_address(resp->rqstp->rq_respages[pn]);
- 		resp->rqstp->rq_vec[v].iov_len =
- 			len < PAGE_SIZE ? len : PAGE_SIZE;
-+		resp->rqstp->rq_resused++;
- 		v++;
- 		len -= PAGE_SIZE;
- 	}
-@@ -2996,6 +3001,8 @@ nfsd4_encode_readlink(struct nfsd4_compo
- 		return nfserr;
- 	if (resp->xbuf->page_len)
- 		return nfserr_resource;
-+	if (!resp->rqstp->rq_respages[resp->rqstp->rq_resused])
-+		return nfserr_resource;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -5739,13 +5739,26 @@ static void nfs41_sequence_prepare(struc
+ 	rpc_call_start(task);
+ }
  
- 	page = page_address(resp->rqstp->rq_respages[resp->rqstp->rq_resused++]);
++static void nfs41_sequence_prepare_privileged(struct rpc_task *task, void *data)
++{
++	rpc_task_set_priority(task, RPC_PRIORITY_PRIVILEGED);
++	nfs41_sequence_prepare(task, data);
++}
++
+ static const struct rpc_call_ops nfs41_sequence_ops = {
+ 	.rpc_call_done = nfs41_sequence_call_done,
+ 	.rpc_call_prepare = nfs41_sequence_prepare,
+ 	.rpc_release = nfs41_sequence_release,
+ };
  
-@@ -3045,6 +3052,8 @@ nfsd4_encode_readdir(struct nfsd4_compou
- 		return nfserr;
- 	if (resp->xbuf->page_len)
- 		return nfserr_resource;
-+	if (!resp->rqstp->rq_respages[resp->rqstp->rq_resused])
-+		return nfserr_resource;
+-static struct rpc_task *_nfs41_proc_sequence(struct nfs_client *clp, struct rpc_cred *cred)
++static const struct rpc_call_ops nfs41_sequence_privileged_ops = {
++	.rpc_call_done = nfs41_sequence_call_done,
++	.rpc_call_prepare = nfs41_sequence_prepare_privileged,
++	.rpc_release = nfs41_sequence_release,
++};
++
++static struct rpc_task *_nfs41_proc_sequence(struct nfs_client *clp, struct rpc_cred *cred,
++					     const struct rpc_call_ops *seq_ops)
+ {
+ 	struct nfs4_sequence_data *calldata;
+ 	struct rpc_message msg = {
+@@ -5755,7 +5768,7 @@ static struct rpc_task *_nfs41_proc_sequ
+ 	struct rpc_task_setup task_setup_data = {
+ 		.rpc_client = clp->cl_rpcclient,
+ 		.rpc_message = &msg,
+-		.callback_ops = &nfs41_sequence_ops,
++		.callback_ops = seq_ops,
+ 		.flags = RPC_TASK_ASYNC | RPC_TASK_SOFT,
+ 	};
  
- 	RESERVE_SPACE(NFS4_VERIFIER_SIZE);
- 	savep = p;
+@@ -5782,7 +5795,7 @@ static int nfs41_proc_async_sequence(str
+ 
+ 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
+ 		return 0;
+-	task = _nfs41_proc_sequence(clp, cred);
++	task = _nfs41_proc_sequence(clp, cred, &nfs41_sequence_ops);
+ 	if (IS_ERR(task))
+ 		ret = PTR_ERR(task);
+ 	else
+@@ -5796,7 +5809,7 @@ static int nfs4_proc_sequence(struct nfs
+ 	struct rpc_task *task;
+ 	int ret;
+ 
+-	task = _nfs41_proc_sequence(clp, cred);
++	task = _nfs41_proc_sequence(clp, cred, &nfs41_sequence_privileged_ops);
+ 	if (IS_ERR(task)) {
+ 		ret = PTR_ERR(task);
+ 		goto out;
 
 
