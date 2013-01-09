@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932763Ab3AIUgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:36:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40971 "EHLO mail.kernel.org"
+	id S932748Ab3AIUgh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:36:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40932 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932725Ab3AIUge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:34 -0500
+	id S932395Ab3AIUgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:36:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Will Deacon <will.deacon@arm.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 11/47] virtio: force vring descriptors to be allocated from lowmem
-Date: Wed,  9 Jan 2013 12:35:06 -0800
-Message-Id: <20130109201730.803735142@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, halfdog <me@halfdog.net>,
+        P J P <ppandit@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 09/47] exec: do not leave bprm->interp on stack
+Date: Wed,  9 Jan 2013 12:35:04 -0800
+Message-Id: <20130109201730.562524687@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
 References: <20130109201729.435233560@linuxfoundation.org>
@@ -27,45 +28,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit b92b1b89a33c172c075edccf6afb0edc41d851fd upstream.
+commit b66c5984017533316fd1951770302649baf1aa33 upstream.
 
-Virtio devices may attempt to add descriptors to a virtqueue from atomic
-context using GFP_ATOMIC allocation. This is problematic because such
-allocations can fall outside of the lowmem mapping, causing virt_to_phys
-to report bogus physical addresses which are subsequently passed to
-userspace via the buffers for the virtual device.
+If a series of scripts are executed, each triggering module loading via
+unprintable bytes in the script header, kernel stack contents can leak
+into the command line.
 
-This patch masks out __GFP_HIGH and __GFP_HIGHMEM from the requested
-flags when allocating descriptors for a virtqueue. If an atomic
-allocation is requested and later fails, we will return -ENOSPC which
-will be handled by the driver.
+Normally execution of binfmt_script and binfmt_misc happens recursively.
+However, when modules are enabled, and unprintable bytes exist in the
+bprm->buf, execution will restart after attempting to load matching
+binfmt modules.  Unfortunately, the logic in binfmt_script and
+binfmt_misc does not expect to get restarted.  They leave bprm->interp
+pointing to their local stack.  This means on restart bprm->interp is
+left pointing into unused stack memory which can then be copied into the
+userspace argv areas.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+After additional study, it seems that both recursion and restart remains
+the desirable way to handle exec with scripts, misc, and modules.  As
+such, we need to protect the changes to interp.
+
+This changes the logic to require allocation for any changes to the
+bprm->interp.  To avoid adding a new kmalloc to every exec, the default
+value is left as-is.  Only when passing through binfmt_script or
+binfmt_misc does an allocation take place.
+
+For a proof of concept, see DoTest.sh from:
+
+   http://www.halfdog.net/Security/2012/LinuxKernelBinfmtScriptStackDataDisclosure/
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: halfdog <me@halfdog.net>
+Cc: P J P <ppandit@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/virtio/virtio_ring.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/binfmt_misc.c        |    5 ++++-
+ fs/binfmt_script.c      |    4 +++-
+ fs/exec.c               |   15 +++++++++++++++
+ include/linux/binfmts.h |    1 +
+ 4 files changed, 23 insertions(+), 2 deletions(-)
 
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -120,6 +120,13 @@ static int vring_add_indirect(struct vri
- 	unsigned head;
- 	int i;
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -176,7 +176,10 @@ static int load_misc_binary(struct linux
+ 		goto _error;
+ 	bprm->argc ++;
  
-+	/*
-+	 * We require lowmem mappings for the descriptors because
-+	 * otherwise virt_to_phys will give us bogus addresses in the
-+	 * virtqueue.
-+	 */
-+	gfp &= ~(__GFP_HIGHMEM | __GFP_HIGH);
+-	bprm->interp = iname;	/* for binfmt_script */
++	/* Update interp in case binfmt_script needs it. */
++	retval = bprm_change_interp(iname, bprm);
++	if (retval < 0)
++		goto _error;
+ 
+ 	interp_file = open_exec (iname);
+ 	retval = PTR_ERR (interp_file);
+--- a/fs/binfmt_script.c
++++ b/fs/binfmt_script.c
+@@ -82,7 +82,9 @@ static int load_script(struct linux_binp
+ 	retval = copy_strings_kernel(1, &i_name, bprm);
+ 	if (retval) return retval; 
+ 	bprm->argc++;
+-	bprm->interp = interp;
++	retval = bprm_change_interp(interp, bprm);
++	if (retval < 0)
++		return retval;
+ 
+ 	/*
+ 	 * OK, now restart the process with the interpreter's dentry.
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1192,9 +1192,24 @@ void free_bprm(struct linux_binprm *bprm
+ 		mutex_unlock(&current->signal->cred_guard_mutex);
+ 		abort_creds(bprm->cred);
+ 	}
++	/* If a binfmt changed the interp, free it. */
++	if (bprm->interp != bprm->filename)
++		kfree(bprm->interp);
+ 	kfree(bprm);
+ }
+ 
++int bprm_change_interp(char *interp, struct linux_binprm *bprm)
++{
++	/* If a binfmt changed the interp, free it first. */
++	if (bprm->interp != bprm->filename)
++		kfree(bprm->interp);
++	bprm->interp = kstrdup(interp, GFP_KERNEL);
++	if (!bprm->interp)
++		return -ENOMEM;
++	return 0;
++}
++EXPORT_SYMBOL(bprm_change_interp);
 +
- 	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
- 	if (!desc)
- 		return -ENOMEM;
+ /*
+  * install the new credentials for this executable
+  */
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -126,6 +126,7 @@ extern int setup_arg_pages(struct linux_
+ 			   unsigned long stack_top,
+ 			   int executable_stack);
+ extern int bprm_mm_init(struct linux_binprm *bprm);
++extern int bprm_change_interp(char *interp, struct linux_binprm *bprm);
+ extern int copy_strings_kernel(int argc, const char *const *argv,
+ 			       struct linux_binprm *bprm);
+ extern int prepare_bprm_creds(struct linux_binprm *bprm);
 
 
