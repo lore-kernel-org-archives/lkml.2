@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097Ab3AIVvS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:51:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41470 "EHLO mail.kernel.org"
+	id S933005Ab3AIUhZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:37:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41415 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932702Ab3AIUh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:26 -0500
+	id S932702Ab3AIUhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        Jay Vosburgh <fubar@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 02/80] bonding: fix race condition in bonding_store_slaves_active
-Date: Wed,  9 Jan 2013 12:34:54 -0800
-Message-Id: <20130109201500.702702566@linuxfoundation.org>
+        Ondrej Zary <linux@rainbow-software.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 011/123] x86, 8042: Enable A20 using KBC to fix S3 resume on some MSI laptops
+Date: Wed,  9 Jan 2013 12:34:10 -0800
+Message-Id: <20130109201459.967119359@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Ondrej Zary <linux@rainbow-software.org>
 
-From: "nikolay@redhat.com" <nikolay@redhat.com>
+commit ad68652412276f68ad4fe3e1ecf5ee6880876783 upstream.
 
-[ Upstream commit e196c0e579902f42cf72414461fb034e5a1ffbf7 ]
+Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
+line but resume code assumes that KBC was used.
+The laptop will not resume from S3 otherwise but powers off after a while
+and then powers on again stuck with a blank screen.
 
-Race between bonding_store_slaves_active() and slave manipulation
- functions. The bond_for_each_slave use in bonding_store_slaves_active()
- is not protected by any synchronization mechanism.
- NULL pointer dereference is easy to reach.
- Fixed by acquiring the bond->lock for the slave walk.
+Fix it by enabling A20 using KBC in i8042_platform_init for x86.
 
- v2: Make description text < 75 columns
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
 
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Link: http://lkml.kernel.org/r/201212112218.06551.linux@rainbow-software.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/bonding/bond_sysfs.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -1578,6 +1578,7 @@ static ssize_t bonding_store_slaves_acti
- 		goto out;
- 	}
+---
+ drivers/input/serio/i8042-x86ia64io.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -921,6 +921,7 @@ static int __init i8042_platform_init(vo
+ 	int retval;
  
-+	read_lock(&bond->lock);
- 	bond_for_each_slave(bond, slave, i) {
- 		if (!bond_is_active_slave(slave)) {
- 			if (new_value)
-@@ -1586,6 +1587,7 @@ static ssize_t bonding_store_slaves_acti
- 				slave->inactive = 1;
- 		}
- 	}
-+	read_unlock(&bond->lock);
- out:
- 	return ret;
- }
+ #ifdef CONFIG_X86
++	u8 a20_on = 0xdf;
+ 	/* Just return if pre-detection shows no i8042 controller exist */
+ 	if (!x86_platform.i8042_detect())
+ 		return -ENODEV;
+@@ -960,6 +961,14 @@ static int __init i8042_platform_init(vo
+ 
+ 	if (dmi_check_system(i8042_dmi_dritek_table))
+ 		i8042_dritek = true;
++
++	/*
++	 * A20 was already enabled during early kernel init. But some buggy
++	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
++	 * resume from S3. So we do it here and hope that nothing breaks.
++	 */
++	i8042_command(&a20_on, 0x10d1);
++	i8042_command(NULL, 0x00ff);	/* Null command for SMM firmware */
+ #endif /* CONFIG_X86 */
+ 
+ 	return retval;
 
 
