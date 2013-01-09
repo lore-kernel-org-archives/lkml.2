@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933777Ab3AIVKl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:10:41 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:47662 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933708Ab3AIUjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:52 -0500
-Date: Wed, 9 Jan 2013 12:39:45 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-Message-ID: <20130109203945.GB20454@htj.dyndns.org>
-References: <20130104082751.GA22227@lizard.gateway.2wire.net>
- <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
- <20130109203731.GA20454@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130109203731.GA20454@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933697Ab3AIUju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:39:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42924 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933640Ab3AIUjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:47 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Russell Webb <russell.webb@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 52/80] xhci: Add Lynx Point LP to list of Intel switchable hosts
+Date: Wed,  9 Jan 2013 12:35:44 -0800
+Message-Id: <20130109201507.097451072@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 12:37:31PM -0800, Tejun Heo wrote:
-> Hello,
-> 
-> Can you please cc me too when posting further patches?  I kinda missed
-> the whole discussion upto this point.
-> 
-> On Fri, Jan 04, 2013 at 12:29:11AM -0800, Anton Vorontsov wrote:
-> > This commit implements David Rientjes' idea of mempressure cgroup.
-> > 
-> > The main characteristics are the same to what I've tried to add to vmevent
-> > API; internally, it uses Mel Gorman's idea of scanned/reclaimed ratio for
-> > pressure index calculation. But we don't expose the index to the userland.
-> > Instead, there are three levels of the pressure:
-> > 
-> >  o low (just reclaiming, e.g. caches are draining);
-> >  o medium (allocation cost becomes high, e.g. swapping);
-> >  o oom (about to oom very soon).
-> > 
-> > The rationale behind exposing levels and not the raw pressure index
-> > described here: http://lkml.org/lkml/2012/11/16/675
-> > 
-> > For a task it is possible to be in both cpusets, memcg and mempressure
-> > cgroups, so by rearranging the tasks it is possible to watch a specific
-> > pressure (i.e. caused by cpuset and/or memcg).
-> 
-> So, cgroup is headed towards single hierarchy.  Dunno how much it
-> would affect mempressure but it probably isn't wise to design with
-> focus on multiple hierarchies.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Also, how are you implementing hierarchical behavior?  All controllers
-should support hierarchy.  Can you please explain how the interface
-would work in detail?
+------------------
 
-Thanks.
+From: Russell Webb <russell.webb@linux.intel.com>
 
--- 
-tejun
+commit bb1e5dd7113d2fd178d3af9aca8f480ae0468edf upstream.
+
+Like Lynx Point, Lynx Point LP is also switchable.  See
+1c12443ab8eba71a658fae4572147e56d1f84f66 for more details.
+
+This patch should be backported to stable kernels as old as 3.0,
+that contain commit 69e848c2090aebba5698a1620604c7dccb448684
+"Intel xhci: Support EHCI/xHCI port switching."
+
+Signed-off-by: Russell Webb <russell.webb@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/host/ehci-pci.c   |    3 ++-
+ drivers/usb/host/pci-quirks.c |    4 +++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -362,7 +362,8 @@ static bool usb_is_intel_switchable_ehci
+ 		pdev->vendor == PCI_VENDOR_ID_INTEL &&
+ 		(pdev->device == 0x1E26 ||
+ 		 pdev->device == 0x8C2D ||
+-		 pdev->device == 0x8C26);
++		 pdev->device == 0x8C26 ||
++		 pdev->device == 0x9C26);
+ }
+ 
+ static void ehci_enable_xhci_companion(void)
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -723,6 +723,7 @@ static int handshake(void __iomem *ptr,
+ }
+ 
+ #define PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI	0x8C31
++#define PCI_DEVICE_ID_INTEL_LYNX_POINT_LP_XHCI	0x9C31
+ 
+ bool usb_is_intel_ppt_switchable_xhci(struct pci_dev *pdev)
+ {
+@@ -736,7 +737,8 @@ bool usb_is_intel_lpt_switchable_xhci(st
+ {
+ 	return pdev->class == PCI_CLASS_SERIAL_USB_XHCI &&
+ 		pdev->vendor == PCI_VENDOR_ID_INTEL &&
+-		pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI;
++		(pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI ||
++		 pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_LP_XHCI);
+ }
+ 
+ bool usb_is_intel_switchable_xhci(struct pci_dev *pdev)
+
+
