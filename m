@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab3AIXSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 18:18:23 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:52482 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932157Ab3AIXSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 18:18:22 -0500
-Date: Wed, 9 Jan 2013 16:17:58 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
-Message-ID: <20130109231758.GA27065@obsidianresearch.com>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <201301092119.57067.arnd@arndb.de>
- <20130109215428.GA13648@avionic-0098.adnet.avionic-design.de>
- <201301092210.49452.arnd@arndb.de>
- <50EDF95F.4070209@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EDF95F.4070209@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+	id S1758187Ab3AIXTZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 18:19:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35795 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758160Ab3AIXTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 18:19:22 -0500
+Date: Wed, 9 Jan 2013 15:19:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
+        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
+        yinghai@kernel.org, glommer@parallels.com, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH v6 04/15] memory-hotplug: remove /sys/firmware/memmap/X
+ sysfs
+Message-Id: <20130109151920.fb9b4029.akpm@linux-foundation.org>
+In-Reply-To: <1357723959-5416-5-git-send-email-tangchen@cn.fujitsu.com>
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1357723959-5416-5-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 04:12:31PM -0700, Stephen Warren wrote:
-> On 01/09/2013 03:10 PM, Arnd Bergmann wrote:
-> > On Wednesday 09 January 2013, Thierry Reding wrote:
-> >> What happens on Tegra is that we need to map 256 MiB of physical memory
-> >> to access all the PCIe extended configuration space. However, ioremap()
-> >> on such a large region fails if not enough vmalloc() space is available.
-> >>
-> >> This was observed when somebody tested this on CardHu which has a 1 GiB
-> >> of RAM and therefore remapping the full 256 MiB fails.
-> ...
-> > Have you checked if the hardware supports an alternative config
-> > space access mechanism that does not depend on a huge address range?
-> > A lot of them provide an index/data register pair somewhere, as the
-> > original PC implementation did.
+On Wed, 9 Jan 2013 17:32:28 +0800
+Tang Chen <tangchen@cn.fujitsu.com> wrote:
+
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 > 
-> That would be nice, but I've talked to the HW engineers, and there's no
-> indication that any alternative mechanism exists.
+> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
+> sysfs files are created. But there is no code to remove these files. The patch
+> implements the function to remove them.
+> 
+> Note: The code does not free firmware_map_entry which is allocated by bootmem.
+>       So the patch makes memory leak. But I think the memory leak size is
+>       very samll. And it does not affect the system.
+> 
+> ...
+>
+> +static struct firmware_map_entry * __meminit
+> +firmware_map_find_entry(u64 start, u64 end, const char *type)
+> +{
+> +	struct firmware_map_entry *entry;
+> +
+> +	spin_lock(&map_entries_lock);
+> +	list_for_each_entry(entry, &map_entries, list)
+> +		if ((entry->start == start) && (entry->end == end) &&
+> +		    (!strcmp(entry->type, type))) {
+> +			spin_unlock(&map_entries_lock);
+> +			return entry;
+> +		}
+> +
+> +	spin_unlock(&map_entries_lock);
+> +	return NULL;
+> +}
+>
+> ...
+>
+> +	entry = firmware_map_find_entry(start, end - 1, type);
+> +	if (!entry)
+> +		return -EINVAL;
+> +
+> +	firmware_map_remove_entry(entry);
+>
+> ...
+>
 
-It seems to be convention that extended config space is often only
-accessible through mmio space, that was true on x86 last I checked
-too..
+The above code looks racy.  After firmware_map_find_entry() does the
+spin_unlock() there is nothing to prevent a concurrent
+firmware_map_remove_entry() from removing the entry, so the kernel ends
+up calling firmware_map_remove_entry() twice against the same entry.
 
-You could decrease the size of the mapping to only span the bus
-numbers that are configured for use via DT.
+An easy fix for this is to hold the spinlock across the entire
+lookup/remove operation.
 
-Are there any concerns about these config registers being accessed
-from a context where a new mapping can't be made? Interrupt? Machine
-Check? PCI-E Advanced Error Reporting?
 
-Cheers,
-Jason
+This problem is inherent to firmware_map_find_entry() as you have
+implemented it, so this function simply should not exist in the current
+form - no caller can use it without being buggy!  A simple fix for this
+is to remove the spin_lock()/spin_unlock() from
+firmware_map_find_entry() and add locking documentation to
+firmware_map_find_entry(), explaining that the caller must hold
+map_entries_lock and must not release that lock until processing of
+firmware_map_find_entry()'s return value has completed.
