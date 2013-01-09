@@ -1,46 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab3AIOsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:48:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50619 "EHLO mx2.suse.de"
+	id S1757972Ab3AIOtE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:49:04 -0500
+Received: from mga03.intel.com ([143.182.124.21]:61230 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932076Ab3AIOsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:48:02 -0500
-Date: Wed, 9 Jan 2013 15:47:58 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
-        dchinner@redhat.com, Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH V3 4/8] memcg: add per cgroup dirty pages accounting
-Message-ID: <20130109144758.GC5095@dhcp22.suse.cz>
-References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
- <1356456367-14660-1-git-send-email-handai.szj@taobao.com>
- <20130102104421.GC22160@dhcp22.suse.cz>
- <CAFj3OHXKyMO3gwghiBAmbowvqko-JqLtKroX2kzin1rk=q9tZg@mail.gmail.com>
- <alpine.LNX.2.00.1301061135400.29149@eggly.anvils>
- <CAFj3OHVUx0bZyEGQU_CApVbgz7SrX3BQ+0U5fRV=En800wv+cQ@mail.gmail.com>
+	id S1757828Ab3AIOtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 09:49:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,438,1355126400"; 
+   d="scan'208";a="189338591"
+Date: Wed, 9 Jan 2013 06:24:43 -0800
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
+Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [resend][PATCH 11/16] dw_dmac: backlink to dw_dma in
+ dw_dma_chan is superfluous
+Message-ID: <20130109142443.GQ19691@intel.com>
+References: <20130108155423.GJ19691@intel.com>
+ <1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1357719435-29955-12-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFj3OHVUx0bZyEGQU_CApVbgz7SrX3BQ+0U5fRV=En800wv+cQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357719435-29955-12-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 09-01-13 22:35:12, Sha Zhengju wrote:
-[...]
-> To my knowledge, each task is forked in root memcg, and there's a
-> moving while attaching it to a cgroup. So move_account is also a
-> frequent behavior to some extent.
-
-Not really. Every fork/exec is copies the current group (see
-cgroup_fork) so there is no moving on that path.
-[...]
--- 
-Michal Hocko
-SUSE Labs
+On Wed, Jan 09, 2013 at 10:17:10AM +0200, Andy Shevchenko wrote:
+> The same information could be exctracted from the struct dma_chan.
+typo...                         ^^^^^^^^^^
+> The patch introduces helper function dwc_get_data_width() as well.
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/dma/dw_dmac.c      |   27 ++++++++++++++++++++-------
+>  drivers/dma/dw_dmac_regs.h |    3 ---
+>  2 files changed, 20 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index ff9d68b..39a6506 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -73,6 +73,22 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
+>   */
+>  #define NR_DESCS_PER_CHANNEL	64
+>  
+> +#define SRC_MASTER	0
+> +#define DST_MASTER	1
+> +
+> +static inline unsigned int dwc_get_data_width(struct dma_chan *chan, int master)
+> +{
+> +	struct dw_dma *dw = to_dw_dma(chan->device);
+> +	struct dw_dma_slave *dws = chan->private;
+> +
+> +	if (master == SRC_MASTER)
+> +		return dw->data_width[dwc_get_sms(dws)];
+> +	else if (master == DST_MASTER)
+> +		return dw->data_width[dwc_get_dms(dws)];
+> +
+> +	return 0;
+> +}
+> +
+>  /*----------------------------------------------------------------------*/
+>  
+>  /*
+> @@ -703,7 +719,6 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+>  		size_t len, unsigned long flags)
+>  {
+>  	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
+> -	struct dw_dma_slave	*dws = chan->private;
+>  	struct dw_desc		*desc;
+>  	struct dw_desc		*first;
+>  	struct dw_desc		*prev;
+> @@ -726,8 +741,8 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+>  
+>  	dwc->direction = DMA_MEM_TO_MEM;
+>  
+> -	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
+> -					 dwc->dw->data_width[dwc_get_dms(dws)]);
+> +	data_width = min_t(unsigned int, dwc_get_data_width(chan, SRC_MASTER),
+> +			   dwc_get_data_width(chan, DST_MASTER));
+>  
+>  	src_width = dst_width = min_t(unsigned int, data_width,
+>  				      dwc_fast_fls(src | dest | len));
+> @@ -792,7 +807,6 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+>  		unsigned long flags, void *context)
+>  {
+>  	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
+> -	struct dw_dma_slave	*dws = chan->private;
+>  	struct dma_slave_config	*sconfig = &dwc->dma_sconfig;
+>  	struct dw_desc		*prev;
+>  	struct dw_desc		*first;
+> @@ -826,7 +840,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+>  		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_M2P) :
+>  			DWC_CTLL_FC(DW_DMA_FC_D_M2P);
+>  
+> -		data_width = dwc->dw->data_width[dwc_get_sms(dws)];
+> +		data_width = dwc_get_data_width(chan, SRC_MASTER);
+>  
+>  		for_each_sg(sgl, sg, sg_len, i) {
+>  			struct dw_desc	*desc;
+> @@ -889,7 +903,7 @@ slave_sg_todev_fill_desc:
+>  		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_P2M) :
+>  			DWC_CTLL_FC(DW_DMA_FC_D_P2M);
+>  
+> -		data_width = dwc->dw->data_width[dwc_get_dms(dws)];
+> +		data_width = dwc_get_data_width(chan, DST_MASTER);
+>  
+>  		for_each_sg(sgl, sg, sg_len, i) {
+>  			struct dw_desc	*desc;
+> @@ -1720,7 +1734,6 @@ static int dw_probe(struct platform_device *pdev)
+>  
+>  		channel_clear_bit(dw, CH_EN, dwc->mask);
+>  
+> -		dwc->dw = dw;
+>  		dwc->direction = DMA_TRANS_NONE;
+>  
+>  		/* hardware configuration */
+> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+> index f9532c2..577f2dd 100644
+> --- a/drivers/dma/dw_dmac_regs.h
+> +++ b/drivers/dma/dw_dmac_regs.h
+> @@ -214,9 +214,6 @@ struct dw_dma_chan {
+>  
+>  	/* configuration passed via DMA_SLAVE_CONFIG */
+>  	struct dma_slave_config dma_sconfig;
+> -
+> -	/* backlink to dw_dma */
+> -	struct dw_dma		*dw;
+>  };
+>  
+>  static inline struct dw_dma_chan_regs __iomem *
+> -- 
+> 1.7.10.4
+> 
