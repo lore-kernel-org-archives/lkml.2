@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933471Ab3AIUjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:39:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42458 "EHLO mail.kernel.org"
+	id S933597Ab3AIUj2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:39:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42712 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933418Ab3AIUi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:59 -0500
+	id S933314Ab3AIUjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sven Wegener <sven.wegener@stealer.net>,
+        Xi Wang <xi.wang@gmail.com>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 041/123] NFSv4: Check for buffer length in __nfs4_get_acl_uncached
-Date: Wed,  9 Jan 2013 12:34:40 -0800
-Message-Id: <20130109201503.819033406@linuxfoundation.org>
+Subject: [ 052/123] nfs: fix null checking in nfs_get_option_str()
+Date: Wed,  9 Jan 2013 12:34:51 -0800
+Message-Id: <20130109201505.225886203@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,43 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Wegener <sven.wegener@stealer.net>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit 7d3e91a89b7adbc2831334def9e494dd9892f9af upstream.
+commit e25fbe380c4e3c09afa98bcdcd9d3921443adab8 upstream.
 
-Commit 1f1ea6c "NFSv4: Fix buffer overflow checking in
-__nfs4_get_acl_uncached" accidently dropped the checking for too small
-result buffer length.
+The following null pointer check is broken.
 
-If someone uses getxattr on "system.nfs4_acl" on an NFSv4 mount
-supporting ACLs, the ACL has not been cached and the buffer suplied is
-too short, we still copy the complete ACL, resulting in kernel and user
-space memory corruption.
+	*option = match_strdup(args);
+	return !option;
 
-Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
+The pointer `option' must be non-null, and thus `!option' is always false.
+Use `!*option' instead.
+
+The bug was introduced in commit c5cb09b6f8 ("Cleanup: Factor out some
+cut-and-paste code.").
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/nfs/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3937,8 +3937,13 @@ static ssize_t __nfs4_get_acl_uncached(s
- 		goto out_free;
- 	}
- 	nfs4_write_cached_acl(inode, pages, res.acl_data_offset, res.acl_len);
--	if (buf)
-+	if (buf) {
-+		if (res.acl_len > buflen) {
-+			ret = -ERANGE;
-+			goto out_free;
-+		}
- 		_copy_from_pages(buf, pages, res.acl_data_offset, res.acl_len);
-+	}
- out_ok:
- 	ret = res.acl_len;
- out_free:
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -1150,7 +1150,7 @@ static int nfs_get_option_str(substring_
+ {
+ 	kfree(*option);
+ 	*option = match_strdup(args);
+-	return !option;
++	return !*option;
+ }
+ 
+ static int nfs_get_option_ul(substring_t args[], unsigned long *option)
 
 
