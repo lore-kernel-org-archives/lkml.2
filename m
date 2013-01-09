@@ -1,59 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315Ab3AIVia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:38:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42066 "EHLO mail.kernel.org"
+	id S933294Ab3AIViw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:38:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42047 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933237Ab3AIUiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:20 -0500
+	id S933226Ab3AIUiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 25/80] ALSA: hda - Fix the wrong pincaps set in ALC861VD dallas/hp fixup
-Date: Wed,  9 Jan 2013 12:35:17 -0800
-Message-Id: <20130109201503.590861892@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tatyana Brokhman <tlinder@codeaurora.org>, Felipe Balbi <balbi@ti.com>
+Subject: [ 035/123] usb: gadget: network: fix bind() error path
+Date: Wed,  9 Jan 2013 12:34:34 -0800
+Message-Id: <20130109201503.063658553@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit b78562b10fa66175e30b76073e32a0ad8d92aa83 upstream.
+commit e79cc615a9bb44da72c499ccfa2c9c4bbea3aa84 upstream.
 
-The workaround to force VREF50 for dallas/hp model with ALC861VD
-was introduced in commit 8fdcb6fe4204bdb4c6991652717ab5063751414e,
-but it contained wrong pincap override bits.
+I think this is wrong since 72c973dd ("usb: gadget: add
+usb_endpoint_descriptor to struct usb_ep"). If we fail to allocate an ep
+or bail out early we shouldn't check for the descriptor which is
+assigned at ep_enable() time.
 
-This patch fixes to exclude VREF80 pincap bit correctly.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Tatyana Brokhman <tlinder@codeaurora.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/f_ecm.c    |    4 ++--
+ drivers/usb/gadget/f_eem.c    |    5 ++---
+ drivers/usb/gadget/f_ncm.c    |    4 ++--
+ drivers/usb/gadget/f_rndis.c  |    4 ++--
+ drivers/usb/gadget/f_subset.c |    4 ++--
+ 5 files changed, 10 insertions(+), 11 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6520,8 +6520,8 @@ static void alc861vd_fixup_dallas(struct
- 				  const struct alc_fixup *fix, int action)
- {
- 	if (action == ALC_FIXUP_ACT_PRE_PROBE) {
--		snd_hda_override_pin_caps(codec, 0x18, 0x00001714);
--		snd_hda_override_pin_caps(codec, 0x19, 0x0000171c);
-+		snd_hda_override_pin_caps(codec, 0x18, 0x00000734);
-+		snd_hda_override_pin_caps(codec, 0x19, 0x0000073c);
- 	}
- }
+--- a/drivers/usb/gadget/f_ecm.c
++++ b/drivers/usb/gadget/f_ecm.c
+@@ -808,9 +808,9 @@ fail:
+ 	/* we might as well release our claims on endpoints */
+ 	if (ecm->notify)
+ 		ecm->notify->driver_data = NULL;
+-	if (ecm->port.out_ep->desc)
++	if (ecm->port.out_ep)
+ 		ecm->port.out_ep->driver_data = NULL;
+-	if (ecm->port.in_ep->desc)
++	if (ecm->port.in_ep)
+ 		ecm->port.in_ep->driver_data = NULL;
  
+ 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+--- a/drivers/usb/gadget/f_eem.c
++++ b/drivers/usb/gadget/f_eem.c
+@@ -319,10 +319,9 @@ fail:
+ 	if (f->hs_descriptors)
+ 		usb_free_descriptors(f->hs_descriptors);
+ 
+-	/* we might as well release our claims on endpoints */
+-	if (eem->port.out_ep->desc)
++	if (eem->port.out_ep)
+ 		eem->port.out_ep->driver_data = NULL;
+-	if (eem->port.in_ep->desc)
++	if (eem->port.in_ep)
+ 		eem->port.in_ep->driver_data = NULL;
+ 
+ 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+--- a/drivers/usb/gadget/f_ncm.c
++++ b/drivers/usb/gadget/f_ncm.c
+@@ -1259,9 +1259,9 @@ fail:
+ 	/* we might as well release our claims on endpoints */
+ 	if (ncm->notify)
+ 		ncm->notify->driver_data = NULL;
+-	if (ncm->port.out_ep->desc)
++	if (ncm->port.out_ep)
+ 		ncm->port.out_ep->driver_data = NULL;
+-	if (ncm->port.in_ep->desc)
++	if (ncm->port.in_ep)
+ 		ncm->port.in_ep->driver_data = NULL;
+ 
+ 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+--- a/drivers/usb/gadget/f_rndis.c
++++ b/drivers/usb/gadget/f_rndis.c
+@@ -803,9 +803,9 @@ fail:
+ 	/* we might as well release our claims on endpoints */
+ 	if (rndis->notify)
+ 		rndis->notify->driver_data = NULL;
+-	if (rndis->port.out_ep->desc)
++	if (rndis->port.out_ep)
+ 		rndis->port.out_ep->driver_data = NULL;
+-	if (rndis->port.in_ep->desc)
++	if (rndis->port.in_ep)
+ 		rndis->port.in_ep->driver_data = NULL;
+ 
+ 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+--- a/drivers/usb/gadget/f_subset.c
++++ b/drivers/usb/gadget/f_subset.c
+@@ -370,9 +370,9 @@ fail:
+ 		usb_free_descriptors(f->hs_descriptors);
+ 
+ 	/* we might as well release our claims on endpoints */
+-	if (geth->port.out_ep->desc)
++	if (geth->port.out_ep)
+ 		geth->port.out_ep->driver_data = NULL;
+-	if (geth->port.in_ep->desc)
++	if (geth->port.in_ep)
+ 		geth->port.in_ep->driver_data = NULL;
+ 
+ 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
 
 
