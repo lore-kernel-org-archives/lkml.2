@@ -1,89 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933248Ab3AIVof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:44:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41777 "EHLO mail.kernel.org"
+	id S933338Ab3AIVou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:44:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41765 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933127Ab3AIUhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:51 -0500
+	id S933124Ab3AIUhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 42/47] Bluetooth: cancel power_on work when unregistering the device
-Date: Wed,  9 Jan 2013 12:35:37 -0800
-Message-Id: <20130109201734.318184940@linuxfoundation.org>
+        Eric Leblond <eric@regit.org>, Johannes Berg <johannes.berg@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 07/80] ipv4: ip_check_defrag must not modify skb before unsharing
+Date: Wed,  9 Jan 2013 12:34:59 -0800
+Message-Id: <20130109201501.314845055@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 
-commit b9b5ef188e5a2222cfc16ef62a4703080750b451 upstream.
+From: Johannes Berg <johannes.berg@intel.com>
 
-We need to cancel the hci_power_on work in order to avoid it run when we
-try to free the hdev.
+[ Upstream commit 1bf3751ec90cc3174e01f0d701e8449ce163d113 ]
 
-[ 1434.201149] ------------[ cut here ]------------
-[ 1434.204998] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
-[ 1434.208324] ODEBUG: free active (active state 0) object type: work_struct hint: hci
-_power_on+0x0/0x90
-[ 1434.210386] Pid: 8564, comm: trinity-child25 Tainted: G        W    3.7.0-rc5-next-
-20121112-sasha-00018-g2f4ce0e #127
-[ 1434.210760] Call Trace:
-[ 1434.210760]  [<ffffffff819f3d6e>] ? debug_print_object+0x8e/0xb0
-[ 1434.210760]  [<ffffffff8110b887>] warn_slowpath_common+0x87/0xb0
-[ 1434.210760]  [<ffffffff8110b911>] warn_slowpath_fmt+0x41/0x50
-[ 1434.210760]  [<ffffffff819f3d6e>] debug_print_object+0x8e/0xb0
-[ 1434.210760]  [<ffffffff8376b750>] ? hci_dev_open+0x310/0x310
-[ 1434.210760]  [<ffffffff83bf94e5>] ? _raw_spin_unlock_irqrestore+0x55/0xa0
-[ 1434.210760]  [<ffffffff819f3ee5>] __debug_check_no_obj_freed+0xa5/0x230
-[ 1434.210760]  [<ffffffff83785db0>] ? bt_host_release+0x10/0x20
-[ 1434.210760]  [<ffffffff819f4d15>] debug_check_no_obj_freed+0x15/0x20
-[ 1434.210760]  [<ffffffff8125eee7>] kfree+0x227/0x330
-[ 1434.210760]  [<ffffffff83785db0>] bt_host_release+0x10/0x20
-[ 1434.210760]  [<ffffffff81e539e5>] device_release+0x65/0xc0
-[ 1434.210760]  [<ffffffff819d3975>] kobject_cleanup+0x145/0x190
-[ 1434.210760]  [<ffffffff819d39cd>] kobject_release+0xd/0x10
-[ 1434.210760]  [<ffffffff819d33cc>] kobject_put+0x4c/0x60
-[ 1434.210760]  [<ffffffff81e548b2>] put_device+0x12/0x20
-[ 1434.210760]  [<ffffffff8376a334>] hci_free_dev+0x24/0x30
-[ 1434.210760]  [<ffffffff82fd8fe1>] vhci_release+0x31/0x60
-[ 1434.210760]  [<ffffffff8127be12>] __fput+0x122/0x250
-[ 1434.210760]  [<ffffffff811cab0d>] ? rcu_user_exit+0x9d/0xd0
-[ 1434.210760]  [<ffffffff8127bf49>] ____fput+0x9/0x10
-[ 1434.210760]  [<ffffffff81133402>] task_work_run+0xb2/0xf0
-[ 1434.210760]  [<ffffffff8106cfa7>] do_notify_resume+0x77/0xa0
-[ 1434.210760]  [<ffffffff83bfb0ea>] int_signal+0x12/0x17
-[ 1434.210760] ---[ end trace a6d57fefbc8a8cc7 ]---
+ip_check_defrag() might be called from af_packet within the
+RX path where shared SKBs are used, so it must not modify
+the input SKB before it has unshared it for defragmentation.
+Use skb_copy_bits() to get the IP header and only pull in
+everything later.
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+The same is true for the other caller in macvlan as it is
+called from dev->rx_handler which can also get a shared SKB.
+
+Reported-by: Eric Leblond <eric@regit.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/bluetooth/hci_core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/ip_fragment.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -1333,6 +1333,8 @@ int hci_unregister_dev(struct hci_dev *h
- 	for (i = 0; i < NUM_REASSEMBLY; i++)
- 		kfree_skb(hdev->reassembly[i]);
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -685,28 +685,27 @@ EXPORT_SYMBOL(ip_defrag);
  
-+	cancel_work_sync(&hdev->power_on);
+ struct sk_buff *ip_check_defrag(struct sk_buff *skb, u32 user)
+ {
+-	const struct iphdr *iph;
++	struct iphdr iph;
+ 	u32 len;
+ 
+ 	if (skb->protocol != htons(ETH_P_IP))
+ 		return skb;
+ 
+-	if (!pskb_may_pull(skb, sizeof(struct iphdr)))
++	if (!skb_copy_bits(skb, 0, &iph, sizeof(iph)))
+ 		return skb;
+ 
+-	iph = ip_hdr(skb);
+-	if (iph->ihl < 5 || iph->version != 4)
++	if (iph.ihl < 5 || iph.version != 4)
+ 		return skb;
+-	if (!pskb_may_pull(skb, iph->ihl*4))
+-		return skb;
+-	iph = ip_hdr(skb);
+-	len = ntohs(iph->tot_len);
+-	if (skb->len < len || len < (iph->ihl * 4))
 +
- 	if (!test_bit(HCI_INIT, &hdev->flags) &&
- 					!test_bit(HCI_SETUP, &hdev->flags))
- 		mgmt_index_removed(hdev->id);
++	len = ntohs(iph.tot_len);
++	if (skb->len < len || len < (iph.ihl * 4))
+ 		return skb;
+ 
+-	if (ip_is_fragment(ip_hdr(skb))) {
++	if (ip_is_fragment(&iph)) {
+ 		skb = skb_share_check(skb, GFP_ATOMIC);
+ 		if (skb) {
++			if (!pskb_may_pull(skb, iph.ihl*4))
++				return skb;
+ 			if (pskb_trim_rcsum(skb, len))
+ 				return skb;
+ 			memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
 
 
