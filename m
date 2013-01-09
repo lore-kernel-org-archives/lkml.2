@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab3AIV7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:59:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41125 "EHLO mail.kernel.org"
+	id S932829Ab3AIUgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:36:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41062 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932798Ab3AIUgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:51 -0500
+	id S932798Ab3AIUgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:36:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tomasz Guszkowski <tsg@o2.pl>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 16/47] p54usb: add USB ID for T-Com Sinus 154 data II
-Date: Wed,  9 Jan 2013 12:35:11 -0800
-Message-Id: <20130109201731.335140859@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 22/47] nfsd4: fix oops on unusual readlike compound
+Date: Wed,  9 Jan 2013 12:35:17 -0800
+Message-Id: <20130109201732.047789890@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
 References: <20130109201729.435233560@linuxfoundation.org>
@@ -27,30 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomasz Guszkowski <tsg@o2.pl>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 3194b7fcdf6caea338b5d2c72d76fed80437649c upstream.
+commit d5f50b0c290431c65377c4afa1c764e2c3fe5305 upstream.
 
-Added USB ID for T-Com Sinus 154 data II.
+If the argument and reply together exceed the maximum payload size, then
+a reply with a read-like operation can overlow the rq_pages array.
 
-Signed-off-by: Tomasz Guszkowski <tsg@o2.pl>
-Acked-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/p54/p54usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfsd/nfs4xdr.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -81,6 +81,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
- 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
- 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
-+	{USB_DEVICE(0x083a, 0x4503)},	/* T-Com Sinus 154 data II */
- 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
- 	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
- 	{USB_DEVICE(0x083a, 0xf503)},	/* Accton FD7050E ver 1010ec  */
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -2682,11 +2682,16 @@ nfsd4_encode_read(struct nfsd4_compoundr
+ 	len = maxcount;
+ 	v = 0;
+ 	while (len > 0) {
+-		pn = resp->rqstp->rq_resused++;
++		pn = resp->rqstp->rq_resused;
++		if (!resp->rqstp->rq_respages[pn]) { /* ran out of pages */
++			maxcount -= len;
++			break;
++		}
+ 		resp->rqstp->rq_vec[v].iov_base =
+ 			page_address(resp->rqstp->rq_respages[pn]);
+ 		resp->rqstp->rq_vec[v].iov_len =
+ 			len < PAGE_SIZE ? len : PAGE_SIZE;
++		resp->rqstp->rq_resused++;
+ 		v++;
+ 		len -= PAGE_SIZE;
+ 	}
+@@ -2734,6 +2739,8 @@ nfsd4_encode_readlink(struct nfsd4_compo
+ 		return nfserr;
+ 	if (resp->xbuf->page_len)
+ 		return nfserr_resource;
++	if (!resp->rqstp->rq_respages[resp->rqstp->rq_resused])
++		return nfserr_resource;
+ 
+ 	page = page_address(resp->rqstp->rq_respages[resp->rqstp->rq_resused++]);
+ 
+@@ -2783,6 +2790,8 @@ nfsd4_encode_readdir(struct nfsd4_compou
+ 		return nfserr;
+ 	if (resp->xbuf->page_len)
+ 		return nfserr_resource;
++	if (!resp->rqstp->rq_respages[resp->rqstp->rq_resused])
++		return nfserr_resource;
+ 
+ 	RESERVE_SPACE(8);  /* verifier */
+ 	savep = p;
 
 
