@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229Ab3AIXLk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 18:11:40 -0500
-Received: from mga03.intel.com ([143.182.124.21]:40532 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758186Ab3AIXKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 18:10:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,440,1355126400"; 
-   d="scan'208";a="242025325"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        sedat.dilek@gmail.com, Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: drop the warning when cl is not initialized during unlinking
-Date: Thu, 10 Jan 2013 01:10:33 +0200
-Message-Id: <1357773033-22910-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S932312Ab3AIXLq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 18:11:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35753 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932248Ab3AIXLm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 18:11:42 -0500
+Date: Wed, 9 Jan 2013 15:11:40 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
+        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
+        yinghai@kernel.org, glommer@parallels.com, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH v6 02/15] memory-hotplug: check whether all memory
+ blocks are offlined or not when removing memory
+Message-Id: <20130109151140.76982b9e.akpm@linux-foundation.org>
+In-Reply-To: <1357723959-5416-3-git-send-email-tangchen@cn.fujitsu.com>
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1357723959-5416-3-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On systems where wd and amthif is not initialized
-we will hit cl->dev == NULL. This condition is okay
-so we don't need to be laud about it.
+On Wed, 9 Jan 2013 17:32:26 +0800
+Tang Chen <tangchen@cn.fujitsu.com> wrote:
 
-Fixes the follwing warning during suspend
-[  137.061985] WARNING: at drivers/misc/mei/client.c:315 mei_cl_unlink+0x86/0x90 [mei]()
-[  137.061986] Hardware name: 530U3BI/530U4BI/530U4BH
-[  137.062140] Modules linked in: snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel snd_hda_intel snd_hda_codec kvm arc4 iwldvm snd_hwdep i915 snd_pcm mac80211 ghash_clmulni_intel snd_page_alloc aesni_intel snd_seq_midi xts snd_seq_midi_event aes_x86_64 rfcomm snd_rawmidi parport_pc bnep lrw snd_seq uvcvideo i2c_algo_bit ppdev gf128mul iwlwifi snd_timer drm_kms_helper ablk_helper cryptd drm snd_seq_device videobuf2_vmalloc psmouse videobuf2_memops snd cfg80211 btusb videobuf2_core soundcore videodev lp bluetooth samsung_laptop wmi microcode mei serio_raw mac_hid video hid_generic lpc_ich parport usbhid hid r8169
-[  137.062143] Pid: 2706, comm: kworker/u:15 Tainted: G      D W    3.8.0-rc2-next20130109-1-iniza-generic #1
-[  137.062144] Call Trace:
-[  137.062156]  [<ffffffff8105860f>] warn_slowpath_common+0x7f/0xc0
-[  137.062159]  [<ffffffff8135b1ea>] ? ioread32+0x3a/0x40
-[  137.062162]  [<ffffffff8105866a>] warn_slowpath_null+0x1a/0x20
-[  137.062168]  [<ffffffffa0076be6>] mei_cl_unlink+0x86/0x90 [mei]
-[  137.062173]  [<ffffffffa0071325>] mei_reset+0xc5/0x240 [mei]
-[  137.062178]  [<ffffffffa0073703>] mei_pci_resume+0xa3/0x110 [mei]
-[  137.062183]  [<ffffffff81379cae>] pci_pm_resume+0x7e/0xe0
-[  137.062185]  [<ffffffff81379c30>] ? pci_pm_thaw+0x80/0x80
-[  137.062189]  [<ffffffff8145a415>] dpm_run_callback.isra.6+0x25/0x50
-[  137.062192]  [<ffffffff8145a6cf>] device_resume+0x9f/0x140
-[  137.062194]  [<ffffffff8145a791>] async_resume+0x21/0x50
-[  137.062200]  [<ffffffff810858b0>] async_run_entry_fn+0x90/0x1c0
-[  137.062203]  [<ffffffff810778e5>] process_one_work+0x155/0x460
-[  137.062207]  [<ffffffff81078578>] worker_thread+0x168/0x400
-[  137.062210]  [<ffffffff81078410>] ? manage_workers+0x2b0/0x2b0
-[  137.062214]  [<ffffffff8107d9f0>] kthread+0xc0/0xd0
-[  137.062218]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
-[  137.062222]  [<ffffffff816bac6c>] ret_from_fork+0x7c/0xb0
-[  137.062228]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
+> We remove the memory like this:
+> 1. lock memory hotplug
+> 2. offline a memory block
+> 3. unlock memory hotplug
+> 4. repeat 1-3 to offline all memory blocks
+> 5. lock memory hotplug
+> 6. remove memory(TODO)
+> 7. unlock memory hotplug
+> 
+> All memory blocks must be offlined before removing memory. But we don't hold
+> the lock in the whole operation. So we should check whether all memory blocks
+> are offlined before step6. Otherwise, kernel maybe panicked.
 
-Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/client.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Well, the obvious question is: why don't we hold lock_memory_hotplug()
+for all of steps 1-4?  Please send the reasons for this in a form which
+I can paste into the changelog.
 
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index d566dd8..82ffd48 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -312,8 +312,9 @@ int mei_cl_unlink(struct mei_cl *cl)
- 	if (!cl)
- 		return 0;
- 
--	if (WARN_ON(!cl->dev))
--		return -EINVAL;
-+	/* wd and amthif might not be initialzed */
-+	if (!cl->dev)
-+		return 0;
- 
- 	dev = cl->dev;
- 
--- 
-1.7.4.4
 
+Actually, I wonder if doing this would fix a race in the current
+remove_memory() repeat: loop.  That code does a
+find_memory_block_hinted() followed by offline_memory_block(), but
+afaict find_memory_block_hinted() only does a get_device().  Is the
+get_device() sufficiently strong to prevent problems if another thread
+concurrently offlines or otherwise alters this memory_block's state?
