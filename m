@@ -1,155 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab3AIC0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 21:26:10 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:63804 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755783Ab3AIC0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 21:26:03 -0500
-X-IronPort-AV: E=Sophos;i="4.84,435,1355068800"; 
-   d="scan'208";a="6547154"
-Message-ID: <50ECCD76.9010508@cn.fujitsu.com>
-Date: Wed, 09 Jan 2013 09:52:54 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH V3 1/2] virtio-net: fix the set affinity bug when CPU
- IDs are not consecutive
-References: <1357639660-6660-1-git-send-email-gaowanlong@cn.fujitsu.com> <50EBF44C.9040401@redhat.com>
-In-Reply-To: <50EBF44C.9040401@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/09 09:51:56,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/09 09:52:00,
-	Serialize complete at 2013/01/09 09:52:00
+	id S1756517Ab3AIC3F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 21:29:05 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:42625 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755277Ab3AIC3D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 21:29:03 -0500
+Message-ID: <1357698538.1806.43.camel@aeonflux>
+Subject: Re: [PATCH] Bluetooth: btmrvl_sdio: look for sd8688 firmware in
+ alternate place
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Lubomir Rintel <lkundrak@v3.sk>
+Cc: David Woodhouse <dwmw2@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
+        libertas-dev@lists.infradead.org, linux-bluetooth@vger.kernel.org,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>, linux-kernel@vger.kernel.org
+Date: Tue, 08 Jan 2013 18:28:58 -0800
+In-Reply-To: <1357689361-7969-2-git-send-email-lkundrak@v3.sk>
+References: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
+	 <1357689361-7969-2-git-send-email-lkundrak@v3.sk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 06:26 PM, Jason Wang wrote:
-> On 01/08/2013 06:07 PM, Wanlong Gao wrote:
->> As Michael mentioned, set affinity and select queue will not work very
->> well when CPU IDs are not consecutive, this can happen with hot unplug.
->> Fix this bug by traversal the online CPUs, and create a per cpu variable
->> to find the mapping from CPU to the preferable virtual-queue.
->>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Cc: "Michael S. Tsirkin" <mst@redhat.com>
->> Cc: Jason Wang <jasowang@redhat.com>
->> Cc: Eric Dumazet <erdnetdev@gmail.com>
->> Cc: virtualization@lists.linux-foundation.org
->> Cc: netdev@vger.kernel.org
->> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->> ---
->>  drivers/net/virtio_net.c | 39 +++++++++++++++++++++++++++++----------
->>  1 file changed, 29 insertions(+), 10 deletions(-)
->>
->> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->> index a6fcf15..a77f86c 100644
->> --- a/drivers/net/virtio_net.c
->> +++ b/drivers/net/virtio_net.c
->> @@ -41,6 +41,8 @@ module_param(gso, bool, 0444);
->>  #define VIRTNET_SEND_COMMAND_SG_MAX    2
->>  #define VIRTNET_DRIVER_VERSION "1.0.0"
->>  
->> +DEFINE_PER_CPU(int, vq_index) = -1;
->> +
+Hi Lubomir,
+
+> linux-firmware ships the sd8688* firmware images that are shared with
+> libertas_sdio WiFi driver under libertas/. libertas_sdio looks in both places
+> and so should we.
 > 
-> I think this should not be a global one, consider we may have more than
-> one virtio-net cards with different max queues.
+> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+> ---
+>  drivers/bluetooth/btmrvl_sdio.c |   24 ++++++++++++++++++++++--
+>  drivers/bluetooth/btmrvl_sdio.h |    6 ++++--
+>  2 files changed, 26 insertions(+), 4 deletions(-)
 
-Yes, would you move this into virtio_info?
+NAK from me on this one. I do not want the driver to check two
+locations. That is what userspace can work around.
 
->>  struct virtnet_stats {
->>  	struct u64_stats_sync tx_syncp;
->>  	struct u64_stats_sync rx_syncp;
->> @@ -1016,6 +1018,7 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
->>  static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->>  {
->>  	int i;
->> +	int cpu;
->>  
->>  	/* In multiqueue mode, when the number of cpu is equal to the number of
->>  	 * queue pairs, we let the queue pairs to be private to one cpu by
->> @@ -1029,16 +1032,29 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->>  			return;
->>  	}
->>  
->> -	for (i = 0; i < vi->max_queue_pairs; i++) {
->> -		int cpu = set ? i : -1;
->> -		virtqueue_set_affinity(vi->rq[i].vq, cpu);
->> -		virtqueue_set_affinity(vi->sq[i].vq, cpu);
->> -	}
->> +	if (set) {
->> +		i = 0;
->> +		for_each_online_cpu(cpu) {
->> +			virtqueue_set_affinity(vi->rq[i].vq, cpu);
->> +			virtqueue_set_affinity(vi->sq[i].vq, cpu);
->> +			per_cpu(vq_index, cpu) = i;
->> +			i++;
->> +			if (i >= vi->max_queue_pairs)
->> +				break;
-> 
-> Can this happen? we check only set when the number are equal.
+If we want to unify the location between the WiFi driver and the
+Bluetooth driver, I am fine with that, but seriously, just pick one over
+the other. I do not care which one.
 
-will remove.
+Regards
 
->> +		}
->>  
->> -	if (set)
->>  		vi->affinity_hint_set = true;
->> -	else
->> +	} else {
->> +		for(i = 0; i < vi->max_queue_pairs; i++) {
->> +			virtqueue_set_affinity(vi->rq[i].vq, -1);
->> +			virtqueue_set_affinity(vi->sq[i].vq, -1);
->> +		}
->> +
->> +		for_each_online_cpu(cpu)
->> +			per_cpu(vq_index, cpu) = -1;
->> +
-> 
-> This looks suboptimal since it may leads only txq zero is used.
+Marcel
 
-So, which value is best for txq when we don't set affinity?
-just remain to smp_processor_id()?
-
-Thanks,
-Wanlong Gao
-
->>  		vi->affinity_hint_set = false;
->> +	}
->>  }
->>  
->>  static void virtnet_get_ringparam(struct net_device *dev,
->> @@ -1127,12 +1143,15 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
->>  
->>  /* To avoid contending a lock hold by a vcpu who would exit to host, select the
->>   * txq based on the processor id.
->> - * TODO: handle cpu hotplug.
->>   */
->>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
->>  {
->> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
->> -		  smp_processor_id();
->> +	int txq = 0;
->> +
->> +	if (skb_rx_queue_recorded(skb))
->> +		txq = skb_get_rx_queue(skb);
->> +	else if ((txq = per_cpu(vq_index, smp_processor_id())) == -1)
->> +		txq = 0;
->>  
->>  	while (unlikely(txq >= dev->real_num_tx_queues))
->>  		txq -= dev->real_num_tx_queues;
-> 
-> 
 
