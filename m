@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab3AIIUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 03:20:49 -0500
-Received: from sg2plout10-02.prod.sin2.secureserver.net ([182.50.145.5]:55601
-	"EHLO sg2plout10-02.prod.sin2.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757020Ab3AIIUr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 03:20:47 -0500
-From: Sujith Manoharan <sujith@msujith.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20717.10275.994429.552141@gargle.gargle.HOWL>
-Date: Wed, 9 Jan 2013 13:49:47 +0530
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, Stable <stable@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        ath9k-devel@lists.ath9k.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ath9k_htc: Fix skb leaks
-In-Reply-To: <50EC44B5.6020605@lwfinger.net>
-References: <1357098567-8558-1-git-send-email-Larry.Finger@lwfinger.net>
-	<20707.47067.474241.813195@gargle.gargle.HOWL>
-	<50E3BE23.3010102@lwfinger.net>
-	<20707.50445.510814.481023@gargle.gargle.HOWL>
-	<50EC44B5.6020605@lwfinger.net>
-X-Mailer: VM 8.2.0b under 24.2.2 (x86_64-unknown-linux-gnu)
+	id S1757397Ab3AIIRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 03:17:33 -0500
+Received: from mga02.intel.com ([134.134.136.20]:18877 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757020Ab3AIIRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 03:17:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,436,1355126400"; 
+   d="scan'208";a="243801717"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>
+Subject: [resend][PATCH 05/16] dma: dw_dmac: check direction properly in dw_dma_cyclic_prep
+Date: Wed,  9 Jan 2013 10:17:04 +0200
+Message-Id: <1357719435-29955-6-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <20130108155423.GJ19691@intel.com>
+ <1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Larry Finger wrote:
-> > I'll come up with a patch and see if kmemleak still complains.
-> 
-> Did I miss your posting on this issue?
+dma_transfer_direction is a normal enum. It means we can't usually use the
+values as bit fields. Let's adjust this check and move it above the usage of
+the direction parameter, due to the nature of the following usage of it.
 
-Nope, I haven't got to this yet, sorry. I'll try to send a patch by today.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/dma/dw_dmac.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Sujith
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index bf32797..5392b55 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1336,6 +1336,9 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
+ 
+ 	retval = ERR_PTR(-EINVAL);
+ 
++	if (unlikely(!is_slave_xfer(direction)))
++		goto out_err;
++
+ 	if (direction == DMA_MEM_TO_DEV)
+ 		reg_width = __ffs(sconfig->dst_addr_width);
+ 	else
+@@ -1350,8 +1353,6 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
+ 		goto out_err;
+ 	if (unlikely(buf_addr & ((1 << reg_width) - 1)))
+ 		goto out_err;
+-	if (unlikely(!(direction & (DMA_MEM_TO_DEV | DMA_DEV_TO_MEM))))
+-		goto out_err;
+ 
+ 	retval = ERR_PTR(-ENOMEM);
+ 
+-- 
+1.7.10.4
+
