@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934071Ab3AIVJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:09:59 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:48731 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933745Ab3AIVJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:09:56 -0500
-Message-ID: <50EDDCAA.6070004@parallels.com>
-Date: Thu, 10 Jan 2013 01:10:02 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S933777Ab3AIVKl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:10:41 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:47662 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933708Ab3AIUjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:52 -0500
+Date: Wed, 9 Jan 2013 12:39:45 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 1/2] Add mempressure cgroup
+Message-ID: <20130109203945.GB20454@htj.dyndns.org>
+References: <20130104082751.GA22227@lizard.gateway.2wire.net>
+ <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
+ <20130109203731.GA20454@htj.dyndns.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v5 11/11] sched: introduce cgroup file stat_percpu
-References: <1357731938-8417-1-git-send-email-glommer@parallels.com> <1357731938-8417-12-git-send-email-glommer@parallels.com> <20130109124220.ad9f1a54.akpm@linux-foundation.org>
-In-Reply-To: <20130109124220.ad9f1a54.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.39.244.6]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130109203731.GA20454@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 12:42 AM, Andrew Morton wrote:
-> On Wed,  9 Jan 2013 15:45:38 +0400
-> Glauber Costa <glommer@parallels.com> wrote:
+On Wed, Jan 09, 2013 at 12:37:31PM -0800, Tejun Heo wrote:
+> Hello,
 > 
->> The file cpu.stat_percpu will show various scheduler related
->> information, that are usually available to the top level through other
->> files.
->>
->> For instance, most of the meaningful data in /proc/stat is presented
->> here. Given this file, a container can easily construct a local copy of
->> /proc/stat for internal consumption.
->>
->> The data we export is comprised of:
->> * all the tick information, previously available only through cpuacct,
->>   like user time, system time, etc.
->>
->> * wait time, which can be used to construct analogous information to
->>   steal time in hypervisors,
->>
->> * nr_switches and nr_running, which are cgroup-local versions of
->>   their global counterparts.
->>
->> The file includes a header, so fields can come and go if needed.
+> Can you please cc me too when posting further patches?  I kinda missed
+> the whole discussion upto this point.
 > 
-> Please update this changelog to fully describe the proposed userspace
-> interfaces.  That means full pathnames and example output. 
-> Understanding these interfaces is the most important part of reviewing
-> this patchset, so this info should be prominent.
+> On Fri, Jan 04, 2013 at 12:29:11AM -0800, Anton Vorontsov wrote:
+> > This commit implements David Rientjes' idea of mempressure cgroup.
+> > 
+> > The main characteristics are the same to what I've tried to add to vmevent
+> > API; internally, it uses Mel Gorman's idea of scanned/reclaimed ratio for
+> > pressure index calculation. But we don't expose the index to the userland.
+> > Instead, there are three levels of the pressure:
+> > 
+> >  o low (just reclaiming, e.g. caches are draining);
+> >  o medium (allocation cost becomes high, e.g. swapping);
+> >  o oom (about to oom very soon).
+> > 
+> > The rationale behind exposing levels and not the raw pressure index
+> > described here: http://lkml.org/lkml/2012/11/16/675
+> > 
+> > For a task it is possible to be in both cpusets, memcg and mempressure
+> > cgroups, so by rearranging the tasks it is possible to watch a specific
+> > pressure (i.e. caused by cpuset and/or memcg).
 > 
-> Also, this patchset appears to alter (or remove?) existing userspace
-> interfaces?  If so, please clearly describe those alterations and also
-> share your thinking on the back-compatibility issues.
-> 
-> Also, I'm not seeing any changes to Docmentation/ in this patchset. 
-> How do we explain the interface to our users?
-> 
-> 
-> From a quick read, it appears that the output will be something along
-> the lines of:
-> 
-> user nice system irq softirq guest guest_nice wait nr_switches nr_running
-> cpu0 nn nn nn nn nn ...
-> cpu1 nn nn nn nn nn ...
-> 
-> which looks pretty terrible.  Apart from being very hard to read, it
-> means that we can never remove fields.  A nicer and more extensible
-> interface would be
-> 
-> cpu:0 nice:nn system:nn irq:nn ...
-> 
+> So, cgroup is headed towards single hierarchy.  Dunno how much it
+> would affect mempressure but it probably isn't wise to design with
+> focus on multiple hierarchies.
 
-Ok.
+Also, how are you implementing hierarchical behavior?  All controllers
+should support hierarchy.  Can you please explain how the interface
+would work in detail?
 
-The actual output format is what matters the least to me, so I can
-change to whatever pleases you guys.
+Thanks.
 
-I just don't how is it that we can never remove fields. My very
-motivation for adding a header in the first place, was to give us
-ability to extend this.
-
-For a next round, I will include a Documentation file as you requested.
-I could, for instance, explicitly mention that people parsing this
-should first query the first line, which constitutes a header.
-
-The main advantage I see in this approach, is that there is way less
-data to be written using a header. Although your way works, it means we
-will write the strings "nice", "system", etc. #cpu times. Quite a waste.
-
-> 
-
+-- 
+tejun
