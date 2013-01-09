@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934154Ab3AIVMq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:12:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42912 "EHLO mail.kernel.org"
+	id S933665Ab3AIUjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:39:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42849 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933676Ab3AIUjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:45 -0500
+	id S933596Ab3AIUjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 062/123] usb: musb: cppi_dma: export cppi_interrupt()
-Date: Wed,  9 Jan 2013 12:35:01 -0800
-Message-Id: <20130109201506.548811867@linuxfoundation.org>
+        "Alexis R. Cortes" <alexis.cortes@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 068/123] usb: host: xhci: Stricter conditional for Z1 system models for Compliance Mode Patch
+Date: Wed,  9 Jan 2013 12:35:07 -0800
+Message-Id: <20130109201507.333892789@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -25,30 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+From: "Alexis R. Cortes" <alexis.cortes@ti.com>
 
-commit 8b416b0b25d5d8ddb3a91c1d20e1373582c50405 upstream.
+commit b0e4e606ff6ff26da0f60826e75577b56ba4e463 upstream.
 
-Now that DaVinci glue layer can be modular, we must export cppi_interrupt()
-that it may call...
+This minor patch creates a more stricter conditional for the Z1 sytems for applying
+the Compliance Mode Patch, this to avoid the quirk to be applied to models that
+contain a "Z1" in their dmi product string but are different from Z1 systems.
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+This patch should be backported to stable kernels as old as 3.2, that
+contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
+xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
+
+Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/cppi_dma.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/host/xhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/musb/cppi_dma.c
-+++ b/drivers/usb/musb/cppi_dma.c
-@@ -1314,6 +1314,7 @@ irqreturn_t cppi_interrupt(int irq, void
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -480,7 +480,7 @@ static bool compliance_mode_recovery_tim
+ 	if (strstr(dmi_product_name, "Z420") ||
+ 			strstr(dmi_product_name, "Z620") ||
+ 			strstr(dmi_product_name, "Z820") ||
+-			strstr(dmi_product_name, "Z1"))
++			strstr(dmi_product_name, "Z1 Workstation"))
+ 		return true;
  
- 	return IRQ_HANDLED;
- }
-+EXPORT_SYMBOL_GPL(cppi_interrupt);
- 
- /* Instantiate a software object representing a DMA controller. */
- struct dma_controller *__devinit
+ 	return false;
 
 
