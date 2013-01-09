@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933931Ab3AIUkr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:40:47 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43576 "EHLO mail.kernel.org"
+	id S934022Ab3AIU5u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:57:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43640 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933789Ab3AIUkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:40 -0500
+	id S933930Ab3AIUkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andy Lutomirski <luto@amacapital.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, Chris Ball <cjb@laptop.org>,
-        Manoj Iyer <manoj.iyer@canonical.com>
-Subject: [ 70/80] PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz
-Date: Wed,  9 Jan 2013 12:36:02 -0800
-Message-Id: <20130109201509.404294787@linuxfoundation.org>
+        Willy Tarreau <w@1wt.eu>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 090/123] tcp: fix MSG_SENDPAGE_NOTLAST logic
+Date: Wed,  9 Jan 2013 12:35:29 -0800
+Message-Id: <20130109201510.164732286@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
 
-commit 812089e01b9f65f90fc8fc670d8cce72a0e01fbb upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-Otherwise it fails like this on cards like the Transcend 16GB SDHC card:
+[ Upstream commit ae62ca7b03217be5e74759dc6d7698c95df498b3 ]
 
-    mmc0: new SDHC card at address b368
-    mmcblk0: mmc0:b368 SDC   15.0 GiB
-    mmcblk0: error -110 sending status command, retrying
-    mmcblk0: error -84 transferring data, sector 0, nr 8, cmd response 0x900, card status 0xb0
+commit 35f9c09fe9c72e (tcp: tcp_sendpages() should call tcp_push() once)
+added an internal flag : MSG_SENDPAGE_NOTLAST meant to be set on all
+frags but the last one for a splice() call.
 
-Tested on my Lenovo x200 laptop.
+The condition used to set the flag in pipe_to_sendpage() relied on
+splice() user passing the exact number of bytes present in the pipe,
+or a smaller one.
 
-[bhelgaas: changelog]
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Chris Ball <cjb@laptop.org>
-CC: Manoj Iyer <manoj.iyer@canonical.com>
+But some programs pass an arbitrary high value, and the test fails.
+
+The effect of this bug is a lack of tcp_push() at the end of a
+splice(pipe -> socket) call, and possibly very slow or erratic TCP
+sessions.
+
+We should both test sd->total_len and fact that another fragment
+is in the pipe (pipe->nrbufs > 1)
+
+Many thanks to Willy for providing very clear bug report, bisection
+and test programs.
+
+Reported-by: Willy Tarreau <w@1wt.eu>
+Bisected-by: Willy Tarreau <w@1wt.eu>
+Tested-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/pci/quirks.c    |    7 +++++--
- include/linux/pci_ids.h |    1 +
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ fs/splice.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2708,7 +2708,7 @@ static void ricoh_mmc_fixup_r5c832(struc
- 	if (PCI_FUNC(dev->devfn))
- 		return;
- 	/*
--	 * RICOH 0xe823 SD/MMC card reader fails to recognize
-+	 * RICOH 0xe822 and 0xe823 SD/MMC card readers fail to recognize
- 	 * certain types of SD/MMC cards. Lowering the SD base
- 	 * clock frequency from 200Mhz to 50Mhz fixes this issue.
- 	 *
-@@ -2719,7 +2719,8 @@ static void ricoh_mmc_fixup_r5c832(struc
- 	 * 0xf9  - Key register for 0x150
- 	 * 0xfc  - key register for 0xe1
- 	 */
--	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
-+	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE822 ||
-+	    dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
- 		pci_write_config_byte(dev, 0xf9, 0xfc);
- 		pci_write_config_byte(dev, 0x150, 0x10);
- 		pci_write_config_byte(dev, 0xf9, 0x00);
-@@ -2746,6 +2747,8 @@ static void ricoh_mmc_fixup_r5c832(struc
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -696,8 +696,10 @@ static int pipe_to_sendpage(struct pipe_
+ 		return -EINVAL;
+ 
+ 	more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
+-	if (sd->len < sd->total_len)
++
++	if (sd->len < sd->total_len && pipe->nrbufs > 1)
+ 		more |= MSG_SENDPAGE_NOTLAST;
++
+ 	return file->f_op->sendpage(file, buf->page, buf->offset,
+ 				    sd->len, &pos, more);
  }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
-+DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
- #endif /*CONFIG_MMC_RICOH_MMC*/
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1565,6 +1565,7 @@
- #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
- #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
- #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
-+#define PCI_DEVICE_ID_RICOH_R5CE822	0xe822
- #define PCI_DEVICE_ID_RICOH_R5CE823	0xe823
- #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
- #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
 
 
