@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096Ab3AIWCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:02:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40983 "EHLO mail.kernel.org"
+	id S1757906Ab3AIWDZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:03:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40960 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932595Ab3AIUgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:36 -0500
+	id S932106Ab3AIUgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:36:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christoffer Dall <cdall@cs.columbia.edu>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Will Deacon <Will.Deacon@arm.com>, Steve Capper <Steve.Capper@arm.com>,
-        Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 12/47] mm: Fix PageHead when !CONFIG_PAGEFLAGS_EXTENDED
-Date: Wed,  9 Jan 2013 12:35:07 -0800
-Message-Id: <20130109201730.906491595@linuxfoundation.org>
+        Ondrej Zary <linux@rainbow-software.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 10/47] x86, 8042: Enable A20 using KBC to fix S3 resume on some MSI laptops
+Date: Wed,  9 Jan 2013 12:35:05 -0800
+Message-Id: <20130109201730.695833130@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
 References: <20130109201729.435233560@linuxfoundation.org>
@@ -30,63 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoffer Dall <cdall@cs.columbia.edu>
+From: Ondrej Zary <linux@rainbow-software.org>
 
-commit ad4b3fb7ff9940bcdb1e4cd62bd189d10fa636ba upstream.
+commit ad68652412276f68ad4fe3e1ecf5ee6880876783 upstream.
 
-Unfortunately with !CONFIG_PAGEFLAGS_EXTENDED, (!PageHead) is false, and
-(PageHead) is true, for tail pages.  If this is indeed the intended
-behavior, which I doubt because it breaks cache cleaning on some ARM
-systems, then the nomenclature is highly problematic.
+Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
+line but resume code assumes that KBC was used.
+The laptop will not resume from S3 otherwise but powers off after a while
+and then powers on again stuck with a blank screen.
 
-This patch makes sure PageHead is only true for head pages and PageTail
-is only true for tail pages, and neither is true for non-compound pages.
+Fix it by enabling A20 using KBC in i8042_platform_init for x86.
 
-[ This buglet seems ancient - seems to have been introduced back in Apr
-  2008 in commit 6a1e7f777f61: "pageflags: convert to the use of new
-  macros".  And the reason nobody noticed is because the PageHead()
-  tests are almost all about just sanity-checking, and only used on
-  pages that are actual page heads.  The fact that the old code returned
-  true for tail pages too was thus not really noticeable.   - Linus ]
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
 
-Signed-off-by: Christoffer Dall <cdall@cs.columbia.edu>
-Acked-by:  Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Will Deacon <Will.Deacon@arm.com>
-Cc: Steve Capper <Steve.Capper@arm.com>
-Cc: Christoph Lameter <cl@linux.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Link: http://lkml.kernel.org/r/201212112218.06551.linux@rainbow-software.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/page-flags.h |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/input/serio/i8042-x86ia64io.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -365,7 +365,7 @@ static inline void ClearPageCompound(str
-  * pages on the LRU and/or pagecache.
-  */
- TESTPAGEFLAG(Compound, compound)
--__PAGEFLAG(Head, compound)
-+__SETPAGEFLAG(Head, compound)  __CLEARPAGEFLAG(Head, compound)
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -900,6 +900,7 @@ static int __init i8042_platform_init(vo
+ 	int retval;
  
- /*
-  * PG_reclaim is used in combination with PG_compound to mark the
-@@ -377,8 +377,14 @@ __PAGEFLAG(Head, compound)
-  * PG_compound & PG_reclaim	=> Tail page
-  * PG_compound & ~PG_reclaim	=> Head page
-  */
-+#define PG_head_mask ((1L << PG_compound))
- #define PG_head_tail_mask ((1L << PG_compound) | (1L << PG_reclaim))
+ #ifdef CONFIG_X86
++	u8 a20_on = 0xdf;
+ 	/* Just return if pre-detection shows no i8042 controller exist */
+ 	if (!x86_platform.i8042_detect())
+ 		return -ENODEV;
+@@ -939,6 +940,14 @@ static int __init i8042_platform_init(vo
  
-+static inline int PageHead(struct page *page)
-+{
-+	return ((page->flags & PG_head_tail_mask) == PG_head_mask);
-+}
+ 	if (dmi_check_system(i8042_dmi_dritek_table))
+ 		i8042_dritek = true;
 +
- static inline int PageTail(struct page *page)
- {
- 	return ((page->flags & PG_head_tail_mask) == PG_head_tail_mask);
++	/*
++	 * A20 was already enabled during early kernel init. But some buggy
++	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
++	 * resume from S3. So we do it here and hope that nothing breaks.
++	 */
++	i8042_command(&a20_on, 0x10d1);
++	i8042_command(NULL, 0x00ff);	/* Null command for SMM firmware */
+ #endif /* CONFIG_X86 */
+ 
+ 	return retval;
 
 
