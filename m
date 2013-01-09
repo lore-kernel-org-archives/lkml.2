@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab3AIUET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:04:19 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:33186 "EHLO
+	id S932708Ab3AIUEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:04:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33181 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932526Ab3AIT7M (ORCPT
+	with ESMTP id S932524Ab3AIT7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jan 2013 14:59:12 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
@@ -12,11 +12,11 @@ To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org
-Subject: [PATCH V5 30/30] ubifs: convert file ops from aio_read/write to read/write_iter
-Date: Wed,  9 Jan 2013 13:58:45 -0600
-Message-Id: <1357761525-22718-31-git-send-email-dave.kleikamp@oracle.com>
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com
+Subject: [PATCH V5 19/30] ocfs2: add support for read_iter, write_iter, and direct_IO_bvec
+Date: Wed,  9 Jan 2013 13:58:34 -0600
+Message-Id: <1357761525-22718-20-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
@@ -25,58 +25,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-mtd@lists.infradead.org
----
- fs/ubifs/file.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+From: Zach Brown <zab@zabbo.net>
 
-diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
-index 5bc7781..cfe6210 100644
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -44,7 +44,7 @@
-  * 'ubifs_writepage()' we are only guaranteed that the page is locked.
-  *
-  * Similarly, @i_mutex is not always locked in 'ubifs_readpage()', e.g., the
-- * read-ahead path does not lock it ("sys_read -> generic_file_aio_read ->
-+ * read-ahead path does not lock it ("sys_read -> generic_file_read_iter ->
-  * ondemand_readahead -> readpage"). In case of readahead, @I_SYNC flag is not
-  * set as well. However, UBIFS disables readahead.
+ocfs2's .aio_read and .aio_write methods are changed to take
+iov_iter and pass it to generic functions.  Wrappers are made to pack
+the iovecs into iters and call these new functions.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: ocfs2-devel@oss.oracle.com
+---
+ fs/ocfs2/aops.h        |  2 +-
+ fs/ocfs2/file.c        | 53 ++++++++++++++++++++++----------------------------
+ fs/ocfs2/inode.h       |  2 --
+ fs/ocfs2/ocfs2_trace.h |  6 +++---
+ 4 files changed, 27 insertions(+), 36 deletions(-)
+
+diff --git a/fs/ocfs2/aops.h b/fs/ocfs2/aops.h
+index ffb2da3..bd0425a 100644
+--- a/fs/ocfs2/aops.h
++++ b/fs/ocfs2/aops.h
+@@ -72,7 +72,7 @@ static inline void ocfs2_iocb_set_rw_locked(struct kiocb *iocb, int level)
+ /*
+  * Using a named enum representing lock types in terms of #N bit stored in
+  * iocb->private, which is going to be used for communication between
+- * ocfs2_dio_end_io() and ocfs2_file_aio_write/read().
++ * ocfs2_dio_end_io() and ocfs2_file_write/read_iter().
   */
-@@ -1394,8 +1394,8 @@ static int update_mctime(struct ubifs_info *c, struct inode *inode)
- 	return 0;
+ enum ocfs2_iocb_lock_bits {
+ 	OCFS2_IOCB_RW_LOCK = 0,
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 37d313e..94fc309 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2219,15 +2219,13 @@ out:
+ 	return ret;
  }
  
--static ssize_t ubifs_aio_write(struct kiocb *iocb, const struct iovec *iov,
--			       unsigned long nr_segs, loff_t pos)
-+static ssize_t ubifs_write_iter(struct kiocb *iocb, struct iov_iter *iter,
-+				loff_t pos)
+-static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+-				    const struct iovec *iov,
+-				    unsigned long nr_segs,
+-				    loff_t pos)
++static ssize_t ocfs2_file_write_iter(struct kiocb *iocb,
++				     struct iov_iter *iter,
++				     loff_t pos)
  {
- 	int err;
- 	struct inode *inode = iocb->ki_filp->f_mapping->host;
-@@ -1405,7 +1405,7 @@ static ssize_t ubifs_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	if (err)
- 		return err;
+ 	int ret, direct_io, appending, rw_level, have_alloc_sem  = 0;
+ 	int can_do_direct, has_refcount = 0;
+ 	ssize_t written = 0;
+-	size_t ocount;		/* original count */
+ 	size_t count;		/* after file limit checks */
+ 	loff_t old_size, *ppos = &iocb->ki_pos;
+ 	u32 old_clusters;
+@@ -2238,11 +2236,11 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+ 			       OCFS2_MOUNT_COHERENCY_BUFFERED);
+ 	int unaligned_dio = 0;
  
--	return generic_file_aio_write(iocb, iov, nr_segs, pos);
-+	return generic_file_write_iter(iocb, iter, pos);
+-	trace_ocfs2_file_aio_write(inode, file, file->f_path.dentry,
++	trace_ocfs2_file_write_iter(inode, file, file->f_path.dentry,
+ 		(unsigned long long)OCFS2_I(inode)->ip_blkno,
+ 		file->f_path.dentry->d_name.len,
+ 		file->f_path.dentry->d_name.name,
+-		(unsigned int)nr_segs);
++		(unsigned long long)pos);
+ 
+ 	if (iocb->ki_left == 0)
+ 		return 0;
+@@ -2344,28 +2342,24 @@ relock:
+ 	/* communicate with ocfs2_dio_end_io */
+ 	ocfs2_iocb_set_rw_locked(iocb, rw_level);
+ 
+-	ret = generic_segment_checks(iov, &nr_segs, &ocount,
+-				     VERIFY_READ);
+-	if (ret)
+-		goto out_dio;
+ 
+-	count = ocount;
++	count = iov_iter_count(iter);
+ 	ret = generic_write_checks(file, ppos, &count,
+ 				   S_ISBLK(inode->i_mode));
+ 	if (ret)
+ 		goto out_dio;
+ 
+ 	if (direct_io) {
+-		written = generic_file_direct_write(iocb, iov, &nr_segs, *ppos,
+-						    ppos, count, ocount);
++		written = generic_file_direct_write_iter(iocb, iter, *ppos,
++						    ppos, count);
+ 		if (written < 0) {
+ 			ret = written;
+ 			goto out_dio;
+ 		}
+ 	} else {
+ 		current->backing_dev_info = file->f_mapping->backing_dev_info;
+-		written = generic_file_buffered_write(iocb, iov, nr_segs, *ppos,
+-						      ppos, count, 0);
++		written = generic_file_buffered_write_iter(iocb, iter, *ppos,
++							   ppos, count, 0);
+ 		current->backing_dev_info = NULL;
+ 	}
+ 
+@@ -2524,7 +2518,7 @@ static ssize_t ocfs2_file_splice_read(struct file *in,
+ 			in->f_path.dentry->d_name.name, len);
+ 
+ 	/*
+-	 * See the comment in ocfs2_file_aio_read()
++	 * See the comment in ocfs2_file_read_iter()
+ 	 */
+ 	ret = ocfs2_inode_lock_atime(inode, in->f_vfsmnt, &lock_level);
+ 	if (ret < 0) {
+@@ -2539,19 +2533,18 @@ bail:
+ 	return ret;
  }
  
- static int ubifs_set_page_dirty(struct page *page)
-@@ -1580,8 +1580,8 @@ const struct file_operations ubifs_file_operations = {
- 	.llseek         = generic_file_llseek,
- 	.read           = do_sync_read,
- 	.write          = do_sync_write,
--	.aio_read       = generic_file_aio_read,
--	.aio_write      = ubifs_aio_write,
-+	.read_iter       = generic_file_read_iter,
-+	.write_iter      = ubifs_write_iter,
- 	.mmap           = ubifs_file_mmap,
- 	.fsync          = ubifs_fsync,
- 	.unlocked_ioctl = ubifs_ioctl,
+-static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+-				   const struct iovec *iov,
+-				   unsigned long nr_segs,
++static ssize_t ocfs2_file_read_iter(struct kiocb *iocb,
++				   struct iov_iter *iter,
+ 				   loff_t pos)
+ {
+ 	int ret = 0, rw_level = -1, have_alloc_sem = 0, lock_level = 0;
+ 	struct file *filp = iocb->ki_filp;
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
+ 
+-	trace_ocfs2_file_aio_read(inode, filp, filp->f_path.dentry,
++	trace_ocfs2_file_read_iter(inode, filp, filp->f_path.dentry,
+ 			(unsigned long long)OCFS2_I(inode)->ip_blkno,
+ 			filp->f_path.dentry->d_name.len,
+-			filp->f_path.dentry->d_name.name, nr_segs);
++			filp->f_path.dentry->d_name.name, pos);
+ 
+ 
+ 	if (!inode) {
+@@ -2587,7 +2580,7 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+ 	 *
+ 	 * Take and drop the meta data lock to update inode fields
+ 	 * like i_size. This allows the checks down below
+-	 * generic_file_aio_read() a chance of actually working.
++	 * generic_file_read_iter() a chance of actually working.
+ 	 */
+ 	ret = ocfs2_inode_lock_atime(inode, filp->f_vfsmnt, &lock_level);
+ 	if (ret < 0) {
+@@ -2596,13 +2589,13 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+ 	}
+ 	ocfs2_inode_unlock(inode, lock_level);
+ 
+-	ret = generic_file_aio_read(iocb, iov, nr_segs, iocb->ki_pos);
+-	trace_generic_file_aio_read_ret(ret);
++	ret = generic_file_read_iter(iocb, iter, iocb->ki_pos);
++	trace_generic_file_read_iter_ret(ret);
+ 
+ 	/* buffered aio wouldn't have proper lock coverage today */
+ 	BUG_ON(ret == -EIOCBQUEUED && !(filp->f_flags & O_DIRECT));
+ 
+-	/* see ocfs2_file_aio_write */
++	/* see ocfs2_file_write_iter */
+ 	if (ret == -EIOCBQUEUED || !ocfs2_iocb_is_rw_locked(iocb)) {
+ 		rw_level = -1;
+ 		have_alloc_sem = 0;
+@@ -2700,8 +2693,8 @@ const struct file_operations ocfs2_fops = {
+ 	.fsync		= ocfs2_sync_file,
+ 	.release	= ocfs2_file_release,
+ 	.open		= ocfs2_file_open,
+-	.aio_read	= ocfs2_file_aio_read,
+-	.aio_write	= ocfs2_file_aio_write,
++	.read_iter	= ocfs2_file_read_iter,
++	.write_iter	= ocfs2_file_write_iter,
+ 	.unlocked_ioctl	= ocfs2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ocfs2_compat_ioctl,
+@@ -2748,8 +2741,8 @@ const struct file_operations ocfs2_fops_no_plocks = {
+ 	.fsync		= ocfs2_sync_file,
+ 	.release	= ocfs2_file_release,
+ 	.open		= ocfs2_file_open,
+-	.aio_read	= ocfs2_file_aio_read,
+-	.aio_write	= ocfs2_file_aio_write,
++	.read_iter	= ocfs2_file_read_iter,
++	.write_iter	= ocfs2_file_write_iter,
+ 	.unlocked_ioctl	= ocfs2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ocfs2_compat_ioctl,
+diff --git a/fs/ocfs2/inode.h b/fs/ocfs2/inode.h
+index 88924a3..621fc73 100644
+--- a/fs/ocfs2/inode.h
++++ b/fs/ocfs2/inode.h
+@@ -147,8 +147,6 @@ void ocfs2_refresh_inode(struct inode *inode,
+ int ocfs2_mark_inode_dirty(handle_t *handle,
+ 			   struct inode *inode,
+ 			   struct buffer_head *bh);
+-int ocfs2_aio_read(struct file *file, struct kiocb *req, struct iocb *iocb);
+-int ocfs2_aio_write(struct file *file, struct kiocb *req, struct iocb *iocb);
+ struct buffer_head *ocfs2_bread(struct inode *inode,
+ 				int block, int *err, int reada);
+ 
+diff --git a/fs/ocfs2/ocfs2_trace.h b/fs/ocfs2/ocfs2_trace.h
+index 3b481f4..1c5018c 100644
+--- a/fs/ocfs2/ocfs2_trace.h
++++ b/fs/ocfs2/ocfs2_trace.h
+@@ -1310,13 +1310,13 @@ DEFINE_OCFS2_FILE_OPS(ocfs2_file_release);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_sync_file);
+ 
+-DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_write);
++DEFINE_OCFS2_FILE_OPS(ocfs2_file_write_iter);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_write);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_read);
+ 
+-DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_read);
++DEFINE_OCFS2_FILE_OPS(ocfs2_file_read_iter);
+ 
+ DEFINE_OCFS2_ULL_ULL_ULL_EVENT(ocfs2_truncate_file);
+ 
+@@ -1474,7 +1474,7 @@ TRACE_EVENT(ocfs2_prepare_inode_for_write,
+ 		  __entry->direct_io, __entry->has_refcount)
+ );
+ 
+-DEFINE_OCFS2_INT_EVENT(generic_file_aio_read_ret);
++DEFINE_OCFS2_INT_EVENT(generic_file_read_iter_ret);
+ 
+ /* End of trace events for fs/ocfs2/file.c. */
+ 
 -- 
 1.8.1
 
