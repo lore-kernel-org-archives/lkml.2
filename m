@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933970Ab3AIVA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:00:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43513 "EHLO mail.kernel.org"
+	id S933923Ab3AIVBX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:01:23 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43490 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933883Ab3AIUkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:35 -0500
+	id S933851Ab3AIUke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Edgar Toernig <froese@gmx.de>, Tony Prisk <linux@prisktech.co.nz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 77/80] drivers/rtc/rtc-vt8500.c: fix handling of data passed in struct rtc_time
-Date: Wed,  9 Jan 2013 12:36:09 -0800
-Message-Id: <20130109201510.272622533@linuxfoundation.org>
+        Alexander Aring <alex.aring@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 087/123] mac802154: fix NOHZ local_softirq_pending 08 warning
+Date: Wed,  9 Jan 2013 12:35:26 -0800
+Message-Id: <20130109201509.784434274@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tony Prisk <linux@prisktech.co.nz>
 
-commit 2f90b68309683f2c5765a1b04ca23d71e51f1494 upstream.
+From: Alexander Aring <alex.aring@googlemail.com>
 
-tm_mon is 0..11, whereas vt8500 expects 1..12 for the month field,
-causing invalid date errors for January, and causing the day field to
-roll over incorrectly.
+[ Upstream commit 5ff3fec6d3fc848753c2fa30b18607358f89a202 ]
 
-The century flag is only handled in vt8500_rtc_read_time, but not set in
-vt8500_rtc_set_time.  This patch corrects the behaviour of the century
-flag.
+When using nanosleep() in an userspace application we get a
+ratelimit warning
 
-Signed-off-by: Edgar Toernig <froese@gmx.de>
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+NOHZ: local_softirq_pending 08
+
+for 10 times.
+
+This patch replaces netif_rx() with netif_rx_ni() which has
+to be used from process/softirq context.
+The process/softirq context will be called from fakelb driver.
+
+See linux-kernel commit 481a819 for similar fix.
+
+Signed-off-by: Alexander Aring <alex.aring@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/rtc/rtc-vt8500.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ net/mac802154/wpan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -118,7 +118,7 @@ static int vt8500_rtc_read_time(struct d
- 	tm->tm_min = bcd2bin((time & TIME_MIN_MASK) >> TIME_MIN_S);
- 	tm->tm_hour = bcd2bin((time & TIME_HOUR_MASK) >> TIME_HOUR_S);
- 	tm->tm_mday = bcd2bin(date & DATE_DAY_MASK);
--	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S);
-+	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S) - 1;
- 	tm->tm_year = bcd2bin((date & DATE_YEAR_MASK) >> DATE_YEAR_S)
- 			+ ((date >> DATE_CENTURY_S) & 1 ? 200 : 100);
- 	tm->tm_wday = (time & TIME_DOW_MASK) >> TIME_DOW_S;
-@@ -137,8 +137,9 @@ static int vt8500_rtc_set_time(struct de
- 	}
+--- a/net/mac802154/wpan.c
++++ b/net/mac802154/wpan.c
+@@ -387,7 +387,7 @@ void mac802154_wpan_setup(struct net_dev
  
- 	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
--		| (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
--		| (bin2bcd(tm->tm_mday)),
-+		| (bin2bcd(tm->tm_mon + 1) << DATE_MONTH_S)
-+		| (bin2bcd(tm->tm_mday))
-+		| ((tm->tm_year >= 200) << DATE_CENTURY_S),
- 		vt8500_rtc->regbase + VT8500_RTC_DS);
- 	writel((bin2bcd(tm->tm_wday) << TIME_DOW_S)
- 		| (bin2bcd(tm->tm_hour) << TIME_HOUR_S)
+ static int mac802154_process_data(struct net_device *dev, struct sk_buff *skb)
+ {
+-	return netif_rx(skb);
++	return netif_rx_ni(skb);
+ }
+ 
+ static int
 
 
