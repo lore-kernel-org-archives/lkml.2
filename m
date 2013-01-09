@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab3AIO5X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:57:23 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:38431 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756339Ab3AIO5V (ORCPT
+	id S932088Ab3AIO6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:58:07 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:41776 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756339Ab3AIO6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:57:21 -0500
-Message-ID: <50ED8537.3020409@windriver.com>
-Date: Wed, 9 Jan 2013 09:56:55 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 9 Jan 2013 09:58:05 -0500
 MIME-Version: 1.0
-To: Nick Bowler <nbowler@elliptictech.com>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [v2.6.34-stable 71/77] crypto: ghash - Avoid null pointer dereference
- if no key is set
-References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com> <1357688156-25387-72-git-send-email-paul.gortmaker@windriver.com> <20130109025631.GA12832@elliptictech.com>
-In-Reply-To: <20130109025631.GA12832@elliptictech.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+In-Reply-To: <CAKohpokJGXKZ9jonGtYvTnPNLVr=wjhQ0DN_e=PF=U3nvusp-A@mail.gmail.com>
+References: <20130108155423.GJ19691@intel.com>
+	<1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1357719435-29955-4-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20130109135006.GO19691@intel.com>
+	<CAKohpokJGXKZ9jonGtYvTnPNLVr=wjhQ0DN_e=PF=U3nvusp-A@mail.gmail.com>
+Date: Wed, 9 Jan 2013 16:58:02 +0200
+Message-ID: <CAHp75VdWWy7V=PQ2EfXrixX2==yDiakga=tA=jV9bzRrqqzZhw@mail.gmail.com>
+Subject: Re: [resend][PATCH 03/16] dmaengine: introduce is_slave_xfer function
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-01-08 09:56 PM, Nick Bowler wrote:
-> On 2013-01-08 18:35 -0500, Paul Gortmaker wrote:
->> From: Nick Bowler <nbowler@elliptictech.com>
->>
->>                    -------------------
->>     This is a commit scheduled for the next v2.6.34 longterm release.
->>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
->>     If you see a problem with using this for longterm, please comment.
->>                    -------------------
->>
->> commit 7ed47b7d142ec99ad6880bbbec51e9f12b3af74c upstream.
->>
->> The ghash_update function passes a pointer to gf128mul_4k_lle which will
->> be NULL if ghash_setkey is not called or if the most recent call to
->> ghash_setkey failed to allocate memory.  This causes an oops.  Fix this
->> up by returning an error code in the null case.
->>
->> This is trivially triggered from unprivileged userspace through the
->> AF_ALG interface by simply writing to the socket without setting a key.
-> 
-> I haven't been following 2.6.34-longterm development, but unless
-> you've also backported the AF_ALG userspace interface from 2.6.38,
-> this sequence can only be triggered by kernel code.  So while this
-> patch shouldn't break anything, it isn't really necessary.
+On Wed, Jan 9, 2013 at 4:19 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> n 9 January 2013 19:20, Vinod Koul <vinod.koul@intel.com> wrote:
+>>> +static inline bool is_slave_xfer(enum dma_transfer_direction direction)
+>>> +{
+>>> +     return (direction == DMA_MEM_TO_DEV) || (direction == DMA_DEV_TO_MEM);
+>>> +}
+>> After reading the subsequent patch I understand what is intent here. Perhaps
+>> is_slave_dirn() would have been a beter one...
+>
+> dirn isn't readable, it took me some time to understand the intent...
+> Either have xfer or direction :)
 
-We've not backported any features or interfaces, as doing so is
-generally outside of the mandate of what -stable tries to achieve.
-So I'll simply drop the patch.
+Agree with Viresh. I might rename it to is_slave_direction if you want to.
 
-Thanks for the info.
-Paul
---
-
-> 
-> Cheers,
-> 
+-- 
+With Best Regards,
+Andy Shevchenko
