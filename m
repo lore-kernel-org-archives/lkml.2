@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab3AIVpU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:45:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41752 "EHLO mail.kernel.org"
+	id S933108Ab3AIUhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:37:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41627 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933113Ab3AIUhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:48 -0500
+	id S933072Ab3AIUhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/80] inet_diag: validate byte code to prevent oops in inet_diag_bc_run()
-Date: Wed,  9 Jan 2013 12:35:02 -0800
-Message-Id: <20130109201501.714035659@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 13/80] b43legacy: Fix firmware loading when driver is built into the kernel
+Date: Wed,  9 Jan 2013 12:35:05 -0800
+Message-Id: <20130109201502.082996944@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -26,110 +26,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-From: Neal Cardwell <ncardwell@google.com>
+commit 576d28a7c73013717311cfcb514dbcae27c82eeb upstream.
 
-[ Upstream commit 405c005949e47b6e91359159c24753519ded0c67 ]
+Recent versions of udev cause synchronous firmware loading from the
+probe routine to fail because the request to user space times out.
+The original fix for b43legacy (commit a3ea2c7) moved the firmware
+load from the probe routine to a work queue, but it still used synchronous
+firmware loading. This method is OK when b43legacy is built as a module;
+however, it fails when the driver is compiled into the kernel.
 
-Add logic to validate INET_DIAG_BC_S_COND and INET_DIAG_BC_D_COND
-operations.
+This version changes the code to load the initial firmware file
+using request_firmware_nowait(). A completion event is used to
+hold the work queue until that file is available. The remaining
+firmware files are read synchronously.
 
-Previously we did not validate the inet_diag_hostcond, address family,
-address length, and prefix length. So a malicious user could make the
-kernel read beyond the end of the bytecode array by claiming to have a
-whole inet_diag_hostcond when the bytecode was not long enough to
-contain a whole inet_diag_hostcond of the given address family. Or
-they could make the kernel read up to about 27 bytes beyond the end of
-a connection address by passing a prefix length that exceeded the
-length of addresses of the given family.
-
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/inet_diag.c |   48 +++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 45 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -504,6 +504,44 @@ static int valid_cc(const void *bc, int
- 	return 0;
+---
+ drivers/net/wireless/b43legacy/b43legacy.h |    5 +++
+ drivers/net/wireless/b43legacy/main.c      |   37 ++++++++++++++++++++++++-----
+ 2 files changed, 36 insertions(+), 6 deletions(-)
+
+--- a/drivers/net/wireless/b43legacy/b43legacy.h
++++ b/drivers/net/wireless/b43legacy/b43legacy.h
+@@ -13,6 +13,7 @@
+ 
+ #include <linux/ssb/ssb.h>
+ #include <linux/ssb/ssb_driver_chipcommon.h>
++#include <linux/completion.h>
+ 
+ #include <net/mac80211.h>
+ 
+@@ -733,6 +734,10 @@ struct b43legacy_wldev {
+ 
+ 	/* Firmware data */
+ 	struct b43legacy_firmware fw;
++	const struct firmware *fwp;	/* needed to pass fw pointer */
++
++	/* completion struct for firmware loading */
++	struct completion fw_load_complete;
+ 
+ 	/* Devicelist in struct b43legacy_wl (all 802.11 cores) */
+ 	struct list_head list;
+--- a/drivers/net/wireless/b43legacy/main.c
++++ b/drivers/net/wireless/b43legacy/main.c
+@@ -1511,9 +1511,17 @@ static void b43legacy_print_fw_helptext(
+ 		     "and download the correct firmware (version 3).\n");
  }
  
-+/* Validate an inet_diag_hostcond. */
-+static bool valid_hostcond(const struct inet_diag_bc_op *op, int len,
-+			   int *min_len)
++static void b43legacy_fw_cb(const struct firmware *firmware, void *context)
 +{
-+	int addr_len;
-+	struct inet_diag_hostcond *cond;
++	struct b43legacy_wldev *dev = context;
 +
-+	/* Check hostcond space. */
-+	*min_len += sizeof(struct inet_diag_hostcond);
-+	if (len < *min_len)
-+		return false;
-+	cond = (struct inet_diag_hostcond *)(op + 1);
-+
-+	/* Check address family and address length. */
-+	switch (cond->family) {
-+	case AF_UNSPEC:
-+		addr_len = 0;
-+		break;
-+	case AF_INET:
-+		addr_len = sizeof(struct in_addr);
-+		break;
-+	case AF_INET6:
-+		addr_len = sizeof(struct in6_addr);
-+		break;
-+	default:
-+		return false;
-+	}
-+	*min_len += addr_len;
-+	if (len < *min_len)
-+		return false;
-+
-+	/* Check prefix length (in bits) vs address length (in bytes). */
-+	if (cond->prefix_len > 8 * addr_len)
-+		return false;
-+
-+	return true;
++	dev->fwp = firmware;
++	complete(&dev->fw_load_complete);
 +}
 +
- static int inet_diag_bc_audit(const void *bytecode, int bytecode_len)
+ static int do_request_fw(struct b43legacy_wldev *dev,
+ 			 const char *name,
+-			 const struct firmware **fw)
++			 const struct firmware **fw, bool async)
  {
- 	const void *bc = bytecode;
-@@ -511,18 +549,22 @@ static int inet_diag_bc_audit(const void
- 
- 	while (len > 0) {
- 		const struct inet_diag_bc_op *op = bc;
-+		int min_len = sizeof(struct inet_diag_bc_op);
- 
- //printk("BC: %d %d %d {%d} / %d\n", op->code, op->yes, op->no, op[1].no, len);
- 		switch (op->code) {
--		case INET_DIAG_BC_AUTO:
- 		case INET_DIAG_BC_S_COND:
- 		case INET_DIAG_BC_D_COND:
-+			if (!valid_hostcond(bc, len, &min_len))
-+				return -EINVAL;
-+			/* fall through */
-+		case INET_DIAG_BC_AUTO:
- 		case INET_DIAG_BC_S_GE:
- 		case INET_DIAG_BC_S_LE:
- 		case INET_DIAG_BC_D_GE:
- 		case INET_DIAG_BC_D_LE:
- 		case INET_DIAG_BC_JMP:
--			if (op->no < 4 || op->no > len + 4 || op->no & 3)
-+			if (op->no < min_len || op->no > len + 4 || op->no & 3)
- 				return -EINVAL;
- 			if (op->no < len &&
- 			    !valid_cc(bytecode, bytecode_len, len - op->no))
-@@ -533,7 +575,7 @@ static int inet_diag_bc_audit(const void
+ 	char path[sizeof(modparam_fwpostfix) + 32];
+ 	struct b43legacy_fw_header *hdr;
+@@ -1526,7 +1534,24 @@ static int do_request_fw(struct b43legac
+ 	snprintf(path, ARRAY_SIZE(path),
+ 		 "b43legacy%s/%s.fw",
+ 		 modparam_fwpostfix, name);
+-	err = request_firmware(fw, path, dev->dev->dev);
++	b43legacyinfo(dev->wl, "Loading firmware %s\n", path);
++	if (async) {
++		init_completion(&dev->fw_load_complete);
++		err = request_firmware_nowait(THIS_MODULE, 1, path,
++					      dev->dev->dev, GFP_KERNEL,
++					      dev, b43legacy_fw_cb);
++		if (err) {
++			b43legacyerr(dev->wl, "Unable to load firmware\n");
++			return err;
++		}
++		/* stall here until fw ready */
++		wait_for_completion(&dev->fw_load_complete);
++		if (!dev->fwp)
++			err = -EINVAL;
++		*fw = dev->fwp;
++	} else {
++		err = request_firmware(fw, path, dev->dev->dev);
++	}
+ 	if (err) {
+ 		b43legacyerr(dev->wl, "Firmware file \"%s\" not found "
+ 		       "or load failed.\n", path);
+@@ -1578,7 +1603,7 @@ static void b43legacy_request_firmware(s
+ 			filename = "ucode4";
+ 		else
+ 			filename = "ucode5";
+-		err = do_request_fw(dev, filename, &fw->ucode);
++		err = do_request_fw(dev, filename, &fw->ucode, true);
+ 		if (err)
+ 			goto err_load;
+ 	}
+@@ -1587,7 +1612,7 @@ static void b43legacy_request_firmware(s
+ 			filename = "pcm4";
+ 		else
+ 			filename = "pcm5";
+-		err = do_request_fw(dev, filename, &fw->pcm);
++		err = do_request_fw(dev, filename, &fw->pcm, false);
+ 		if (err)
+ 			goto err_load;
+ 	}
+@@ -1605,7 +1630,7 @@ static void b43legacy_request_firmware(s
  		default:
- 			return -EINVAL;
+ 			goto err_no_initvals;
  		}
--		if (op->yes < 4 || op->yes > len + 4 || op->yes & 3)
-+		if (op->yes < min_len || op->yes > len + 4 || op->yes & 3)
- 			return -EINVAL;
- 		bc  += op->yes;
- 		len -= op->yes;
+-		err = do_request_fw(dev, filename, &fw->initvals);
++		err = do_request_fw(dev, filename, &fw->initvals, false);
+ 		if (err)
+ 			goto err_load;
+ 	}
+@@ -1625,7 +1650,7 @@ static void b43legacy_request_firmware(s
+ 		default:
+ 			goto err_no_initvals;
+ 		}
+-		err = do_request_fw(dev, filename, &fw->initvals_band);
++		err = do_request_fw(dev, filename, &fw->initvals_band, false);
+ 		if (err)
+ 			goto err_load;
+ 	}
 
 
