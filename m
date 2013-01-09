@@ -1,74 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933066Ab3AIVwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:52:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41437 "EHLO mail.kernel.org"
+	id S932988Ab3AIUhW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:37:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41404 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932864Ab3AIUhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:23 -0500
+	id S932655Ab3AIUhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarveshwar Bandi <sarveshwar.bandi@emulex.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 01/80] bonding: Bonding driver does not consider the gso_max_size/gso_max_segs setting of slave devices.
-Date: Wed,  9 Jan 2013 12:34:53 -0800
-Message-Id: <20130109201500.566587403@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 25/47] genirq: Always force thread affinity
+Date: Wed,  9 Jan 2013 12:35:20 -0800
+Message-Id: <20130109201732.408321702@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Thomas Gleixner <tglx@linutronix.de>
 
-From: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+commit 04aa530ec04f61875b99c12721162e2964e3318c upstream.
 
-[ Upstream commit 0e376bd0b791ac6ac6bdb051492df0769c840848 ]
+Sankara reported that the genirq core code fails to adjust the
+affinity of an interrupt thread in several cases:
 
-Patch sets the lowest gso_max_size and gso_max_segs values of the slave devices during enslave and detach.
+ 1) On request/setup_irq() the call to setup_affinity() happens before
+    the new action is registered, so the new thread is not notified.
 
-Signed-off-by: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+ 2) For secondary shared interrupts nothing notifies the new thread to
+    change its affinity.
+
+ 3) Interrupts which have the IRQ_NO_BALANCE flag set are not moving
+    the thread either.
+
+Fix this by setting the thread affinity flag right on thread creation
+time. This ensures that under all circumstances the thread moves to
+the right place. Requires a check in irq_thread_check_affinity for an
+existing affinity mask (CONFIG_CPU_MASK_OFFSTACK=y)
+
+Reported-and-tested-by: Sankara Muthukrishnan <sankara.m@gmail.com>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1209041738200.2754@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/bonding/bond_main.c |    7 +++++++
- 1 file changed, 7 insertions(+)
 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1383,6 +1383,8 @@ static void bond_compute_features(struct
- 	struct net_device *bond_dev = bond->dev;
- 	netdev_features_t vlan_features = BOND_VLAN_FEATURES;
- 	unsigned short max_hard_header_len = ETH_HLEN;
-+	unsigned int gso_max_size = GSO_MAX_SIZE;
-+	u16 gso_max_segs = GSO_MAX_SEGS;
- 	int i;
+---
+ kernel/irq/manage.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
+
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -698,6 +698,7 @@ static void
+ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
+ {
+ 	cpumask_var_t mask;
++	bool valid = true;
  
- 	read_lock(&bond->lock);
-@@ -1396,11 +1398,16 @@ static void bond_compute_features(struct
- 
- 		if (slave->dev->hard_header_len > max_hard_header_len)
- 			max_hard_header_len = slave->dev->hard_header_len;
-+
-+		gso_max_size = min(gso_max_size, slave->dev->gso_max_size);
-+		gso_max_segs = min(gso_max_segs, slave->dev->gso_max_segs);
+ 	if (!test_and_clear_bit(IRQTF_AFFINITY, &action->thread_flags))
+ 		return;
+@@ -712,10 +713,18 @@ irq_thread_check_affinity(struct irq_des
  	}
  
- done:
- 	bond_dev->vlan_features = vlan_features;
- 	bond_dev->hard_header_len = max_hard_header_len;
-+	bond_dev->gso_max_segs = gso_max_segs;
-+	netif_set_gso_max_size(bond_dev, gso_max_size);
+ 	raw_spin_lock_irq(&desc->lock);
+-	cpumask_copy(mask, desc->irq_data.affinity);
++	/*
++	 * This code is triggered unconditionally. Check the affinity
++	 * mask pointer. For CPU_MASK_OFFSTACK=n this is optimized out.
++	 */
++	if (desc->irq_data.affinity)
++		cpumask_copy(mask, desc->irq_data.affinity);
++	else
++		valid = false;
+ 	raw_spin_unlock_irq(&desc->lock);
  
- 	read_unlock(&bond->lock);
+-	set_cpus_allowed_ptr(current, mask);
++	if (valid)
++		set_cpus_allowed_ptr(current, mask);
+ 	free_cpumask_var(mask);
+ }
+ #else
+@@ -925,6 +934,16 @@ __setup_irq(unsigned int irq, struct irq
+ 		 */
+ 		get_task_struct(t);
+ 		new->thread = t;
++		/*
++		 * Tell the thread to set its affinity. This is
++		 * important for shared interrupt handlers as we do
++		 * not invoke setup_affinity() for the secondary
++		 * handlers as everything is already set up. Even for
++		 * interrupts marked with IRQF_NO_BALANCE this is
++		 * correct as we want the thread to move to the cpu(s)
++		 * on which the requesting code placed the interrupt.
++		 */
++		set_bit(IRQTF_AFFINITY, &new->thread_flags);
+ 	}
  
+ 	if (!alloc_cpumask_var(&mask, GFP_KERNEL)) {
 
 
