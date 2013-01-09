@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab3AIOrc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:47:32 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52339 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757972Ab3AIOr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:47:28 -0500
-From: Mark Rutland <mark.rutland@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, tglx@linutronix.de, nico@linaro.org,
-        will.deacon@arm.com, marc.zyngier@arm.com, john.stultz@linaro.org,
-        mark.rutland@arm.com
-Subject: [PATCHv2 4/4] arm: Add generic timer broadcast support
-Date: Wed,  9 Jan 2013 14:46:10 +0000
-Message-Id: <1357742770-15028-5-git-send-email-mark.rutland@arm.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1357742770-15028-1-git-send-email-mark.rutland@arm.com>
-References: <1357742770-15028-1-git-send-email-mark.rutland@arm.com>
-X-OriginalArrivalTime: 09 Jan 2013 14:47:25.0759 (UTC) FILETIME=[3D6C0CF0:01CDEE78]
-X-MC-Unique: 113010914472702701
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S932097Ab3AIOsE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:48:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50619 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932076Ab3AIOsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 09:48:02 -0500
+Date: Wed, 9 Jan 2013 15:47:58 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
+        dchinner@redhat.com, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 4/8] memcg: add per cgroup dirty pages accounting
+Message-ID: <20130109144758.GC5095@dhcp22.suse.cz>
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+ <1356456367-14660-1-git-send-email-handai.szj@taobao.com>
+ <20130102104421.GC22160@dhcp22.suse.cz>
+ <CAFj3OHXKyMO3gwghiBAmbowvqko-JqLtKroX2kzin1rk=q9tZg@mail.gmail.com>
+ <alpine.LNX.2.00.1301061135400.29149@eggly.anvils>
+ <CAFj3OHVUx0bZyEGQU_CApVbgz7SrX3BQ+0U5fRV=En800wv+cQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFj3OHVUx0bZyEGQU_CApVbgz7SrX3BQ+0U5fRV=En800wv+cQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r09ElZ1o006488
 
-Implement timer_broadcast for the arm architecture, allowing for the use
-of clock_event_device_drivers decoupled from the timer tick broadcast
-mechanism.
+On Wed 09-01-13 22:35:12, Sha Zhengju wrote:
+[...]
+> To my knowledge, each task is forked in root memcg, and there's a
+> moving while attaching it to a cgroup. So move_account is also a
+> frequent behavior to some extent.
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- arch/arm/Kconfig      |    1 +
- arch/arm/kernel/smp.c |    3 +--
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index f95ba14..b051266 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -4,6 +4,7 @@ config ARM
- 	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select ARCH_HAVE_CUSTOM_GPIO_H
-+	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select BUILDTIME_EXTABLE_SORT if MMU
- 	select CPU_PM if (SUSPEND || CPU_IDLE)
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index a9d7e70..a901054 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -476,7 +476,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
- static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
- 
- #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
--static void smp_timer_broadcast(const struct cpumask *mask)
-+void tick_broadcast(const struct cpumask *mask)
- {
- 	smp_cross_call(mask, IPI_TIMER);
- }
-@@ -524,7 +524,6 @@ static void __cpuinit percpu_timer_setup(void)
- 	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
- 
- 	evt->cpumask = cpumask_of(cpu);
--	evt->broadcast = smp_timer_broadcast;
- 
- 	if (!lt_ops || lt_ops->setup(evt))
- 		broadcast_timer_setup(evt);
+Not really. Every fork/exec is copies the current group (see
+cgroup_fork) so there is no moving on that path.
+[...]
 -- 
-1.7.0.4
-
-
+Michal Hocko
+SUSE Labs
