@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934171Ab3AIVRK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:17:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35210 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933606Ab3AIVRG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:17:06 -0500
-Date: Wed, 9 Jan 2013 13:17:05 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v5 11/11] sched: introduce cgroup file stat_percpu
-Message-Id: <20130109131705.4156ba5c.akpm@linux-foundation.org>
-In-Reply-To: <50EDDCAA.6070004@parallels.com>
-References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
-	<1357731938-8417-12-git-send-email-glommer@parallels.com>
-	<20130109124220.ad9f1a54.akpm@linux-foundation.org>
-	<50EDDCAA.6070004@parallels.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933611Ab3AIUjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:39:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42757 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933314Ab3AIUj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:29 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        David Binderman <dcb314@hotmail.com>
+Subject: [ 064/123] xhci: Fix conditional check in bandwidth calculation.
+Date: Wed,  9 Jan 2013 12:35:03 -0800
+Message-Id: <20130109201506.827253029@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jan 2013 01:10:02 +0400
-Glauber Costa <glommer@parallels.com> wrote:
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-> The main advantage I see in this approach, is that there is way less
-> data to be written using a header. Although your way works, it means we
-> will write the strings "nice", "system", etc. #cpu times. Quite a waste.
+------------------
 
-Yes, overhead can be a significant issue with this type of interface. 
-But we already incurred a massive overhead by using a human-readable
-ascii interface.  If performance is an issue, perhaps the whole thing
-should be grafted onto taskstats instead.  Or create a new
-taskstats-like thing.
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-btw, a more typical interface would be
+commit 392a07ae3316f2b90b39ce41e66d6f6b5c95de90 upstream.
 
-cat /.../cpu0
-nice:nn
-system:nn
-irq:nn
+David reports that at drivers/usb/host/xhci.c:2257:
 
-- the traditional one-per-line name:value tuples.  But I'd assumed that
-having a file per CPU would be aawkward.
+static bool xhci_is_sync_in_ep(unsigned int ep_type)
+{
+    return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
+}
+
+The static analyser cppcheck says
+
+[linux-3.7-rc2/drivers/usb/host/xhci.c:2257]: (style) Redundant condition: If ep_type == 5, the comparison ep_type != 7 is always true.
+
+Maybe the original programmer intention was something like
+
+static bool xhci_is_sync_in_ep(unsigned int ep_type)
+{
+    return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
+}
+
+Fix this.
+
+This patch should be backported to stable kernels as old as 3.2, that
+contain the commit 2b69899934c63b7b9432568584fb4c4a2924f40c "xhci: USB
+3.0 BW checking."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/host/xhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2254,7 +2254,7 @@ static bool xhci_is_async_ep(unsigned in
+ 
+ static bool xhci_is_sync_in_ep(unsigned int ep_type)
+ {
+-	return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
++	return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
+ }
+ 
+ static unsigned int xhci_get_ss_bw_consumed(struct xhci_bw_info *ep_bw)
+
+
