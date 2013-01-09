@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab3AIAo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 19:44:27 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:41504 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755277Ab3AIAo0 (ORCPT
+	id S1755746Ab3AIAuc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 19:50:32 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:35918 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab3AIAua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 19:44:26 -0500
-Date: Tue, 8 Jan 2013 19:43:41 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-Message-ID: <20130109004340.GA12234@konrad-lan.dumpdata.com>
-References: <CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
- <CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
- <CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
- <20130107152622.GD3219@phenom.dumpdata.com>
- <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
- <8762382z2c.fsf@xmission.com>
- <CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
- <87y5g4z7rp.fsf@xmission.com>
- <CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
- <CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
+	Tue, 8 Jan 2013 19:50:30 -0500
+Date: Tue, 8 Jan 2013 16:50:25 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: pv-drivers@vmware.com, George Zhang <georgezhang@vmware.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 07/12] VMCI: queue pairs implementation.
+Message-ID: <20130109005025.GA2121@kroah.com>
+References: <20130108234751.2698.66606.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <20130108235444.2698.24076.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <20130109001539.GA24989@kroah.com>
+ <2526541.2xuuOB7vZK@dtor-d630.eng.vmware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
+In-Reply-To: <2526541.2xuuOB7vZK@dtor-d630.eng.vmware.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 03:40:11PM -0800, Yinghai Lu wrote:
-> On Mon, Jan 7, 2013 at 7:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > On Mon, Jan 7, 2013 at 7:13 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> >> I meant we should detect failure to allocate bounce buffers in in
-> >> swiotlb_init() instead of panicing.
-> >>
-> >> I meant swiotlb_map_single() should either panic or simply fail.
-> >>
-> >> If I have read lib/swiotlb.c correctly the only place we allocate a
-> >> bounce buffer is in swiotlb_map_single.  If there are more places we can
-> >> allocate bounce buffers those need to be handled as well.
-> >
-> > ok, will give it a try.
+On Tue, Jan 08, 2013 at 04:28:51PM -0800, Dmitry Torokhov wrote:
+> Hi Greg,
 > 
-> please check if you are ok with attached.
+> On Tuesday, January 08, 2013 04:15:39 PM Greg KH wrote:
+> > On Tue, Jan 08, 2013 at 03:54:54PM -0800, George Zhang wrote:
+> > 
+> > > +/* Guest device port I/O. */
+> > > +struct PPNSet {
+> > > +	u64 num_produce_pages;
+> > > +	u64 num_consume_pages;
+> > > +	u32 *produce_ppns;
+> > > +	u32 *consume_ppns;
+> > > +	bool initialized;
+> > > +};
+> > 
+> > I know this is a private structure to the driver, so it's not that big
+> > of a deal at all, but the naming for this is a bit odd (mixed case.)
+> > 
+> > Not a show stopper at all, but if you had run checkpatch.pl on it, it
+> > would have warned you about this.
 > 
-> looks like it need more change of lines.
+> Surprisingly it does not:
+> 
+> [dtor@dtor-ws vmci]$ ./scripts/checkpatch.pl -f  
+> drivers/misc/vmw_vmci/vmci_queue_pair.h 
+> total: 0 errors, 0 warnings, 191 lines checked
+> 
+> drivers/misc/vmw_vmci/vmci_queue_pair.h has no obvious style problems and is 
+> ready for submission.
+> 
+> Also silent on the patch itself...
 
-The swiotlb_full check I don't believe is neccessary. You won't ever get
-to that unless swiotlb_map_page has at least provided a bounce buffer.
-And if the swiotlb_map_page does not have a bounce buffer it will exit
-with:
+You might want to upgrade your version of checkpatch.  As of 3.8-rc2,
+this is what I get:
 
-+       if (no_iotlb_memory)                                                    
-+               return SWIOTLB_MAP_ERROR;                                       
-+                 
+$ ./scripts/checkpatch.pl -f drivers/misc/vmw_vmci/vmci_queue_pair.h
+WARNING: Avoid CamelCase: <PPNSet>
+#28: FILE: misc/vmw_vmci/vmci_queue_pair.h:28:
++struct PPNSet {
 
-which is dangerous. That is b/c there are drivers that don't use the
-dma_mapping_error check (so check the bus address after calling
-pci_map_*). This means they would try to do DMA on 0xffffffff (yikes!).
+total: 0 errors, 1 warnings, 191 lines checked
 
-That is reason the failback (v_overflow_buffer) is still in
-usage - b/c we have drivers that might just do this and this is the last
-resort for them. And until those drivers are fixed - we _need_ this
-fallback to work.
+drivers/misc/vmw_vmci/vmci_queue_pair.h has style problems, please review.
+
+If any of these errors are false positives, please report
+them to the maintainer, see CHECKPATCH in MAINTAINERS.
+
+> We'll send a followup patch anyway.
+
+Great.
+
+greg k-h
