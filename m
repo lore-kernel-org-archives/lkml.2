@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944Ab3AIOln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:41:43 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:53426 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757828Ab3AIOll convert rfc822-to-8bit (ORCPT
+	id S1757948Ab3AIOl7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:41:59 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:32779 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757869Ab3AIOl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:41:41 -0500
-From: Romain KUNTZ <r.kuntz@ipflavors.com>
+	Wed, 9 Jan 2013 09:41:57 -0500
+Date: Wed, 9 Jan 2013 06:41:48 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v5 00/11] per-cgroup cpu-stat
+Message-ID: <20130109144148.GH3926@htj.dyndns.org>
+References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH 1/1] ipv6: fix the noflags test in addrconf_get_prefix_route
-Date: Wed, 9 Jan 2013 15:36:40 +0100
-Message-Id: <470C14E4-2866-4C55-89A3-D6751E1587C4@ipflavors.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, Andreas Hofmeister <andi@collax.com>,
-        Romain KUNTZ <r.kuntz@ipflavors.com>
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-X-Mailer: Apple Mail (2.1499)
+Content-Disposition: inline
+In-Reply-To: <1357731938-8417-1-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e7ece201c35615c44a3cfdc10ee28ad5a5878f41 Mon Sep 17 00:00:00 2001
-From: Romain Kuntz <r.kuntz@ipflavors.com>
-Date: Wed, 9 Jan 2013 15:02:26 +0100
-Subject: [PATCH 1/1] ipv6: fix the noflags test in addrconf_get_prefix_route
+Hello, Glauber.
 
-The tests on the flags in addrconf_get_prefix_route() does no make
-much sense: the 'noflags' parameter contains the set of flags that
-must not match with the route flags, so the test must be done
-against 'noflags', and not against 'flags'.
+On Wed, Jan 09, 2013 at 03:45:27PM +0400, Glauber Costa wrote:
+> [ update: I thought I posted this already before leaving for holidays. However,
+>   now that I am checking for replies, I can't find nor replies nor the original
+>   mail in my boxes or archives. I am posting again for safety sake, but sorry
+>   you are getting this twice by any chance ]
 
-Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
----
- net/ipv6/addrconf.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I think I saw the series a while back.
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 408cac4a..29ba4ff 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1877,7 +1877,7 @@ static struct rt6_info *addrconf_get_prefix_route(const struct in6_addr *pfx,
- 			continue;
- 		if ((rt->rt6i_flags & flags) != flags)
- 			continue;
--		if ((noflags != 0) && ((rt->rt6i_flags & flags) != 0))
-+		if ((rt->rt6i_flags & noflags) != 0)
- 			continue;
- 		dst_hold(&rt->dst);
- 		break;
+> This is an attempt to provide userspace with enough information to reconstruct
+> per-container version of files like "/proc/stat". In particular, we are
+> interested in knowing the per-cgroup slices of user time, system time, wait
+> time, number of processes, and a variety of statistics.
+> 
+> This task is made more complicated by the fact that multiple controllers are
+> involved in collecting those statistics: cpu and cpuacct. So the first thing I
+> am doing here, is ressurecting Tejun's patches that aim at deprecating cpuacct.
+> 
+> This is one of the major differences from earlier attempts: all data is provided
+> by the cpu controller, resulting in greater simplicity.
+> 
+> This also tries to hook into the existing scheduler hierarchy walks instead of
+> providing new ones.
+
+The cgroup part looks good to me.
+
+Thanks.
+
 -- 
-1.7.2.5
-
+tejun
