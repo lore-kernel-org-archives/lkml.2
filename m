@@ -1,180 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933845Ab3AIVFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:05:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43196 "EHLO mail.kernel.org"
+	id S933880Ab3AIVFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:05:35 -0500
+Received: from gate.crashing.org ([63.228.1.57]:41580 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933751Ab3AIUkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:13 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        Kiran Kumar Kella <kkiran@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 61/80] tcp: implement RFC 5961 3.2
-Date: Wed,  9 Jan 2013 12:35:53 -0800
-Message-Id: <20130109201508.255559021@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933751Ab3AIVFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:05:30 -0500
+Message-ID: <1357765188.4838.52.camel@pasglop>
+Subject: Re: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for
+ hot-add root bus
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Paul Mackerras <paulus@samba.org>
+Date: Thu, 10 Jan 2013 07:59:48 +1100
+In-Reply-To: <CAErSpo6qX3ih9DXLqxqJw141OAeTFu0YfSih6LyD0sd2gS-Vyg@mail.gmail.com>
+References: <20121030040237.GA10472@google.com>
+	 <1352003971-22278-1-git-send-email-yinghai@kernel.org>
+	 <CAE9FiQUn=bcgOLFzBwsBT1-O1poRNy9qYTb0w9EAya3_inKqAw@mail.gmail.com>
+	 <CAErSpo5Z57asEXbfesOjXMEPj4WM3YMbzQH3s-v_NBrnPNmuVQ@mail.gmail.com>
+	 <CAErSpo4LS7ShCbeOm1s9ob1MjPfUSWn9J96UHRBP6van54swQA@mail.gmail.com>
+	 <CAE9FiQV5x1S1BNHrXq0wMRDx7PD5BoCh3fOnq2vS_AOAGL8Rrw@mail.gmail.com>
+	 <CAErSpo5vEb=63jGsqfau1G=f54oqq17pc3ZzcpzhL7hQrtYhng@mail.gmail.com>
+	 <CAE9FiQUxxjZmd3C33_ujSeL1EjcKHHSoGusQwfBD+Zd=cwCDZA@mail.gmail.com>
+	 <CAErSpo6qX3ih9DXLqxqJw141OAeTFu0YfSih6LyD0sd2gS-Vyg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2013-01-09 at 11:39 -0700, Bjorn Helgaas wrote:
+> 
+> > the reason why we need to change those codes for x86, we want to
+> make it support
+> > pci root bus hotplug. So it would be reasonable for us to align
+> other
+> > platform to x86
+> > changes after pci root bus hotplug change is completely done.
+> 
+> OK, I opened https://bugzilla.kernel.org/show_bug.cgi?id=52531 as a
+> way to keep track of this consistency issue and merged
+> pci/yinghai-survey-resources to my -next branch.
 
-------------------
+Hrm... that's going to be tricky. For example the SR-IOV stuff will not
+work for us, we are working on a different implementation, due to some
+of "interesting" bridge constraints etc...
 
+It would be nice to get more of the resource survey in common, our
+original code was actually completely different and I reconciled it a
+lot with x86 in the past few years, but I'm sure we can do better.
+However there are still going to be corner cases....
 
-From: Eric Dumazet <edumazet@google.com>
-
-[ Upstream commit 282f23c6ee343126156dd41218b22ece96d747e3 ]
-
-Implement the RFC 5691 mitigation against Blind
-Reset attack using RST bit.
-
-Idea is to validate incoming RST sequence,
-to match RCV.NXT value, instead of previouly accepted
-window : (RCV.NXT <= SEG.SEQ < RCV.NXT+RCV.WND)
-
-If sequence is in window but not an exact match, send
-a "challenge ACK", so that the other part can resend an
-RST with the appropriate sequence.
-
-Add a new sysctl, tcp_challenge_ack_limit, to limit
-number of challenge ACK sent per second.
-
-Add a new SNMP counter to count number of challenge acks sent.
-(netstat -s | grep TCPChallengeACK)
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Kiran Kumar Kella <kkiran@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- Documentation/networking/ip-sysctl.txt |    5 +++++
- include/linux/snmp.h                   |    1 +
- include/net/tcp.h                      |    1 +
- net/ipv4/proc.c                        |    1 +
- net/ipv4/sysctl_net_ipv4.c             |    7 +++++++
- net/ipv4/tcp_input.c                   |   31 ++++++++++++++++++++++++++++++-
- 6 files changed, 45 insertions(+), 1 deletion(-)
-
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -537,6 +537,11 @@ tcp_thin_dupack - BOOLEAN
- 	Documentation/networking/tcp-thin.txt
- 	Default: 0
- 
-+tcp_challenge_ack_limit - INTEGER
-+	Limits number of Challenge ACK sent per second, as recommended
-+	in RFC 5961 (Improving TCP's Robustness to Blind In-Window Attacks)
-+	Default: 100
-+
- UDP variables:
- 
- udp_mem - vector of 3 INTEGERs: min, pressure, max
---- a/include/linux/snmp.h
-+++ b/include/linux/snmp.h
-@@ -234,6 +234,7 @@ enum
- 	LINUX_MIB_TCPREQQFULLDROP,		/* TCPReqQFullDrop */
- 	LINUX_MIB_TCPRETRANSFAIL,		/* TCPRetransFail */
- 	LINUX_MIB_TCPRCVCOALESCE,			/* TCPRcvCoalesce */
-+	LINUX_MIB_TCPCHALLENGEACK,		/* TCPChallengeACK */
- 	__LINUX_MIB_MAX
- };
- 
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -252,6 +252,7 @@ extern int sysctl_tcp_max_ssthresh;
- extern int sysctl_tcp_cookie_size;
- extern int sysctl_tcp_thin_linear_timeouts;
- extern int sysctl_tcp_thin_dupack;
-+extern int sysctl_tcp_challenge_ack_limit;
- 
- extern atomic_long_t tcp_memory_allocated;
- extern struct percpu_counter tcp_sockets_allocated;
---- a/net/ipv4/proc.c
-+++ b/net/ipv4/proc.c
-@@ -258,6 +258,7 @@ static const struct snmp_mib snmp4_net_l
- 	SNMP_MIB_ITEM("TCPReqQFullDrop", LINUX_MIB_TCPREQQFULLDROP),
- 	SNMP_MIB_ITEM("TCPRetransFail", LINUX_MIB_TCPRETRANSFAIL),
- 	SNMP_MIB_ITEM("TCPRcvCoalesce", LINUX_MIB_TCPRCVCOALESCE),
-+	SNMP_MIB_ITEM("TCPChallengeACK", LINUX_MIB_TCPCHALLENGEACK),
- 	SNMP_MIB_SENTINEL
- };
- 
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -590,6 +590,13 @@ static struct ctl_table ipv4_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
-+	{
-+		.procname	= "tcp_challenge_ack_limit",
-+		.data		= &sysctl_tcp_challenge_ack_limit,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec
-+	},
- #ifdef CONFIG_NET_DMA
- 	{
- 		.procname	= "tcp_dma_copybreak",
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -88,6 +88,9 @@ int sysctl_tcp_app_win __read_mostly = 3
- int sysctl_tcp_adv_win_scale __read_mostly = 1;
- EXPORT_SYMBOL(sysctl_tcp_adv_win_scale);
- 
-+/* rfc5961 challenge ack rate limiting */
-+int sysctl_tcp_challenge_ack_limit = 100;
-+
- int sysctl_tcp_stdurg __read_mostly;
- int sysctl_tcp_rfc1337 __read_mostly;
- int sysctl_tcp_max_orphans __read_mostly = NR_FILE;
-@@ -5265,6 +5268,23 @@ out:
- }
- #endif /* CONFIG_NET_DMA */
- 
-+static void tcp_send_challenge_ack(struct sock *sk)
-+{
-+	/* unprotected vars, we dont care of overwrites */
-+	static u32 challenge_timestamp;
-+	static unsigned int challenge_count;
-+	u32 now = jiffies / HZ;
-+
-+	if (now != challenge_timestamp) {
-+		challenge_timestamp = now;
-+		challenge_count = 0;
-+	}
-+	if (++challenge_count <= sysctl_tcp_challenge_ack_limit) {
-+		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPCHALLENGEACK);
-+		tcp_send_ack(sk);
-+	}
-+}
-+
- /* Does PAWS and seqno based validation of an incoming segment, flags will
-  * play significant role here.
-  */
-@@ -5301,7 +5321,16 @@ static int tcp_validate_incoming(struct
- 
- 	/* Step 2: check RST bit */
- 	if (th->rst) {
--		tcp_reset(sk);
-+		/* RFC 5961 3.2 :
-+		 * If sequence number exactly matches RCV.NXT, then
-+		 *     RESET the connection
-+		 * else
-+		 *     Send a challenge ACK
-+		 */
-+		if (TCP_SKB_CB(skb)->seq == tp->rcv_nxt)
-+			tcp_reset(sk);
-+		else
-+			tcp_send_challenge_ack(sk);
- 		goto discard;
- 	}
- 
+Ben.
 
 
