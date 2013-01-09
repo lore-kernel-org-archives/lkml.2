@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab3AIUgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:36:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41008 "EHLO mail.kernel.org"
+	id S932784Ab3AIWBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:01:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41018 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932725Ab3AIUgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:39 -0500
+	id S932766Ab3AIUgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:36:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 14/47] ALSA: usb-audio: Avoid autopm calls after disconnection
-Date: Wed,  9 Jan 2013 12:35:09 -0800
-Message-Id: <20130109201731.119234523@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 20/47] NFS: avoid NULL dereference in nfs_destroy_server
+Date: Wed,  9 Jan 2013 12:35:15 -0800
+Message-Id: <20130109201731.834799774@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
 References: <20130109201729.435233560@linuxfoundation.org>
@@ -25,104 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: NeilBrown <neilb@suse.de>
 
-commit 59866da9e4ae54819e3c4e0a8f426bdb0c2ef993 upstream.
+commit f259613a1e4b44a0cf85a5dafd931be96ee7c9e5 upstream.
 
-Add a similar protection against the disconnection race and the
-invalid use of usb instance after disconnection, as well as we've done
-for the USB audio PCM.
+In rare circumstances, nfs_clone_server() of a v2 or v3 server can get
+an error between setting server->destory (to nfs_destroy_server), and
+calling nfs_start_lockd (which will set server->nlm_host).
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51201
+If this happens, nfs_clone_server will call nfs_free_server which
+will call nfs_destroy_server and thence nlmclnt_done(NULL).  This
+causes the NULL to be dereferenced.
 
-Reviewd-by: Clemens Ladisch <clemens@ladisch.de>
-Tested-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+So add a guard to only call nlmclnt_done() if ->nlm_host is not NULL.
+
+The other guards there are irrelevant as nlm_host can only be non-NULL
+if one of these flags are set - so remove those tests.  (Thanks to Trond
+for this suggestion).
+
+This is suitable for any stable kernel since 2.6.25.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/midi.c |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ fs/nfs/client.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -115,6 +115,7 @@ struct snd_usb_midi {
- 	struct list_head list;
- 	struct timer_list error_timer;
- 	spinlock_t disc_lock;
-+	struct rw_semaphore disc_rwsem;
- 	struct mutex mutex;
- 	u32 usb_id;
- 	int next_midi_device;
-@@ -1021,6 +1022,12 @@ static void substream_open(struct snd_ra
- 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
- 	struct snd_kcontrol *ctl;
- 
-+	down_read(&umidi->disc_rwsem);
-+	if (umidi->disconnected) {
-+		up_read(&umidi->disc_rwsem);
-+		return;
-+	}
-+
- 	mutex_lock(&umidi->mutex);
- 	if (open) {
- 		if (umidi->opened++ == 0 && umidi->roland_load_ctl) {
-@@ -1039,6 +1046,7 @@ static void substream_open(struct snd_ra
- 		}
- 	}
- 	mutex_unlock(&umidi->mutex);
-+	up_read(&umidi->disc_rwsem);
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -673,8 +673,7 @@ static int nfs_create_rpc_client(struct
+  */
+ static void nfs_destroy_server(struct nfs_server *server)
+ {
+-	if (!(server->flags & NFS_MOUNT_LOCAL_FLOCK) ||
+-			!(server->flags & NFS_MOUNT_LOCAL_FCNTL))
++	if (server->nlm_host)
+ 		nlmclnt_done(server->nlm_host);
  }
  
- static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
-@@ -1059,8 +1067,15 @@ static int snd_usbmidi_output_open(struc
- 		snd_BUG();
- 		return -ENXIO;
- 	}
-+
-+	down_read(&umidi->disc_rwsem);
-+	if (umidi->disconnected) {
-+		up_read(&umidi->disc_rwsem);
-+		return -ENODEV;
-+	}
- 	err = usb_autopm_get_interface(umidi->iface);
- 	port->autopm_reference = err >= 0;
-+	up_read(&umidi->disc_rwsem);
- 	if (err < 0 && err != -EACCES)
- 		return -EIO;
- 	substream->runtime->private_data = port;
-@@ -1075,8 +1090,10 @@ static int snd_usbmidi_output_close(stru
- 	struct usbmidi_out_port *port = substream->runtime->private_data;
- 
- 	substream_open(substream, 0);
--	if (port->autopm_reference)
-+	down_read(&umidi->disc_rwsem);
-+	if (!umidi->disconnected && port->autopm_reference)
- 		usb_autopm_put_interface(umidi->iface);
-+	up_read(&umidi->disc_rwsem);
- 	return 0;
- }
- 
-@@ -1386,9 +1403,12 @@ void snd_usbmidi_disconnect(struct list_
- 	 * a timer may submit an URB. To reliably break the cycle
- 	 * a flag under lock must be used
- 	 */
-+	down_write(&umidi->disc_rwsem);
- 	spin_lock_irq(&umidi->disc_lock);
- 	umidi->disconnected = 1;
- 	spin_unlock_irq(&umidi->disc_lock);
-+	up_write(&umidi->disc_rwsem);
-+
- 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i) {
- 		struct snd_usb_midi_endpoint* ep = &umidi->endpoints[i];
- 		if (ep->out)
-@@ -2100,6 +2120,7 @@ int snd_usbmidi_create(struct snd_card *
- 	umidi->usb_protocol_ops = &snd_usbmidi_standard_ops;
- 	init_timer(&umidi->error_timer);
- 	spin_lock_init(&umidi->disc_lock);
-+	init_rwsem(&umidi->disc_rwsem);
- 	mutex_init(&umidi->mutex);
- 	umidi->usb_id = USB_ID(le16_to_cpu(umidi->dev->descriptor.idVendor),
- 			       le16_to_cpu(umidi->dev->descriptor.idProduct));
 
 
