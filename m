@@ -1,87 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757018Ab3AICdE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 21:33:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55413 "EHLO mx2.suse.de"
+	id S1756252Ab3AICeY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 21:34:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:40194 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756119Ab3AICdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 21:33:02 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
-        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
-        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org
-Subject: Re: [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump with iommu
-Date: Wed, 09 Jan 2013 03:32:50 +0100
-Message-ID: <3564889.4S6qWWRR6X@hammer82.arch.suse.de>
-User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CAE9FiQXUCtfeKuZVb1=13SL-UUu5hkNE3Q3K8MTZA2ap1qDCAg@mail.gmail.com>
-References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local> <201301081750.07296.trenn@suse.de> <CAE9FiQXUCtfeKuZVb1=13SL-UUu5hkNE3Q3K8MTZA2ap1qDCAg@mail.gmail.com>
+	id S1753754Ab3AICeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 21:34:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,435,1355126400"; 
+   d="scan'208";a="269611929"
+Date: Wed, 9 Jan 2013 10:35:03 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/5] kfifo: remove unnecessary type check
+Message-ID: <20130109023503.GC304@yliu-dev.sh.intel.com>
+References: <1357657073-27352-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1357657073-27352-2-git-send-email-yuanhan.liu@linux.intel.com>
+ <1357681864.27255.5.camel@wall-e>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357681864.27255.5.camel@wall-e>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 08, 2013 09:27:55 AM Yinghai Lu wrote:
-> On Tue, Jan 8, 2013 at 8:50 AM, Thomas Renninger <trenn@suse.de> wrote:
-> > megaraid_sas
+On Tue, Jan 08, 2013 at 10:51:04PM +0100, Stefani Seibold wrote:
+> Am Dienstag, den 08.01.2013, 22:57 +0800 schrieb Yuanhan Liu:
+> > Firstly, this kind of type check doesn't work. It does something similar
+> > as following:
+> > 	void * __dummy = NULL;
+> > 	__buf = __dummy;
+> > 
+> > __dummy is defined as void *. Thus it will not trigger warnings as
+> > expected.
+> > 
+> > Second, we don't need that kind of check. Since the prototype
+> > of __kfifo_out is:
+> > 	unsigned int __kfifo_out(struct __kfifo *fifo,  void *buf, unsigned int len)
+> > 
+> > buf is defined as void *, so we don't need do the type check. Remove it.
+> > 
 > 
-> can you check if your initrd for kdump kernel has that driver and
-> module that it depends on like
-> scsi sas transport etc ?
+> Thats wrong.
+> 
+> First the type checking will be used in kfifo_put() and kfifo_in() for
+> const types to check if the passed type of the data can converted to the
+> fifo element type. 
 
-Removing the 5 patches and the disk works and the
-dump is written.
+Hi Stefani,
 
-I can look a bit further at the memmap=exactmap issue tomorrow.
-I can also double check above then, but I am rather sure about it
-already:
-I tried plain vanilla -> worked, dumping started
-I tried with only these 5 patches added -> no disk.
+Yes, I see now. After rechecking the code, I found that this kind of
+type checking only works for those static defined kifo by
+DECLARE/DEFINE_KFIFO. As the ptrtype is the same as the data type:
 
+    /* the 4th argument "type" is "ptrtype" */
+    #define STRUCT_KFIFO(type, size) struct __STRUCT_KFIFO(type, size, 0, type)
 
-Some questions:
+    #define DECLARE_KFIFO(fifo, type, size) STRUCT_KFIFO(type, size) fifo
 
-You try to initialize the PCI subsystem in a way the BIOS typically has
-to do it in kexec case?
+While, for those kfifo dynamically allocated, the type checking will not
+work as expected then as ptrtype is always "void":
 
-Reacting and trying to handle error condtitions more gracefully
-at the place where they are caught could be another approach which
-imo makes sense to implement in parallel.
+    struct kfifo __STRUCT_KFIFO_PTR(unsigned char, 0, void);
 
-In my case for example I see:
-"Present field in the IRTE entry is clear"
-DMAR errors. I expect this comes from a device which still throws
-interrupts, but irq vector got not set-up or registered in the kexec'ed 
-kernel.
+So, there is no need to do type force convertion like following:
+    arch/arm/plat-omap/mailbox.c:   len = kfifo_in(&mq->fifo, (unsigned char *)&msg, sizeof(msg));
+As mq->fifo is dynamically allocated.
 
-I could imagine this is the same error which happens when an irq is
-wrongly configured and spurious interrupts happen (but in irq remapped case).
-In my case it's not sever as I only see this message once, but according
-to another report, they see about 80 of such DMAR error messages per
-second. This seem to result in endless DMAR error interrupts and finally
-a dead system.
+So, the type checking does work, and I'll drop this patch.
 
-I wonder whether the DMAR error handler could already invoke a PCIe
-reset.
-I found:
-int pci_set_pcie_reset_state(struct pci_dev *dev, enum pcie_reset_state state)
-which unfortunatly is only implemented for PPC, but would it make sense to
-implement this one and trigger function level reset if several specific DMAR
-errors are seen (or other PCI(e) error handlers get active?)?
+Sorry for the noisy.
 
-If this does not help the next step could be to stop DMAR error interrupt
-handling or other iommu commands to keep the machine alive, even if one
-device keeps firing interrupts to an unconfigured irq vector (or whatever other
-things could happen).
+	--yliu
 
-Just some ideas...
-Comments appreciated.
-
-   Thomas
+> And it will be used in kfifo_get(), kfifo_peek(), kfifo_out() and
+> kfio_out_peek() to check if the element type of the fifo can be
+> converted to the passed type of the destination.
+> 
+> So a big NAK!  
+> 
+> > v2: remove ptr and const_ptr, which were used for type checking.
+> > 
+> > LINK: https://lkml.org/lkml/2012/10/25/386
+> > LINK: https://lkml.org/lkml/2012/10/25/584
+> > 
+> > Cc: Stefani Seibold <stefani@seibold.net>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> > ---
+> >  include/linux/kfifo.h |   46 ++++++++++++----------------------------------
+> >  1 files changed, 12 insertions(+), 34 deletions(-)
+> > 
+> > diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
+> > index 10308c6..7a18245 100644
+> > --- a/include/linux/kfifo.h
+> > +++ b/include/linux/kfifo.h
+> > @@ -63,49 +63,47 @@ struct __kfifo {
+> >  	void		*data;
+> >  };
+> >  
+> > -#define __STRUCT_KFIFO_COMMON(datatype, recsize, ptrtype) \
+> > +#define __STRUCT_KFIFO_COMMON(datatype, recsize) \
+> >  	union { \
+> >  		struct __kfifo	kfifo; \
+> >  		datatype	*type; \
+> >  		char		(*rectype)[recsize]; \
+> > -		ptrtype		*ptr; \
+> > -		const ptrtype	*ptr_const; \
+> >  	}
+> >  
+> > -#define __STRUCT_KFIFO(type, size, recsize, ptrtype) \
+> > +#define __STRUCT_KFIFO(type, size, recsize) \
+> >  { \
+> > -	__STRUCT_KFIFO_COMMON(type, recsize, ptrtype); \
+> > +	__STRUCT_KFIFO_COMMON(type, recsize); \
+> >  	type		buf[((size < 2) || (size & (size - 1))) ? -1 : size]; \
+> >  }
+> >  
+> >  #define STRUCT_KFIFO(type, size) \
+> > -	struct __STRUCT_KFIFO(type, size, 0, type)
+> > +	struct __STRUCT_KFIFO(type, size, 0)
+> >  
+> > -#define __STRUCT_KFIFO_PTR(type, recsize, ptrtype) \
+> > +#define __STRUCT_KFIFO_PTR(type, recsize) \
+> >  { \
+> > -	__STRUCT_KFIFO_COMMON(type, recsize, ptrtype); \
+> > +	__STRUCT_KFIFO_COMMON(type, recsize); \
+> >  	type		buf[0]; \
+> >  }
+> >  
+> >  #define STRUCT_KFIFO_PTR(type) \
+> > -	struct __STRUCT_KFIFO_PTR(type, 0, type)
+> > +	struct __STRUCT_KFIFO_PTR(type, 0)
+> >  
+> >  /*
+> >   * define compatibility "struct kfifo" for dynamic allocated fifos
+> >   */
+> > -struct kfifo __STRUCT_KFIFO_PTR(unsigned char, 0, void);
+> > +struct kfifo __STRUCT_KFIFO_PTR(unsigned char, 0);
+> >  
+> >  #define STRUCT_KFIFO_REC_1(size) \
+> > -	struct __STRUCT_KFIFO(unsigned char, size, 1, void)
+> > +	struct __STRUCT_KFIFO(unsigned char, size, 1)
+> >  
+> >  #define STRUCT_KFIFO_REC_2(size) \
+> > -	struct __STRUCT_KFIFO(unsigned char, size, 2, void)
+> > +	struct __STRUCT_KFIFO(unsigned char, size, 2)
+> >  
+> >  /*
+> >   * define kfifo_rec types
+> >   */
+> > -struct kfifo_rec_ptr_1 __STRUCT_KFIFO_PTR(unsigned char, 1, void);
+> > -struct kfifo_rec_ptr_2 __STRUCT_KFIFO_PTR(unsigned char, 2, void);
+> > +struct kfifo_rec_ptr_1 __STRUCT_KFIFO_PTR(unsigned char, 1);
+> > +struct kfifo_rec_ptr_2 __STRUCT_KFIFO_PTR(unsigned char, 2);
+> >  
+> >  /*
+> >   * helper macro to distinguish between real in place fifo where the fifo
+> > @@ -390,10 +388,6 @@ __kfifo_int_must_check_helper( \
+> >  	unsigned int __ret; \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) { \
+> > -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
+> > -		__dummy = (typeof(__val))NULL; \
+> > -	} \
+> >  	if (__recsize) \
+> >  		__ret = __kfifo_in_r(__kfifo, __val, sizeof(*__val), \
+> >  			__recsize); \
+> > @@ -432,8 +426,6 @@ __kfifo_uint_must_check_helper( \
+> >  	unsigned int __ret; \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) \
+> > -		__val = (typeof(__tmp->ptr))0; \
+> >  	if (__recsize) \
+> >  		__ret = __kfifo_out_r(__kfifo, __val, sizeof(*__val), \
+> >  			__recsize); \
+> > @@ -473,8 +465,6 @@ __kfifo_uint_must_check_helper( \
+> >  	unsigned int __ret; \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) \
+> > -		__val = (typeof(__tmp->ptr))NULL; \
+> >  	if (__recsize) \
+> >  		__ret = __kfifo_out_peek_r(__kfifo, __val, sizeof(*__val), \
+> >  			__recsize); \
+> > @@ -512,10 +502,6 @@ __kfifo_uint_must_check_helper( \
+> >  	unsigned long __n = (n); \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) { \
+> > -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
+> > -		__dummy = (typeof(__buf))NULL; \
+> > -	} \
+> >  	(__recsize) ?\
+> >  	__kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
+> >  	__kfifo_in(__kfifo, __buf, __n); \
+> > @@ -565,10 +551,6 @@ __kfifo_uint_must_check_helper( \
+> >  	unsigned long __n = (n); \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) { \
+> > -		typeof(__tmp->ptr) __dummy = NULL; \
+> > -		__buf = __dummy; \
+> > -	} \
+> >  	(__recsize) ?\
+> >  	__kfifo_out_r(__kfifo, __buf, __n, __recsize) : \
+> >  	__kfifo_out(__kfifo, __buf, __n); \
+> > @@ -777,10 +759,6 @@ __kfifo_uint_must_check_helper( \
+> >  	unsigned long __n = (n); \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) { \
+> > -		typeof(__tmp->ptr) __dummy __attribute__ ((unused)) = NULL; \
+> > -		__buf = __dummy; \
+> > -	} \
+> >  	(__recsize) ? \
+> >  	__kfifo_out_peek_r(__kfifo, __buf, __n, __recsize) : \
+> >  	__kfifo_out_peek(__kfifo, __buf, __n); \
+> 
