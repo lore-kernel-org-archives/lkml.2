@@ -1,67 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934052Ab3AIUyd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:54:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43777 "EHLO mail.kernel.org"
+	id S934102Ab3AIUyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:54:50 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36109 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933994Ab3AIUlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:02 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Zdenek Kabelac <zkabelac@redhat.com>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 100/123] fs: Fix imbalance in freeze protection in mark_files_ro()
-Date: Wed,  9 Jan 2013 12:35:39 -0800
-Message-Id: <20130109201511.401004489@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933994Ab3AIUys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:54:48 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
+Date: Wed, 09 Jan 2013 22:00:32 +0100
+Message-ID: <2444115.yc4aG06zuI@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAErSpo5UD9362JVKzG4rcLJ6kKMLvMzdJ3kLRvRTSRdSqHOH9w@mail.gmail.com>
+References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <16794957.TmlpVGsGIb@vostro.rjw.lan> <CAErSpo5UD9362JVKzG4rcLJ6kKMLvMzdJ3kLRvRTSRdSqHOH9w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Wednesday, January 09, 2013 01:44:23 PM Bjorn Helgaas wrote:
+> [+cc Myron]
+> 
+> On Wed, Jan 9, 2013 at 1:19 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Thursday, January 10, 2013 12:58:25 AM Jiang Liu wrote:
+> >> Hi Rafael,
+> >>       Thanks for your great efforts to review the patch.
+> >>
+> >> On 01/09/2013 08:01 AM, Rafael J. Wysocki wrote:
+> >> > Hi,
+> >> >
+> >> > On Wednesday, January 09, 2013 12:52:22 AM Jiang Liu wrote:
+> >> snip
+> >> >>
+> >> >> +static void acpi_pci_slot_notify_add(struct pci_dev *dev)
+> >> >> +{
+> >> >> +  acpi_handle handle;
+> >> >> +  struct callback_args context;
+> >> >> +
+> >> >> +  if (!dev->subordinate)
+> >> >> +          return;
+> >> >> +
+> >> >> +  mutex_lock(&slot_list_lock);
+> >> >> +  handle = DEVICE_ACPI_HANDLE(&dev->dev);
+> >> >> +  context.root_handle = acpi_find_root_bridge_handle(dev);
+> >> >
+> >> > There's a patch under discussion that removes this function.
+> >> >
+> >> > Isn't there any other way to do this?
+> >>       I will try to find a way to get rid of calling acpi_find_root_bridge_handle,
+> >> and it seems doable.
+> >>
+> >> >
+> >> >> +  if (handle && context.root_handle) {
+> >> >> +          context.pci_bus = dev->subordinate;
+> >> >> +          context.user_function = register_slot;
+> >> >> +          acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
+> >> >
+> >> > You can just pass 1 here I think.  Does the compiler complain?
+> >> Thanks for reminder, the (u32) is unnecessary.
+> >>
+> >> >
+> >> >> +                              register_slot, NULL, &context, NULL);
+> >> >> +  }
+> >> >> +  mutex_unlock(&slot_list_lock);
+> >> >> +}
+> >> >> +
+> >> >> +static void acpi_pci_slot_notify_del(struct pci_dev *dev)
+> >> >> +{
+> >> >> +  struct acpi_pci_slot *slot, *tmp;
+> >> >> +  struct pci_bus *bus = dev->subordinate;
+> >> >> +
+> >> >> +  if (!bus)
+> >> >> +          return;
+> >> >> +
+> >> >> +  mutex_lock(&slot_list_lock);
+> >> >> +  list_for_each_entry_safe(slot, tmp, &slot_list, list)
+> >> >> +          if (slot->pci_slot && slot->pci_slot->bus == bus) {
+> >> >> +                  list_del(&slot->list);
+> >> >> +                  pci_destroy_slot(slot->pci_slot);
+> >> >> +                  put_device(&bus->dev);
+> >> >> +                  kfree(slot);
+> >> >> +          }
+> >> >> +  mutex_unlock(&slot_list_lock);
+> >> >> +}
+> >> >> +
+> >> >> +static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
+> >> >> +                             unsigned long event, void *data)
+> >> >> +{
+> >> >> +  struct device *dev = data;
+> >> >> +
+> >> >> +  switch (event) {
+> >> >> +  case BUS_NOTIFY_ADD_DEVICE:
+> >> >> +          acpi_pci_slot_notify_add(to_pci_dev(dev));
+> >> >> +          break;
+> >> >
+> >> > Do I think correctly that this is going to be called for every PCI device
+> >> > added to the system, even if it's not a bridge?
+> >> You are right. Function acpi_pci_slot_notify_add() and acpi_pci_slot_notify_del()
+> >> will check whether it's a bridge. If preferred, I will move the check up into
+> >> acpi_pci_slot_notify_fn().
+> >>
+> >> >
+> >> >> +  case BUS_NOTIFY_DEL_DEVICE:
+> >> >> +          acpi_pci_slot_notify_del(to_pci_dev(dev));
+> >> >> +          break;
+> >> >> +  default:
+> >> >> +          return NOTIFY_DONE;
+> >> >> +  }
+> >> >> +
+> >> >> +  return NOTIFY_OK;
+> >> >> +}
+> >> >> +
+> >> >> +static struct notifier_block acpi_pci_slot_notifier = {
+> >> >> +  .notifier_call = &acpi_pci_slot_notify_fn,
+> >> >> +};
+> >> >> +
+> >> >>  static int __init
+> >> >>  acpi_pci_slot_init(void)
+> >> >>  {
+> >> >>    dmi_check_system(acpi_pci_slot_dmi_table);
+> >> >>    acpi_pci_register_driver(&acpi_pci_slot_driver);
+> >> >> +  bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
+> >> >
+> >> > I wonder if/why this has to be so convoluted?
+> >> >
+> >> > We have found a PCI bridge in the ACPI namespace, so we've created a struct
+> >> > acpi_device for it and we've walked the namespace below it already.
+> >> >
+> >> > Now we're creating a struct pci_dev for it and while registering it we're
+> >> > going to walk the namespace below the bridge again to find and register its
+> >> > slots and that is done indirectly from a bus type notifier.
+> >> >
+> >> > Why can't we enumerate the slots directly upfront?
+> >> Do you mean to create the PCI slot devices when creating the ACPI devices?
+> >> I think there are two factors prevent us from doing that.
+> >> The first is that the ACPI pci_slot driver could be built as a module, so
+> >> we can't call into it from the ACPI core.
+> >
+> > I didn't say about calling the pci_slot driver from the ACPI core, but about
+> > enumerating slots in a way suitable for consumption by the pci_slot driver
+> > when it's ready.
+> >
+> > That said I really don't see a value in having a modular pci_slot driver.  It
+> > is part of the hotplug infrastructure and should always be presend for this
+> > reason, so we don't need to worry about the "pci_slot driver not present" case.
+> 
+> I agree that there's no value in supporting CONFIG_ACPI_PCI_SLOT=m.  I
+> think Myron has some patches that remove that case.
+> 
+> I'm not sure what the best way to merge them is.  We have a bunch of
+> stuff this cycle that touches both ACPI and PCI.
 
-------------------
+Well, is there a possibility to pull my acpi-scan branch into your tree?
 
-From: Jan Kara <jack@suse.cz>
-
-commit 72651cac884b1e285fa8e8314b10e9f1b8458802 upstream.
-
-File descriptors (even those for writing) do not hold freeze protection.
-Thus mark_files_ro() must call __mnt_drop_write() to only drop protection
-against remount read-only. Calling mnt_drop_write_file() as we do now
-results in:
-
-[ BUG: bad unlock balance detected! ]
-3.7.0-rc6-00028-g88e75b6 #101 Not tainted
--------------------------------------
-kworker/1:2/79 is trying to release lock (sb_writers) at:
-[<ffffffff811b33b4>] mnt_drop_write+0x24/0x30
-but there are no more locks to release!
-
-Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/file_table.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -458,8 +458,8 @@ void mark_files_ro(struct super_block *s
- 		spin_unlock(&f->f_lock);
- 		if (file_check_writeable(f) != 0)
- 			continue;
-+		__mnt_drop_write(f->f_path.mnt);
- 		file_release_write(f);
--		mnt_drop_write_file(f);
- 	} while_file_list_for_each_entry;
- 	lg_global_unlock(&files_lglock);
- }
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
