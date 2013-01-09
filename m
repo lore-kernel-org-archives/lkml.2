@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab3AIKZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 05:25:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1733 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab3AIKZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 05:25:33 -0500
-Date: Wed, 9 Jan 2013 11:25:15 +0100
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Frank Eigler <fche@redhat.com>, Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] uprobes: alloc utask/xol_area cleanups and minor fix
-Message-ID: <20130109102515.GB21781@bandura.brq.redhat.com>
-References: <20121231175150.GA32066@redhat.com>
+	id S1756129Ab3AIK0H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 05:26:07 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42600 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755754Ab3AIK0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 05:26:06 -0500
+Date: Wed, 9 Jan 2013 10:25:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH 1/4] gpiolib: introduce descriptor-based GPIO interface
+Message-ID: <20130109102548.GD3931@n2100.arm.linux.org.uk>
+References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <1357629535-26033-2-git-send-email-acourbot@nvidia.com> <201301081259.29839.arnd@arndb.de> <CAAVeFu+4VbCbj9TaeMm+NMDJ9_M4-j4O0ONF7Yh_un63wS38+Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121231175150.GA32066@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAVeFu+4VbCbj9TaeMm+NMDJ9_M4-j4O0ONF7Yh_un63wS38+Q@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 31, 2012 at 06:51:50PM +0100, Oleg Nesterov wrote:
-> Hello.
+On Wed, Jan 09, 2013 at 10:06:16AM +0900, Alexandre Courbot wrote:
+> On Tue, Jan 8, 2013 at 9:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > Please avoid the use of IS_ERR_OR_NULL(), especially on interfaces you
+> > introduce yourself. AFAICT, gpiod_get cannot return NULL, so you
+> > should not check for that.
 > 
-> This series fixes the minor bug and cleanups the usage of add_utask()
-> and xol_alloc_area(). Plus it cleanups the initializaion of ->utask
-> in handle_swbp() paths.
-> 
-> Anton, this conflicts with your uretprobe patches, but I think we
-> should do this to avoid the code duplication. IOW, I consider this
-> series as a minor preparations for uretprobes as well.
-> 
-> Oleg.
-> 
->  kernel/events/uprobes.c |  150 +++++++++++++++++++++--------------------------
->  1 files changed, 68 insertions(+), 82 deletions(-)
->
+> Sure - you sound like IS_ERR_OR_NULL() is generally considered evil,
+> may I ask why this is the case?
 
-I haven't found anything other than small style problems, I've pointed
-to in other mails to this thread.
+I think I've explained that in the past; many people just do not think.
+They just use whatever macro they feel like is the right one.  We keep
+seeing this, and this is a persistent problem. It's getting to be more
+of a problem because people are starting to argue back when you point
+out that they're wrong.
 
-And this patchset doesn't brake anything on my machine. :)
+People are even starting to believe that documentation which specifies
+explicitly "values where IS_ERR() is true are considered errors,
+everything else is valid" means that the use of IS_ERR_OR_NULL() in such
+cases is permissible.  (I've had such an argument with two people
+recently.)
 
-Acked-by: Anton Arapov <anton@redhat.com>
+So, interfaces which have well defined return values and even interfaces
+which specify _how_ errors should be checked end up being checked with
+the wrong macros.  People constantly translate IS_ERR() to IS_ERR_OR_NULL()
+even when it's inappropriate.
 
-Anton.
+People don't think and people don't read documentation.  People don't
+remember this level of detail.  Whatever the excuse, the problem remains.
+IS_ERR_OR_NULL() always gets used inappropriately and without any regard
+to whether it's correct or not.
+
+So yes, IS_ERR_OR_NULL() _is_ pure evil.  IMHO this macro is doing more
+harm than good.
