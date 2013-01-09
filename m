@@ -1,144 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932940Ab3AIUhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41290 "EHLO mail.kernel.org"
+	id S933015Ab3AIVyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:54:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41337 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932923Ab3AIUhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:07 -0500
+	id S932935Ab3AIUhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 04/80] sctp: fix -ENOMEM result with invalid user space pointer in sendto() syscall
-Date: Wed,  9 Jan 2013 12:34:56 -0800
-Message-Id: <20130109201500.946402656@linuxfoundation.org>
+        Christoffer Dall <cdall@cs.columbia.edu>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Will Deacon <Will.Deacon@arm.com>, Steve Capper <Steve.Capper@arm.com>,
+        Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 016/123] mm: Fix PageHead when !CONFIG_PAGEFLAGS_EXTENDED
+Date: Wed,  9 Jan 2013 12:34:15 -0800
+Message-Id: <20130109201500.581329750@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Christoffer Dall <cdall@cs.columbia.edu>
 
-From: Tommi Rantala <tt.rantala@gmail.com>
+commit ad4b3fb7ff9940bcdb1e4cd62bd189d10fa636ba upstream.
 
-[ Upstream commit 6e51fe7572590d8d86e93b547fab6693d305fd0d ]
+Unfortunately with !CONFIG_PAGEFLAGS_EXTENDED, (!PageHead) is false, and
+(PageHead) is true, for tail pages.  If this is indeed the intended
+behavior, which I doubt because it breaks cache cleaning on some ARM
+systems, then the nomenclature is highly problematic.
 
-Consider the following program, that sets the second argument to the
-sendto() syscall incorrectly:
+This patch makes sure PageHead is only true for head pages and PageTail
+is only true for tail pages, and neither is true for non-compound pages.
 
- #include <string.h>
- #include <arpa/inet.h>
- #include <sys/socket.h>
+[ This buglet seems ancient - seems to have been introduced back in Apr
+  2008 in commit 6a1e7f777f61: "pageflags: convert to the use of new
+  macros".  And the reason nobody noticed is because the PageHead()
+  tests are almost all about just sanity-checking, and only used on
+  pages that are actual page heads.  The fact that the old code returned
+  true for tail pages too was thus not really noticeable.   - Linus ]
 
- int main(void)
- {
-         int fd;
-         struct sockaddr_in sa;
-
-         fd = socket(AF_INET, SOCK_STREAM, 132 /*IPPROTO_SCTP*/);
-         if (fd < 0)
-                 return 1;
-
-         memset(&sa, 0, sizeof(sa));
-         sa.sin_family = AF_INET;
-         sa.sin_addr.s_addr = inet_addr("127.0.0.1");
-         sa.sin_port = htons(11111);
-
-         sendto(fd, NULL, 1, 0, (struct sockaddr *)&sa, sizeof(sa));
-
-         return 0;
- }
-
-We get -ENOMEM:
-
- $ strace -e sendto ./demo
- sendto(3, NULL, 1, 0, {sa_family=AF_INET, sin_port=htons(11111), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 ENOMEM (Cannot allocate memory)
-
-Propagate the error code from sctp_user_addto_chunk(), so that we will
-tell user space what actually went wrong:
-
- $ strace -e sendto ./demo
- sendto(3, NULL, 1, 0, {sa_family=AF_INET, sin_port=htons(11111), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EFAULT (Bad address)
-
-Noticed while running Trinity (the syscall fuzzer).
-
-Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Christoffer Dall <cdall@cs.columbia.edu>
+Acked-by:  Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Will Deacon <Will.Deacon@arm.com>
+Cc: Steve Capper <Steve.Capper@arm.com>
+Cc: Christoph Lameter <cl@linux.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/chunk.c  |   13 +++++++++----
- net/sctp/socket.c |    4 ++--
- 2 files changed, 11 insertions(+), 6 deletions(-)
 
---- a/net/sctp/chunk.c
-+++ b/net/sctp/chunk.c
-@@ -183,7 +183,7 @@ struct sctp_datamsg *sctp_datamsg_from_u
+---
+ include/linux/page-flags.h |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -362,7 +362,7 @@ static inline void ClearPageCompound(str
+  * pages on the LRU and/or pagecache.
+  */
+ TESTPAGEFLAG(Compound, compound)
+-__PAGEFLAG(Head, compound)
++__SETPAGEFLAG(Head, compound)  __CLEARPAGEFLAG(Head, compound)
  
- 	msg = sctp_datamsg_new(GFP_KERNEL);
- 	if (!msg)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
+ /*
+  * PG_reclaim is used in combination with PG_compound to mark the
+@@ -374,8 +374,14 @@ __PAGEFLAG(Head, compound)
+  * PG_compound & PG_reclaim	=> Tail page
+  * PG_compound & ~PG_reclaim	=> Head page
+  */
++#define PG_head_mask ((1L << PG_compound))
+ #define PG_head_tail_mask ((1L << PG_compound) | (1L << PG_reclaim))
  
- 	/* Note: Calculate this outside of the loop, so that all fragments
- 	 * have the same expiration.
-@@ -280,8 +280,11 @@ struct sctp_datamsg *sctp_datamsg_from_u
- 
- 		chunk = sctp_make_datafrag_empty(asoc, sinfo, len, frag, 0);
- 
--		if (!chunk)
-+		if (!chunk) {
-+			err = -ENOMEM;
- 			goto errout;
-+		}
++static inline int PageHead(struct page *page)
++{
++	return ((page->flags & PG_head_tail_mask) == PG_head_mask);
++}
 +
- 		err = sctp_user_addto_chunk(chunk, offset, len, msgh->msg_iov);
- 		if (err < 0)
- 			goto errout_chunk_free;
-@@ -315,8 +318,10 @@ struct sctp_datamsg *sctp_datamsg_from_u
- 
- 		chunk = sctp_make_datafrag_empty(asoc, sinfo, over, frag, 0);
- 
--		if (!chunk)
-+		if (!chunk) {
-+			err = -ENOMEM;
- 			goto errout;
-+		}
- 
- 		err = sctp_user_addto_chunk(chunk, offset, over,msgh->msg_iov);
- 
-@@ -342,7 +347,7 @@ errout:
- 		sctp_chunk_free(chunk);
- 	}
- 	sctp_datamsg_put(msg);
--	return NULL;
-+	return ERR_PTR(err);
- }
- 
- /* Check whether this message has expired. */
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -1908,8 +1908,8 @@ SCTP_STATIC int sctp_sendmsg(struct kioc
- 
- 	/* Break the message into multiple chunks of maximum size. */
- 	datamsg = sctp_datamsg_from_user(asoc, sinfo, msg, msg_len);
--	if (!datamsg) {
--		err = -ENOMEM;
-+	if (IS_ERR(datamsg)) {
-+		err = PTR_ERR(datamsg);
- 		goto out_free;
- 	}
- 
+ static inline int PageTail(struct page *page)
+ {
+ 	return ((page->flags & PG_head_tail_mask) == PG_head_tail_mask);
 
 
