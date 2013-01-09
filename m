@@ -1,293 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab3AIOEK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:04:10 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43318 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757874Ab3AIOEI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:04:08 -0500
-Subject: [PATCH 04/10] goldfish: virtual input event driver
-To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        mikechan@google.com
-From: Alan Cox <alan@linux.intel.com>
-Date: Wed, 09 Jan 2013 14:24:12 +0000
-Message-ID: <20130109142409.9239.656.stgit@bob.linux.org.uk>
-In-Reply-To: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
-References: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1757945Ab3AIOEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:04:24 -0500
+Received: from plane.gmane.org ([80.91.229.3]:37594 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757911Ab3AIOEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 09:04:21 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: "lkml@tigusoft.pl" <lkml@tigusoft.pl>
+Subject: Re: 3.2.35 problem with M5A97 PRO ram: bad_page free_pages_prepare
+ mem_init
+Date: Wed, 09 Jan 2013 15:04:00 +0100
+Organization: tigusoft.pl
+Message-ID: <kcjtcf$iqd$1@ger.gmane.org>
+References: <kcfoae$91e$1@ger.gmane.org> <kcfoq8$dac$1@ger.gmane.org> <20130108155923.GA8350@liondog.tnic> <kcj877$d31$1@ger.gmane.org>
+Reply-To: lkml@tigusoft.pl
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: bolobolo1.torservers.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+In-Reply-To: <kcj877$d31$1@ger.gmane.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brian Swetland <swetland@google.com>
+On 09/01/13 09:02, lkml@tigusoft.pl wrote:
+> On 08/01/13 16:59, Borislav Petkov wrote:
+>> On Tue, Jan 08, 2013 at 01:21:26AM +0100, lkml@tigusoft.pl wrote:
+>>> On 08/01/13 01:13, lkml@tigusoft.pl wrote:
+>>>
+>>>> linux kernel
+>>>> 3.2.0-0.bpo.4-rt-amd64 #1 SMP PREEMPT RT Debian 3.2.35-2~bpo60+1 x86_64
+>>>> GNU/Linux
+>>>
+>>> will post later how it behaves on vanilla 3.2.36 and 3.7.1
+>>
+>> Yes, also, if your DRAM supports ECC, try enabling it in the BIOS.
+>> This board should support ECC. Then, enable CONFIG_EDAC_AMD64 and
+>> CONFIG_EDAC_DECODE_MCE to check whether it catches any DRAM errors.
+>>
+>> If your DRAM is non-ECC, try consecutively swapping out a DIMM each time
+>> and booting to see whether removing one of the DIMMs makes the errors go
+>> away.
+>>
+>> HTH.
+>>
+> 
+> Thank you;
+> On vanilla 3.2.36 there is the same problem.
+> 
+> Also problems happen on each boot so not random memory error, but I will
+> try to swap rams, run memtest and so on.
 
-This device is a direct pipe from "hardware" to the input
-event subsystem, allowing us to avoid having to route
-"keypad" style events through an AT keyboard driver (gross!)
+Turned out it was just a hardware problem after all.
+Solution is simply to try good memtest86 memory tester and swap out bad
+chip.
 
-As with the other submissions this driver is cross architecture.
+Sorry for the trouble, thanks.
 
-Signed-off-by: Mike A. Chan <mikechan@google.com>
-[Tided up to work on x86]
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
-Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
-Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
-Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
-[Ported to 3.4]
-Signed-off-by: Tom Keel <thomas.keel@intel.com>
-[Cleaned up for 3.7 and submission]
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/input/keyboard/Kconfig           |   11 ++
- drivers/input/keyboard/Makefile          |    1 
- drivers/input/keyboard/goldfish_events.c |  199 ++++++++++++++++++++++++++++++
- 3 files changed, 211 insertions(+)
- create mode 100644 drivers/input/keyboard/goldfish_events.c
-
-
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 5a240c6..df884b8 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -479,6 +479,17 @@ config KEYBOARD_SAMSUNG
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called samsung-keypad.
- 
-+config KEYBOARD_GOLDFISH_EVENTS
-+	depends on GOLDFISH
-+	tristate "Generic Input Event device for Goldfish"
-+	help
-+	  Say Y here to get an input event device for the Goldfish virtual
-+	  device emulator.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called goldfish-events.
-+
-+
- config KEYBOARD_STOWAWAY
- 	tristate "Stowaway keyboard"
- 	select SERIO
-diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
-index 44e7600..49b1645 100644
---- a/drivers/input/keyboard/Makefile
-+++ b/drivers/input/keyboard/Makefile
-@@ -13,6 +13,7 @@ obj-$(CONFIG_KEYBOARD_ATKBD)		+= atkbd.o
- obj-$(CONFIG_KEYBOARD_BFIN)		+= bf54x-keys.o
- obj-$(CONFIG_KEYBOARD_DAVINCI)		+= davinci_keyscan.o
- obj-$(CONFIG_KEYBOARD_EP93XX)		+= ep93xx_keypad.o
-+obj-$(CONFIG_KEYBOARD_GOLDFISH_EVENTS)	+= goldfish_events.o
- obj-$(CONFIG_KEYBOARD_GPIO)		+= gpio_keys.o
- obj-$(CONFIG_KEYBOARD_GPIO_POLLED)	+= gpio_keys_polled.o
- obj-$(CONFIG_KEYBOARD_TCA6416)		+= tca6416-keypad.o
-diff --git a/drivers/input/keyboard/goldfish_events.c b/drivers/input/keyboard/goldfish_events.c
-new file mode 100644
-index 0000000..a335047
---- /dev/null
-+++ b/drivers/input/keyboard/goldfish_events.c
-@@ -0,0 +1,199 @@
-+/*
-+ * Copyright (C) 2007 Google, Inc.
-+ * Copyright (C) 2012 Intel, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/types.h>
-+#include <linux/input.h>
-+#include <linux/kernel.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/irq.h>
-+#include <linux/io.h>
-+
-+enum {
-+	REG_READ        = 0x00,
-+	REG_SET_PAGE    = 0x00,
-+	REG_LEN         = 0x04,
-+	REG_DATA        = 0x08,
-+
-+	PAGE_NAME       = 0x00000,
-+	PAGE_EVBITS     = 0x10000,
-+	PAGE_ABSDATA    = 0x20000 | EV_ABS,
-+};
-+
-+struct event_dev {
-+	struct input_dev *input;
-+	int irq;
-+	void __iomem *addr;
-+	char name[0];
-+};
-+
-+static irqreturn_t events_interrupt(int irq, void *dev_id)
-+{
-+	struct event_dev *edev = dev_id;
-+	unsigned type, code, value;
-+
-+	type = __raw_readl(edev->addr + REG_READ);
-+	code = __raw_readl(edev->addr + REG_READ);
-+	value = __raw_readl(edev->addr + REG_READ);
-+
-+	input_event(edev->input, type, code, value);
-+	if (type == EV_KEY)
-+		input_sync(edev->input);
-+	return IRQ_HANDLED;
-+}
-+
-+static void events_import_bits(struct event_dev *edev,
-+			unsigned long bits[], unsigned type, size_t count)
-+{
-+	int i, j;
-+	size_t size;
-+	uint8_t val;
-+	void __iomem *addr = edev->addr;
-+	__raw_writel(PAGE_EVBITS | type, addr + REG_SET_PAGE);
-+	size = __raw_readl(addr + REG_LEN) * 8;
-+	if (size < count)
-+		count = size;
-+	addr = addr + REG_DATA;
-+	for (i = 0; i < count; i += 8) {
-+		val = __raw_readb(addr++);
-+		for (j = 0; j < 8; j++)
-+			if (val & 1 << j)
-+				set_bit(i + j, bits);
-+	}
-+}
-+
-+static int events_probe(struct platform_device *pdev)
-+{
-+	struct input_dev *input_dev;
-+	struct event_dev *edev = NULL;
-+	struct resource *res;
-+	unsigned keymapnamelen;
-+	int i;
-+	int count;
-+	int irq;
-+	void __iomem *addr;
-+	int ret;
-+
-+	pr_debug("*** events probe ***\n");
-+
-+	input_dev = input_allocate_device();
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!input_dev || !res)
-+		goto fail;
-+
-+	addr = ioremap(res->start, 4096);
-+	irq = platform_get_irq(pdev, 0);
-+
-+	pr_debug("events_probe() addr=%p irq=%d\n", addr, irq);
-+
-+	if (!addr)
-+		goto fail;
-+	if (irq < 0)
-+		goto fail;
-+
-+	__raw_writel(PAGE_NAME, addr + REG_SET_PAGE);
-+	keymapnamelen = __raw_readl(addr + REG_LEN);
-+
-+	edev = kzalloc(sizeof(struct event_dev) + keymapnamelen + 1,
-+								GFP_KERNEL);
-+	if (!edev)
-+		goto fail;
-+
-+	edev->input = input_dev;
-+	edev->addr = addr;
-+	edev->irq = irq;
-+
-+	for (i = 0; i < keymapnamelen; i++)
-+		edev->name[i] = __raw_readb(edev->addr + REG_DATA + i);
-+
-+	pr_debug("events_probe() keymap=%s\n", edev->name);
-+
-+	events_import_bits(edev, input_dev->evbit, EV_SYN, EV_MAX);
-+	events_import_bits(edev, input_dev->keybit, EV_KEY, KEY_MAX);
-+	events_import_bits(edev, input_dev->relbit, EV_REL, REL_MAX);
-+	events_import_bits(edev, input_dev->absbit, EV_ABS, ABS_MAX);
-+	events_import_bits(edev, input_dev->mscbit, EV_MSC, MSC_MAX);
-+	events_import_bits(edev, input_dev->ledbit, EV_LED, LED_MAX);
-+	events_import_bits(edev, input_dev->sndbit, EV_SND, SND_MAX);
-+	events_import_bits(edev, input_dev->ffbit, EV_FF, FF_MAX);
-+	events_import_bits(edev, input_dev->swbit, EV_SW, SW_MAX);
-+
-+	__raw_writel(PAGE_ABSDATA, addr + REG_SET_PAGE);
-+	count = __raw_readl(addr + REG_LEN) / (4 * 4);
-+	if (count > ABS_MAX)
-+		count = ABS_MAX;
-+	for (i = 0; i < count; i++) {
-+		int val[4];
-+		int j;
-+		if (!test_bit(i, input_dev->absbit))
-+			continue;
-+		for (j = 0; j < ARRAY_SIZE(val); j++)
-+			val[j] = __raw_readl(edev->addr + REG_DATA + (i * ARRAY_SIZE(val) + j) * 4);
-+		input_set_abs_params(input_dev, i, val[0], val[1],
-+							val[2], val[3]);
-+	}
-+
-+	platform_set_drvdata(pdev, edev);
-+
-+	input_dev->name = edev->name;
-+	input_set_drvdata(input_dev, edev);
-+
-+	ret = input_register_device(input_dev);
-+	if (ret)
-+		goto fail;
-+
-+	if (request_irq(edev->irq, events_interrupt, 0,
-+				"goldfish-events-keypad", edev) < 0) {
-+		input_unregister_device(input_dev);
-+		kfree(edev);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+
-+fail:
-+	kfree(edev);
-+	input_free_device(input_dev);
-+
-+	return -EINVAL;
-+}
-+
-+static struct platform_driver events_driver = {
-+	.probe = events_probe,
-+	.driver = {
-+		.name = "goldfish_events",
-+	},
-+};
-+
-+static int __devinit events_init(void)
-+{
-+	return platform_driver_register(&events_driver);
-+}
-+
-+
-+static void __exit events_exit(void)
-+{
-+	return platform_driver_unregister(&events_driver);
-+}
-+
-+module_init(events_init);
-+module_exit(events_exit);
-+
-+MODULE_AUTHOR("Brian Swetland");
-+MODULE_DESCRIPTION("Goldfish Event Device");
-+MODULE_LICENSE("GPL");
 
