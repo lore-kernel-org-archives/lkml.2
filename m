@@ -1,163 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578Ab3AIUNf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:13:35 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36085 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932478Ab3AIUNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:13:33 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
-Date: Wed, 09 Jan 2013 21:19:17 +0100
-Message-ID: <16794957.TmlpVGsGIb@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <50EDA1B1.3050501@gmail.com>
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <9523101.J0n0M0VJmQ@vostro.rjw.lan> <50EDA1B1.3050501@gmail.com>
+	id S932605Ab3AIUOq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:14:46 -0500
+Received: from nm16.access.bullet.mail.sp2.yahoo.com ([98.139.44.143]:47365
+	"EHLO nm16.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932488Ab3AIUOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:14:42 -0500
+X-Yahoo-Newman-Id: 673118.31898.bm@smtp109.biz.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 5AkmwSUVM1lSYdt_r_8aKotRvqbmEP02nAl2FoUqQi1wJhD
+ EQRW4YrBlEs3iqZIcDJW.Dr2dnxudB.g_Sjpc.JKPSiKKZDYbXtbnzAakQ_2
+ fmAu9MIrWqRtZHA5S31.ZzllNtU68V6XInrUMaK8gIithHMi30eOV4hDLV2o
+ NeIFrQ7sUR9UmGdB7DRE3nBiwwHJNUmDVJgA8RJGTxVUYYUAw_4ugpKRYwiX
+ iD6oBaf5gz85d6DXNcXHS8hyxgHkkifrNKDmAQfghuPR3wLtoLPRiLrKiRgl
+ neO4Pl.0JHi3CzgNid04I6q9h_zTxspkOSe15DniyijiHZiIiplDLXHqR4aC
+ KBrrPVo.xVoitYJWHjlA2.aMaDRJcEYEvTF7LsmybOedwwe.S.C28ucxNe54
+ s6yzlCJLDMuwBmUzju0cpihxsNnst6uCILpmZOykd7s1D7dH0j_esPFXiRAg
+ xW_iOb.KTkFDcLkODcAZBzm6AJWhk1SFg
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50EDCFC0.3010401@schaufler-ca.com>
+Date: Wed, 09 Jan 2013 12:14:56 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Eric Paris <eparis@redhat.com>
+CC: linux-kernel@vger.kernel.org, libc-alpha@sourceware.org, dwalsh@redhat.com,
+        dmalcolm@redhat.com, sds@tycho.nsa.gov, segoon@openwall.com,
+        linux-security-module@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: Friendlier EPERM - Request for input
+References: <1357747463.2593.28.camel@localhost> <1357760637.2593.55.camel@localhost>
+In-Reply-To: <1357760637.2593.55.camel@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 10, 2013 12:58:25 AM Jiang Liu wrote:
-> Hi Rafael,
-> 	Thanks for your great efforts to review the patch.	
-> 
-> On 01/09/2013 08:01 AM, Rafael J. Wysocki wrote:
-> > Hi,
-> > 
-> > On Wednesday, January 09, 2013 12:52:22 AM Jiang Liu wrote:
-> snip
-> >>  
-> >> +static void acpi_pci_slot_notify_add(struct pci_dev *dev)
-> >> +{
-> >> +	acpi_handle handle;
-> >> +	struct callback_args context;
-> >> +
-> >> +	if (!dev->subordinate)
-> >> +		return;
-> >> +
-> >> +	mutex_lock(&slot_list_lock);
-> >> +	handle = DEVICE_ACPI_HANDLE(&dev->dev);
-> >> +	context.root_handle = acpi_find_root_bridge_handle(dev);
-> > 
-> > There's a patch under discussion that removes this function.
-> > 
-> > Isn't there any other way to do this?
-> 	I will try to find a way to get rid of calling acpi_find_root_bridge_handle,
-> and it seems doable.
-> 
-> > 
-> >> +	if (handle && context.root_handle) {
-> >> +		context.pci_bus = dev->subordinate;
-> >> +		context.user_function = register_slot;
-> >> +		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
-> > 
-> > You can just pass 1 here I think.  Does the compiler complain?
-> Thanks for reminder, the (u32) is unnecessary.
-> 
-> > 
-> >> +				    register_slot, NULL, &context, NULL);
-> >> +	}
-> >> +	mutex_unlock(&slot_list_lock);
-> >> +}
-> >> +
-> >> +static void acpi_pci_slot_notify_del(struct pci_dev *dev)
-> >> +{
-> >> +	struct acpi_pci_slot *slot, *tmp;
-> >> +	struct pci_bus *bus = dev->subordinate;
-> >> +
-> >> +	if (!bus)
-> >> +		return;
-> >> +
-> >> +	mutex_lock(&slot_list_lock);
-> >> +	list_for_each_entry_safe(slot, tmp, &slot_list, list)
-> >> +		if (slot->pci_slot && slot->pci_slot->bus == bus) {
-> >> +			list_del(&slot->list);
-> >> +			pci_destroy_slot(slot->pci_slot);
-> >> +			put_device(&bus->dev);
-> >> +			kfree(slot);
-> >> +		}
-> >> +	mutex_unlock(&slot_list_lock);
-> >> +}
-> >> +
-> >> +static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
-> >> +				   unsigned long event, void *data)
-> >> +{
-> >> +	struct device *dev = data;
-> >> +
-> >> +	switch (event) {
-> >> +	case BUS_NOTIFY_ADD_DEVICE:
-> >> +		acpi_pci_slot_notify_add(to_pci_dev(dev));
-> >> +		break;
-> > 
-> > Do I think correctly that this is going to be called for every PCI device
-> > added to the system, even if it's not a bridge?
-> You are right. Function acpi_pci_slot_notify_add() and acpi_pci_slot_notify_del()
-> will check whether it's a bridge. If preferred, I will move the check up into
-> acpi_pci_slot_notify_fn().
-> 
-> > 
-> >> +	case BUS_NOTIFY_DEL_DEVICE:
-> >> +		acpi_pci_slot_notify_del(to_pci_dev(dev));
-> >> +		break;
-> >> +	default:
-> >> +		return NOTIFY_DONE;
-> >> +	}
-> >> +
-> >> +	return NOTIFY_OK;
-> >> +}
-> >> +
-> >> +static struct notifier_block acpi_pci_slot_notifier = {
-> >> +	.notifier_call = &acpi_pci_slot_notify_fn,
-> >> +};
-> >> +
-> >>  static int __init
-> >>  acpi_pci_slot_init(void)
-> >>  {
-> >>  	dmi_check_system(acpi_pci_slot_dmi_table);
-> >>  	acpi_pci_register_driver(&acpi_pci_slot_driver);
-> >> +	bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
-> > 
-> > I wonder if/why this has to be so convoluted?
-> > 
-> > We have found a PCI bridge in the ACPI namespace, so we've created a struct
-> > acpi_device for it and we've walked the namespace below it already.
-> > 
-> > Now we're creating a struct pci_dev for it and while registering it we're
-> > going to walk the namespace below the bridge again to find and register its
-> > slots and that is done indirectly from a bus type notifier.
-> > 
-> > Why can't we enumerate the slots directly upfront?
-> Do you mean to create the PCI slot devices when creating the ACPI devices?
-> I think there are two factors prevent us from doing that.
-> The first is that the ACPI pci_slot driver could be built as a module, so
-> we can't call into it from the ACPI core.
+On 1/9/2013 11:43 AM, Eric Paris wrote:
+>> On Wed, 2013-01-09 at 11:04 -0500, Eric Paris wrote:
+>>> Getting an EPERM/EACCES in userspace really kinda blows.  As a user you
+>>> don't have any idea why you got it.  
+> Stephen Smalley wrote:
+>> What if the denial was due to lacking sufficient permission to stat
+>> the file (in which case you shouldn't leak the file's attributes to the
+>> caller)?
+>>
+>> Also, the present inability of (unprivileged) userspace to distinguish
+>> DAC from MAC denials is relied upon to avoid any covert channel when
+>> the DAC check happens before the MAC check, as otherwise you leak
+>> information about the DAC attributes.  If you are going to indicate to
+>> all of userspace whether it was DAC or MAC, you have to make sure that
+>> the MAC check / LSM hook always comes first in every case.  Which then
+>> leads to lots of unnecessary MAC audit messages that would have been
+>> denied by DAC anyway.
+> I'd have to fall back to my original thought about who to expose this
+> information to:
+>
+>>> Another thought was that some people might want to turn off the ability
+>>> to get this information.  I don't see a reason a sysctl couldn't be used
+>>> to disable extended errno information if the admin so chose.
+> On systems with a strict security policy worried about such things this
+> would quite reasonably need to be disabled.  But most of the reason
+> people turn off LSMs is because it gets in the way and they get pissed
+> getting an EPERM, checking rwx bits, having no idea WTF happened, and
+> then being REALLY pissed at the LSM when they figure out that was the
+> problem.  I want to put it right there, out front, here is what went
+> wrong for the common case.
+>
+> I mean, we sorta, kinda sometimes, poorly give this information.  Isn't
+> DAC usually EPERM and LSMs usually EACCES.
 
-I didn't say about calling the pci_slot driver from the ACPI core, but about
-enumerating slots in a way suitable for consumption by the pci_slot driver
-when it's ready.
+It's supposed (from POSIX) to be that EACCES means the system
+denied you access based on normal policy and EPERM means you tried
+something that you could only do with privilege, and failed.
 
-That said I really don't see a value in having a modular pci_slot driver.  It
-is part of the hotplug infrastructure and should always be presend for this
-reason, so we don't need to worry about the "pci_slot driver not present" case.
+Opening a file with mode bits that deny access should get EACCES.
+Changing the mode bits on a file you don't own should get EPERM.
 
-> The second reason is that the PCI slot is associated with a PCI bus, and the
-> bus is only available until the PCI device has been created.
+> From a DAC PoV exposing the
+> DAC info is completely reasonable.  You can't hide a stat(), even
+> setting chmod 000.  So this is an LSM issue.  Not an issue for
+> DAC/Capabilities/ACLs.  We can add an LSM hook on the /proc file to make
+> sure nothing can get the data even if the global sysctl allows such
+> access.
+>
+> We could if it was worth it make filling in the extended dial
+> information an LSM hook where you can check on a per denial basis.  But
+> I don't see the need.
+>
+>> Privileged userspace already has a way to identify when it was a MAC
+>> denial, via the audit logs.  But those are considered
+>> security-sensitive, and so exposing that same information to
+>> unprivileged userspace will be a problem.
+> The audit log is complete crap from a usability PoV.  If a web admin is
+> trying to figure out why his web server isn't serving out web pages
+> in /home he's going to look in the web server logs and see EPERM.
+> That's it.  Now he has to start blindly guessing which of the many
+> possible reasons for EPERM is his problem.  Wouldn't it be better if the
+> information was actually available?  Using the audit log in real time is
+> a bloody nightmare.  As the audit maintainer I know how to use ausearch,
+> but then again, as the SELinux maintainer I know how to figure out which
+> of the many possibilities from EPERM are the cause.  But I want to make
+> it easier for a normal admin to figure that out.
+>
+> I know many people are worried about information leaks, so I'll right up
+> front say lets add the sysctl to disable the interface for those who are
+> concerned about the metadata information leak.  But for most of us I
+> want that data right when it happens, where it happens, so It can be
+> exposed, used, and acted upon by the admin trying to troubleshoot why
+> the shit just hit the fan.
 
-I suppose you mean "after"?  [I'm not sure if I agree with that, but whatever.]
+How on earth is your webadmin supposed to match the failure
+of a system call with the content of /proc/8675309/whydiditfail
+at the time of the failure? It's not like he's going to go into
+the apache source and add code to look at what's there.
 
-We know which devices have slots before that happens, though.
+Unfortunately, what you probably need is an interface that gives
+the program access to the audit records it has generated.
 
-Thanks,
-Rafael
+>
+> -Eric
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
