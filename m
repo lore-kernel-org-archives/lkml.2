@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab3AISNt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 13:13:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52616 "EHLO mx1.redhat.com"
+	id S932399Ab3AISPY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 13:15:24 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44112 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932241Ab3AISNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 13:13:48 -0500
-Date: Wed, 9 Jan 2013 19:13:10 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] uprobes: Teach handler_chain() to filter out the
-	probed task
-Message-ID: <20130109181310.GA488@redhat.com>
-References: <20121229173554.GA2145@redhat.com> <20121229173614.GA2154@redhat.com> <20130108111814.GA1325@linux.vnet.ibm.com> <20130108190018.GA4408@redhat.com> <20130109173918.GL1325@linux.vnet.ibm.com>
+	id S932320Ab3AISPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 13:15:22 -0500
+Date: Wed, 9 Jan 2013 19:15:21 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Adrian Byszuk <adrian.byszuk@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: BUG: kernel panic on Dell Vostro 3560 when plugging in AC adapter
+Message-ID: <20130109181520.GB17840@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Adrian Byszuk <adrian.byszuk@gmail.com>,
+	linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+	John Stultz <john.stultz@linaro.org>
+References: <50ED371A.3080903@gmail.com>
+ <20130109120732.GA8016@liondog.tnic>
+ <50ED98AA.1090304@gmail.com>
+ <20130109170119.GA17840@liondog.tnic>
+ <50EDB070.9020908@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130109173918.GL1325@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <50EDB070.9020908@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09, Srikar Dronamraju wrote:
->
-> * Oleg Nesterov <oleg@redhat.com> [2013-01-08 20:00:18]:
->
-> > They shouldn't in any case. To remind, we can optimize filter_chain()
-> > for example and avoid the potentially costly uc->filter() call. Say,
-> > we can detect/remember the fact that at least one consumre has
-> > ->filter == NULL.
-> >
-> > OTOH, UPROBE_HANDLER_REMOVE is not really pre-filtering (although I think
-> > it helps to make the things better). It is more like uprobe_unapply_mm()
-> > which (perhaps) we need as well. But doing uprobe_unapply_mm() from
-> > uc->handler is a) deadlockable and b) not optimal because it has to
-> > consult other consumers.
-> >
-> > Anyway I agree, the folks writing handlers should understand what do they
-> > do ;) and this needs some documentation.
->
-> If we document explicitly that filter wont be called, then this should
-> be okay.
+On Wed, Jan 09, 2013 at 07:01:20PM +0100, Adrian Byszuk wrote:
+> I started bisecting and got situation where I don't see kernel panic,
+> but the whole system hangs - not sure in what direction go next, but
 
-OK.
+Hmm, git bisect skip should help here, look at the git-bisect manpage.
 
-Can I take this as your ACK? 
+-- 
+Regards/Gruss,
+    Boris.
 
-Oleg.
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
