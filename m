@@ -1,95 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405Ab3AIToZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 14:44:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64883 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932231Ab3AIToX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 14:44:23 -0500
-Message-ID: <1357760637.2593.55.camel@localhost>
-Subject: Re: Friendlier EPERM - Request for input
-From: Eric Paris <eparis@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: libc-alpha@sourceware.org, dwalsh@redhat.com, dmalcolm@redhat.com,
-        sds@tycho.nsa.gov, segoon@openwall.com,
-        linux-security-module@vger.kernel.org
-Date: Wed, 09 Jan 2013 14:43:57 -0500
-In-Reply-To: <1357747463.2593.28.camel@localhost>
-References: <1357747463.2593.28.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S932454Ab3AITox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 14:44:53 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:18386 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932231Ab3AITow (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 14:44:52 -0500
+Message-ID: <50EDC8A1.30307@oracle.com>
+Date: Wed, 09 Jan 2013 13:44:33 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel,gmane.comp.freedesktop.xorg.drivers.intel
+To: Lijo Antony <lijo.kernel@gmail.com>
+CC: Dave Airlie <airlied@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
+References: <20130108223611.GA19672@kroah.com> <20130109003824.GA21075@kroah.com> <CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com> <20130109042533.GA9164@kroah.com> <CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com> <50ED1C12.2090608@gmail.com>
+In-Reply-To: <50ED1C12.2090608@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Wed, 2013-01-09 at 11:04 -0500, Eric Paris wrote:
-> >Getting an EPERM/EACCES in userspace really kinda blows.  As a user you
-> >don't have any idea why you got it.  
+On 01/09/2013 01:28 AM, Lijo Antony wrote:
+> On 01/09/2013 09:31 AM, Dave Airlie wrote:
+>> On Wed, Jan 9, 2013 at 2:25 PM, Greg KH <gregkh@linuxfoundation.org>
+>> wrote:
+>>> On Wed, Jan 09, 2013 at 01:42:39PM +1000, Dave Airlie wrote:
+>>>>>> Hi all,
+>>>>>>
+>>>>>> I've hit this 3 times today on Linus's latest 3.8-rc2+ tree:
+>>>>>>
+>>>>>> [11868.414648] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer
+>>>>>> elapsed... GPU hung
+>>>>>> [11868.414655] [drm] capturing error event; look for more
+>>>>>> information in /debug/dri/0/i915_error_state
+>>>>>> [11870.408342] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer
+>>>>>> elapsed... GPU hung
+>>>>>> [11870.408412] [drm:i915_reset] *ERROR* GPU hanging too fast,
+>>>>>> declaring wedged!
+>>>>>> [11870.408414] [drm:i915_reset] *ERROR* Failed to reset chip.
+>>>>>> [11883.083225] gnome-shell[19396]: segfault at 218 ip
+>>>>>> 00007feef5f32333 sp 00007ffffc1dc930 error 4 in
+>>>>>> i965_dri.so[7feef5ecb000+d0000]
+>>>>>
+>>>>> I just hit this again.  And, as the kernel was asking for it, attached
+>>>>> is the i915_error_state file, compressed due to the size of it.
+>>>>>
+>>>> Welcome to sink hole that is
+>>>> https://bugs.freedesktop.org/show_bug.cgi?id=55984
+>>>>
+>>>> 3 months and ticking, Intel guys are all running away from it saying
+>>>> they can't reproduce, everyone else on planet seems to reproduce quite
+>>>> easily.
+>>>>
+>>>> Its generally considered a bug in the relocation/shrinker/no idea
+>>>> category,
+>>>
+>>> Ugh, what a mess.
+>>>
+>>>> Assuming you have an Ironlake machine which I'm going to guess you do.
+>>>
+>>> I don't know, it's an old i5 machine that has never had any video
+>>> problems for many years now.  How do I tell?
+>>
+>> lspci -nn probably an 8086:0046 device.
+>>
+>> Old i5 probably means original i5 which means ironlake.
+>>
+> 
+> I have also seen this a couple of times on 3.7 and 3.8-rc1.
+> Most of the times I was watching youtube video in chrome. Nothing
+> crashed though(I am not running gnome shell). System recovered after few
+> seconds.
+> 
+> I didn't see this on 3.8-rc2 yet, probably because I haven't watched any
+> video.
 
-Stephen Smalley wrote:
-> What if the denial was due to lacking sufficient permission to stat
-> the file (in which case you shouldn't leak the file's attributes to the
-> caller)?
->
-> Also, the present inability of (unprivileged) userspace to distinguish
-> DAC from MAC denials is relied upon to avoid any covert channel when
-> the DAC check happens before the MAC check, as otherwise you leak
-> information about the DAC attributes.  If you are going to indicate to
-> all of userspace whether it was DAC or MAC, you have to make sure that
-> the MAC check / LSM hook always comes first in every case.  Which then
-> leads to lots of unnecessary MAC audit messages that would have been
-> denied by DAC anyway.
+I can easily reproduce it running glxgears on 3.8-rc1 or 3.8-rc2.
 
-I'd have to fall back to my original thought about who to expose this
-information to:
+00:02.0 VGA compatible controller [0300]: Intel Corporation Core
+Processor Integrated Graphics Controller [8086:0046] (rev 02)
 
-> >Another thought was that some people might want to turn off the ability
-> >to get this information.  I don't see a reason a sysctl couldn't be used
-> >to disable extended errno information if the admin so chose.
+Thinkpad T410
 
-On systems with a strict security policy worried about such things this
-would quite reasonably need to be disabled.  But most of the reason
-people turn off LSMs is because it gets in the way and they get pissed
-getting an EPERM, checking rwx bits, having no idea WTF happened, and
-then being REALLY pissed at the LSM when they figure out that was the
-problem.  I want to put it right there, out front, here is what went
-wrong for the common case.
+Shaggy
 
-I mean, we sorta, kinda sometimes, poorly give this information.  Isn't
-DAC usually EPERM and LSMs usually EACCES.  From a DAC PoV exposing the
-DAC info is completely reasonable.  You can't hide a stat(), even
-setting chmod 000.  So this is an LSM issue.  Not an issue for
-DAC/Capabilities/ACLs.  We can add an LSM hook on the /proc file to make
-sure nothing can get the data even if the global sysctl allows such
-access.
-
-We could if it was worth it make filling in the extended dial
-information an LSM hook where you can check on a per denial basis.  But
-I don't see the need.
-
-> Privileged userspace already has a way to identify when it was a MAC
-> denial, via the audit logs.  But those are considered
-> security-sensitive, and so exposing that same information to
-> unprivileged userspace will be a problem.
-
-The audit log is complete crap from a usability PoV.  If a web admin is
-trying to figure out why his web server isn't serving out web pages
-in /home he's going to look in the web server logs and see EPERM.
-That's it.  Now he has to start blindly guessing which of the many
-possible reasons for EPERM is his problem.  Wouldn't it be better if the
-information was actually available?  Using the audit log in real time is
-a bloody nightmare.  As the audit maintainer I know how to use ausearch,
-but then again, as the SELinux maintainer I know how to figure out which
-of the many possibilities from EPERM are the cause.  But I want to make
-it easier for a normal admin to figure that out.
-
-I know many people are worried about information leaks, so I'll right up
-front say lets add the sysctl to disable the interface for those who are
-concerned about the metadata information leak.  But for most of us I
-want that data right when it happens, where it happens, so It can be
-exposed, used, and acted upon by the admin trying to troubleshoot why
-the shit just hit the fan.
-
--Eric
-
+> 
+> -lijo
+> 
+> 
+> 
