@@ -1,353 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab3AIOFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:05:14 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43339 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757926Ab3AIOFM (ORCPT
+	id S1757959Ab3AIOFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:05:23 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:45774 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757887Ab3AIOFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:05:12 -0500
-Subject: [PATCH 07/10] goldfish: power device
-To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        mikechan@google.com
-From: Alan Cox <alan@linux.intel.com>
-Date: Wed, 09 Jan 2013 14:25:16 +0000
-Message-ID: <20130109142500.9239.26543.stgit@bob.linux.org.uk>
-In-Reply-To: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
-References: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jan 2013 09:05:16 -0500
+From: Abhijit Pawar <abhi.c.pawar@gmail.com>
+To: Ben Myers <bpm@sgi.com>, jeff.liu@oracle.com
+Cc: Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, david@fromorbit.com,
+        Abhijit Pawar <abhi.c.pawar@gmail.com>
+Subject: [PATCH 1/1] fs/xfs remove obsolete simple_strto<foo>
+Date: Wed,  9 Jan 2013 19:34:42 +0530
+Message-Id: <1357740282-2377-1-git-send-email-abhi.c.pawar@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Lockwood <lockwood@android.com>
+This patch replaces usages of obsolete simple_strtoul with kstrtoint in xfs_args and suffix_strtoul.
 
-Add the emulated power driver for the Goldfish platform.
-
-This folds together the code from the Google tree, Jun Nakajima's cleanups
-and x86 porting work, and then a tidy up to pass checkpatch.
-
-Signed-off-by: Mike A. Chan <mikechan@google.com>
-[cleanup and x86 support]
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
-Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
-Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
-Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
-[ported to 3.4]
-Signed-off-by: Tom Keel <thomas.keel@intel.com>
-[ported to 3.7 and final tidy]
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
 ---
+ fs/xfs/xfs_super.c |   29 +++++++++++++++++++----------
+ 1 files changed, 19 insertions(+), 10 deletions(-)
 
- drivers/power/Kconfig            |    8 +
- drivers/power/Makefile           |    1 
- drivers/power/goldfish_battery.c |  262 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 270 insertions(+), 1 deletion(-)
- create mode 100644 drivers/power/goldfish_battery.c
-
-
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 9f45e2f..0c5208d 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -346,8 +346,14 @@ config AB8500_BM
- 	help
- 	  Say Y to include support for AB8500 battery management.
+diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
+index ab8839b..c407121 100644
+--- a/fs/xfs/xfs_super.c
++++ b/fs/xfs/xfs_super.c
+@@ -139,9 +139,9 @@ static const match_table_t tokens = {
  
--source "drivers/power/reset/Kconfig"
-+config BATTERY_GOLDFISH
-+	tristate "Goldfish battery driver"
-+	depends on GOLDFISH
-+	help
-+	  Say Y to enable support for the battery and AC power in the
-+	  Goldfish emulator.
  
-+source "drivers/power/reset/Kconfig"
- endif # POWER_SUPPLY
+ STATIC unsigned long
+-suffix_strtoul(char *s, char **endp, unsigned int base)
++suffix_kstrtoint(char *s, unsigned int base, int *res)
+ {
+-	int	last, shift_left_factor = 0;
++	int	last, shift_left_factor = 0, _res;
+ 	char	*value = s;
  
- source "drivers/power/avs/Kconfig"
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index b11e0c7..a9f5c06 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -20,6 +20,7 @@ obj-$(CONFIG_BATTERY_DS2760)	+= ds2760_battery.o
- obj-$(CONFIG_BATTERY_DS2780)	+= ds2780_battery.o
- obj-$(CONFIG_BATTERY_DS2781)	+= ds2781_battery.o
- obj-$(CONFIG_BATTERY_DS2782)	+= ds2782_battery.o
-+obj-$(CONFIG_BATTERY_GOLDFISH)	+= goldfish_battery.o
- obj-$(CONFIG_BATTERY_PMU)	+= pmu_battery.o
- obj-$(CONFIG_BATTERY_OLPC)	+= olpc_battery.o
- obj-$(CONFIG_BATTERY_TOSA)	+= tosa_battery.o
-diff --git a/drivers/power/goldfish_battery.c b/drivers/power/goldfish_battery.c
-new file mode 100644
-index 0000000..06602802
---- /dev/null
-+++ b/drivers/power/goldfish_battery.c
-@@ -0,0 +1,262 @@
-+/*
-+ * Power supply driver for the goldfish emulator
-+ *
-+ * Copyright (C) 2008 Google, Inc.
-+ * Copyright (C) 2012 Intel, Inc.
-+ * Author: Mike Lockwood <lockwood@android.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
-+#include <linux/types.h>
-+#include <linux/pci.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+
-+
-+struct goldfish_battery_data {
-+	void __iomem *reg_base;
-+	int irq;
-+	spinlock_t lock;
-+
-+	struct power_supply battery;
-+	struct power_supply ac;
-+};
-+
-+#define GOLDFISH_BATTERY_READ(data, addr)   (readl(data->reg_base + addr))
-+#define GOLDFISH_BATTERY_WRITE(data, addr, x)   (writel(x, data->reg_base + addr))
-+
-+
-+/* temporary variable used between goldfish_battery_probe() and goldfish_battery_open() */
-+static struct goldfish_battery_data *battery_data;
-+
-+enum {
-+	/* status register */
-+	BATTERY_INT_STATUS	    = 0x00,
-+	/* set this to enable IRQ */
-+	BATTERY_INT_ENABLE	    = 0x04,
-+
-+	BATTERY_AC_ONLINE       = 0x08,
-+	BATTERY_STATUS          = 0x0C,
-+	BATTERY_HEALTH          = 0x10,
-+	BATTERY_PRESENT         = 0x14,
-+	BATTERY_CAPACITY        = 0x18,
-+
-+	BATTERY_STATUS_CHANGED	= 1U << 0,
-+	AC_STATUS_CHANGED	= 1U << 1,
-+	BATTERY_INT_MASK        = BATTERY_STATUS_CHANGED | AC_STATUS_CHANGED,
-+};
-+
-+
-+static int goldfish_ac_get_property(struct power_supply *psy,
-+			enum power_supply_property psp,
-+			union power_supply_propval *val)
-+{
-+	struct goldfish_battery_data *data = container_of(psy,
-+		struct goldfish_battery_data, ac);
-+	int ret = 0;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_AC_ONLINE);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+	return ret;
-+}
-+
-+static int goldfish_battery_get_property(struct power_supply *psy,
-+				 enum power_supply_property psp,
-+				 union power_supply_propval *val)
-+{
-+	struct goldfish_battery_data *data = container_of(psy,
-+		struct goldfish_battery_data, battery);
-+	int ret = 0;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_STATUS:
-+		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_STATUS);
-+		break;
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_HEALTH);
-+		break;
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_PRESENT);
-+		break;
-+	case POWER_SUPPLY_PROP_TECHNOLOGY:
-+		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
-+		break;
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		val->intval = GOLDFISH_BATTERY_READ(data, BATTERY_CAPACITY);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+static enum power_supply_property goldfish_battery_props[] = {
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+};
-+
-+static enum power_supply_property goldfish_ac_props[] = {
-+	POWER_SUPPLY_PROP_ONLINE,
-+};
-+
-+static irqreturn_t goldfish_battery_interrupt(int irq, void *dev_id)
-+{
-+	unsigned long irq_flags;
-+	struct goldfish_battery_data *data = dev_id;
-+	uint32_t status;
-+
-+	spin_lock_irqsave(&data->lock, irq_flags);
-+
-+	/* read status flags, which will clear the interrupt */
-+	status = GOLDFISH_BATTERY_READ(data, BATTERY_INT_STATUS);
-+	status &= BATTERY_INT_MASK;
-+
-+	if (status & BATTERY_STATUS_CHANGED)
-+		power_supply_changed(&data->battery);
-+	if (status & AC_STATUS_CHANGED)
-+		power_supply_changed(&data->ac);
-+
-+	spin_unlock_irqrestore(&data->lock, irq_flags);
-+	return status ? IRQ_HANDLED : IRQ_NONE;
-+}
-+
-+
-+static int goldfish_battery_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct resource *r;
-+	struct goldfish_battery_data *data;
-+
-+	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	if (data == NULL) {
-+		ret = -ENOMEM;
-+		goto err_data_alloc_failed;
-+	}
-+	spin_lock_init(&data->lock);
-+
-+	data->battery.properties = goldfish_battery_props;
-+	data->battery.num_properties = ARRAY_SIZE(goldfish_battery_props);
-+	data->battery.get_property = goldfish_battery_get_property;
-+	data->battery.name = "battery";
-+	data->battery.type = POWER_SUPPLY_TYPE_BATTERY;
-+
-+	data->ac.properties = goldfish_ac_props;
-+	data->ac.num_properties = ARRAY_SIZE(goldfish_ac_props);
-+	data->ac.get_property = goldfish_ac_get_property;
-+	data->ac.name = "ac";
-+	data->ac.type = POWER_SUPPLY_TYPE_MAINS;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (r == NULL) {
-+		pr_err("%s: platform_get_resource failed\n", pdev->name);
-+		ret = -ENODEV;
-+		goto err_no_io_base;
-+	}
-+	data->reg_base = ioremap(r->start, r->end - r->start + 1);
-+	if (data->reg_base == NULL) {
-+		pr_err("%s: unable to remap MMIO\n", pdev->name);
-+		ret = -ENOMEM;
-+		goto err_no_io_base;
-+	}
-+
-+	data->irq = platform_get_irq(pdev, 0);
-+	if (data->irq < 0) {
-+		pr_err("%s: platform_get_irq failed\n", pdev->name);
-+		ret = -ENODEV;
-+		goto err_no_irq;
-+	}
-+
-+	ret = request_irq(data->irq, goldfish_battery_interrupt,
-+						IRQF_SHARED, pdev->name, data);
-+	if (ret)
-+		goto err_request_irq_failed;
-+
-+	ret = power_supply_register(&pdev->dev, &data->ac);
-+	if (ret)
-+		goto err_ac_failed;
-+
-+	ret = power_supply_register(&pdev->dev, &data->battery);
-+	if (ret)
-+		goto err_battery_failed;
-+
-+	platform_set_drvdata(pdev, data);
-+	battery_data = data;
-+
-+	GOLDFISH_BATTERY_WRITE(data, BATTERY_INT_ENABLE, BATTERY_INT_MASK);
+ 	last = strlen(value) - 1;
+@@ -158,7 +158,10 @@ suffix_strtoul(char *s, char **endp, unsigned int base)
+ 		value[last] = '\0';
+ 	}
+ 
+-	return simple_strtoul((const char *)s, endp, base) << shift_left_factor;
++	if (kstrtoint(s, base, &_res))
++		return -EINVAL;
++	*res = _res << shift_left_factor;
 +	return 0;
-+
-+err_battery_failed:
-+	power_supply_unregister(&data->ac);
-+err_ac_failed:
-+	free_irq(data->irq, data);
-+err_request_irq_failed:
-+err_no_irq:
-+	iounmap(data->reg_base);
-+err_no_io_base:
-+	kfree(data);
-+err_data_alloc_failed:
-+	return ret;
-+}
-+
-+static int goldfish_battery_remove(struct platform_device *pdev)
-+{
-+	struct goldfish_battery_data *data = platform_get_drvdata(pdev);
-+
-+	power_supply_unregister(&data->battery);
-+	power_supply_unregister(&data->ac);
-+
-+	free_irq(data->irq, data);
-+	iounmap(data->reg_base);
-+	kfree(data);
-+	battery_data = NULL;
-+	return 0;
-+}
-+
-+static struct platform_driver goldfish_battery_device = {
-+	.probe		= goldfish_battery_probe,
-+	.remove		= goldfish_battery_remove,
-+	.driver = {
-+		.name = "goldfish-battery"
-+	}
-+};
-+
-+static int __init goldfish_battery_init(void)
-+{
-+	return platform_driver_register(&goldfish_battery_device);
-+}
-+
-+static void __exit goldfish_battery_exit(void)
-+{
-+	platform_driver_unregister(&goldfish_battery_device);
-+}
-+
-+module_init(goldfish_battery_init);
-+module_exit(goldfish_battery_exit);
-+
-+MODULE_AUTHOR("Mike Lockwood lockwood@android.com");
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Battery driver for the Goldfish emulator");
+ }
+ 
+ /*
+@@ -174,7 +177,7 @@ xfs_parseargs(
+ 	char			*options)
+ {
+ 	struct super_block	*sb = mp->m_super;
+-	char			*this_char, *value, *eov;
++	char			*this_char, *value;
+ 	int			dsunit = 0;
+ 	int			dswidth = 0;
+ 	int			iosize = 0;
+@@ -230,14 +233,16 @@ xfs_parseargs(
+ 					this_char);
+ 				return EINVAL;
+ 			}
+-			mp->m_logbufs = simple_strtoul(value, &eov, 10);
++			if (kstrtoint(value, 10, &mp->m_logbufs))
++				return EINVAL;
+ 		} else if (!strcmp(this_char, MNTOPT_LOGBSIZE)) {
+ 			if (!value || !*value) {
+ 				xfs_warn(mp, "%s option requires an argument",
+ 					this_char);
+ 				return EINVAL;
+ 			}
+-			mp->m_logbsize = suffix_strtoul(value, &eov, 10);
++			if (suffix_kstrtoint(value, 10, &mp->m_logbsize))
++				return EINVAL;
+ 		} else if (!strcmp(this_char, MNTOPT_LOGDEV)) {
+ 			if (!value || !*value) {
+ 				xfs_warn(mp, "%s option requires an argument",
+@@ -266,7 +271,8 @@ xfs_parseargs(
+ 					this_char);
+ 				return EINVAL;
+ 			}
+-			iosize = simple_strtoul(value, &eov, 10);
++			if (kstrtoint(value, 10, &iosize))
++				return EINVAL;
+ 			iosizelog = ffs(iosize) - 1;
+ 		} else if (!strcmp(this_char, MNTOPT_ALLOCSIZE)) {
+ 			if (!value || !*value) {
+@@ -274,7 +280,8 @@ xfs_parseargs(
+ 					this_char);
+ 				return EINVAL;
+ 			}
+-			iosize = suffix_strtoul(value, &eov, 10);
++			if (suffix_kstrtoint(value, 10, &iosize))
++				return EINVAL;
+ 			iosizelog = ffs(iosize) - 1;
+ 		} else if (!strcmp(this_char, MNTOPT_GRPID) ||
+ 			   !strcmp(this_char, MNTOPT_BSDGROUPS)) {
+@@ -296,14 +303,16 @@ xfs_parseargs(
+ 					this_char);
+ 				return EINVAL;
+ 			}
+-			dsunit = simple_strtoul(value, &eov, 10);
++			if (kstrtoint(value, 10, &dsunit))
++				return EINVAL;
+ 		} else if (!strcmp(this_char, MNTOPT_SWIDTH)) {
+ 			if (!value || !*value) {
+ 				xfs_warn(mp, "%s option requires an argument",
+ 					this_char);
+ 				return EINVAL;
+ 			}
+-			dswidth = simple_strtoul(value, &eov, 10);
++			if (kstrtoint(value, 10, &dswidth))
++				return EINVAL;
+ 		} else if (!strcmp(this_char, MNTOPT_32BITINODE)) {
+ 			mp->m_flags |= XFS_MOUNT_SMALL_INUMS;
+ 		} else if (!strcmp(this_char, MNTOPT_64BITINODE)) {
+-- 
+1.7.7.6
 
