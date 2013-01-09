@@ -1,183 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934064Ab3AIVQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:16:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42780 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933606Ab3AIUjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:32 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Chintan Mehta <chintan.mehta@sibridgetech.com>,
-        Shimmer Huang <shimmering.h@gmail.com>,
-        Bhavik Kothari <bhavik.kothari@sibridgetech.com>
-Subject: [ 065/123] xHCI: Fix TD Size calculation on 1.0 hosts.
-Date: Wed,  9 Jan 2013 12:35:04 -0800
-Message-Id: <20130109201506.959312835@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S934171Ab3AIVRK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:17:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35210 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933606Ab3AIVRG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:17:06 -0500
+Date: Wed, 9 Jan 2013 13:17:05 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v5 11/11] sched: introduce cgroup file stat_percpu
+Message-Id: <20130109131705.4156ba5c.akpm@linux-foundation.org>
+In-Reply-To: <50EDDCAA.6070004@parallels.com>
+References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
+	<1357731938-8417-12-git-send-email-glommer@parallels.com>
+	<20130109124220.ad9f1a54.akpm@linux-foundation.org>
+	<50EDDCAA.6070004@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 10 Jan 2013 01:10:02 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-------------------
+> The main advantage I see in this approach, is that there is way less
+> data to be written using a header. Although your way works, it means we
+> will write the strings "nice", "system", etc. #cpu times. Quite a waste.
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Yes, overhead can be a significant issue with this type of interface. 
+But we already incurred a massive overhead by using a human-readable
+ascii interface.  If performance is an issue, perhaps the whole thing
+should be grafted onto taskstats instead.  Or create a new
+taskstats-like thing.
 
-commit 4525c0a10dff7ad3669763c28016c7daffc3900e upstream.
+btw, a more typical interface would be
 
-The xHCI 1.0 specification made a change to the TD Size field in TRBs.
-The value is now the number of packets that remain to be sent in the TD,
-not including this TRB.  The TD Size value for the last TRB in a TD must
-always be zero.
+cat /.../cpu0
+nice:nn
+system:nn
+irq:nn
 
-The xHCI function xhci_v1_0_td_remainder() attempts to calculate this,
-but it gets it wrong.  First, it erroneously reuses the old
-xhci_td_remainder function, which will right shift the value by 10.  The
-xHCI 1.0 spec as of June 2011 says nothing about right shifting by 10.
-Second, it does not set the TD size for the last TRB in a TD to zero.
-
-Third, it uses roundup instead of DIV_ROUND_UP.  The total packet count
-is supposed to be the total number of bytes in this TD, divided by the
-max packet size, rounded up.  DIV_ROUND_UP is the right function to use
-in that case.
-
-With the old code, a TD on an endpoint with max packet size 1024 would
-be set up like so:
-TRB 1, TRB length = 600 bytes, TD size = 0
-TRB 1, TRB length = 200 bytes, TD size = 0
-TRB 1, TRB length = 100 bytes, TD size = 0
-
-With the new code, the TD would be set up like this:
-TRB 1, TRB length = 600 bytes, TD size = 1
-TRB 1, TRB length = 200 bytes, TD size = 1
-TRB 1, TRB length = 100 bytes, TD size = 0
-
-This commit should be backported to kernels as old as 3.0, that contain
-the commit 4da6e6f247a2601ab9f1e63424e4d944ed4124f3 "xhci 1.0: Update TD
-size field format."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Chintan Mehta <chintan.mehta@sibridgetech.com>
-Reported-by: Shimmer Huang <shimmering.h@gmail.com>
-Tested-by: Bhavik Kothari <bhavik.kothari@sibridgetech.com>
-Tested-by: Shimmer Huang <shimmering.h@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/xhci-ring.c |   32 +++++++++++++++++++-------------
- 1 file changed, 19 insertions(+), 13 deletions(-)
-
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3071,11 +3071,11 @@ static u32 xhci_td_remainder(unsigned in
- }
- 
- /*
-- * For xHCI 1.0 host controllers, TD size is the number of packets remaining in
-- * the TD (*not* including this TRB).
-+ * For xHCI 1.0 host controllers, TD size is the number of max packet sized
-+ * packets remaining in the TD (*not* including this TRB).
-  *
-  * Total TD packet count = total_packet_count =
-- *     roundup(TD size in bytes / wMaxPacketSize)
-+ *     DIV_ROUND_UP(TD size in bytes / wMaxPacketSize)
-  *
-  * Packets transferred up to and including this TRB = packets_transferred =
-  *     rounddown(total bytes transferred including this TRB / wMaxPacketSize)
-@@ -3083,15 +3083,16 @@ static u32 xhci_td_remainder(unsigned in
-  * TD size = total_packet_count - packets_transferred
-  *
-  * It must fit in bits 21:17, so it can't be bigger than 31.
-+ * The last TRB in a TD must have the TD size set to zero.
-  */
--
- static u32 xhci_v1_0_td_remainder(int running_total, int trb_buff_len,
--		unsigned int total_packet_count, struct urb *urb)
-+		unsigned int total_packet_count, struct urb *urb,
-+		unsigned int num_trbs_left)
- {
- 	int packets_transferred;
- 
- 	/* One TRB with a zero-length data packet. */
--	if (running_total == 0 && trb_buff_len == 0)
-+	if (num_trbs_left == 0 || (running_total == 0 && trb_buff_len == 0))
- 		return 0;
- 
- 	/* All the TRB queueing functions don't count the current TRB in
-@@ -3100,7 +3101,9 @@ static u32 xhci_v1_0_td_remainder(int ru
- 	packets_transferred = (running_total + trb_buff_len) /
- 		usb_endpoint_maxp(&urb->ep->desc);
- 
--	return xhci_td_remainder(total_packet_count - packets_transferred);
-+	if ((total_packet_count - packets_transferred) > 31)
-+		return 31 << 17;
-+	return (total_packet_count - packets_transferred) << 17;
- }
- 
- static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
-@@ -3127,7 +3130,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 
- 	num_trbs = count_sg_trbs_needed(xhci, urb);
- 	num_sgs = urb->num_mapped_sgs;
--	total_packet_count = roundup(urb->transfer_buffer_length,
-+	total_packet_count = DIV_ROUND_UP(urb->transfer_buffer_length,
- 			usb_endpoint_maxp(&urb->ep->desc));
- 
- 	trb_buff_len = prepare_transfer(xhci, xhci->devs[slot_id],
-@@ -3210,7 +3213,8 @@ static int queue_bulk_sg_tx(struct xhci_
- 					running_total);
- 		} else {
- 			remainder = xhci_v1_0_td_remainder(running_total,
--					trb_buff_len, total_packet_count, urb);
-+					trb_buff_len, total_packet_count, urb,
-+					num_trbs - 1);
- 		}
- 		length_field = TRB_LEN(trb_buff_len) |
- 			remainder |
-@@ -3318,7 +3322,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *
- 	start_cycle = ep_ring->cycle_state;
- 
- 	running_total = 0;
--	total_packet_count = roundup(urb->transfer_buffer_length,
-+	total_packet_count = DIV_ROUND_UP(urb->transfer_buffer_length,
- 			usb_endpoint_maxp(&urb->ep->desc));
- 	/* How much data is in the first TRB? */
- 	addr = (u64) urb->transfer_dma;
-@@ -3364,7 +3368,8 @@ int xhci_queue_bulk_tx(struct xhci_hcd *
- 					running_total);
- 		} else {
- 			remainder = xhci_v1_0_td_remainder(running_total,
--					trb_buff_len, total_packet_count, urb);
-+					trb_buff_len, total_packet_count, urb,
-+					num_trbs - 1);
- 		}
- 		length_field = TRB_LEN(trb_buff_len) |
- 			remainder |
-@@ -3627,7 +3632,7 @@ static int xhci_queue_isoc_tx(struct xhc
- 		addr = start_addr + urb->iso_frame_desc[i].offset;
- 		td_len = urb->iso_frame_desc[i].length;
- 		td_remain_len = td_len;
--		total_packet_count = roundup(td_len,
-+		total_packet_count = DIV_ROUND_UP(td_len,
- 				usb_endpoint_maxp(&urb->ep->desc));
- 		/* A zero-length transfer still involves at least one packet. */
- 		if (total_packet_count == 0)
-@@ -3706,7 +3711,8 @@ static int xhci_queue_isoc_tx(struct xhc
- 			} else {
- 				remainder = xhci_v1_0_td_remainder(
- 						running_total, trb_buff_len,
--						total_packet_count, urb);
-+						total_packet_count, urb,
-+						(trbs_per_td - j - 1));
- 			}
- 			length_field = TRB_LEN(trb_buff_len) |
- 				remainder |
-
-
+- the traditional one-per-line name:value tuples.  But I'd assumed that
+having a file per CPU would be aawkward.
