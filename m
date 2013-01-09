@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933085Ab3AIVug (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:50:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41511 "EHLO mail.kernel.org"
+	id S933045Ab3AIVu5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:50:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41484 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932971Ab3AIUh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:29 -0500
+	id S933010Ab3AIUh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 021/123] ALSA: hda - Add stereo-dmic fixup for Acer Aspire One 522
-Date: Wed,  9 Jan 2013 12:34:20 -0800
-Message-Id: <20130109201501.226061149@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 013/123] virtio: 9p: correctly pass physical address to userspace for high pages
+Date: Wed,  9 Jan 2013 12:34:12 -0800
+Message-Id: <20130109201500.230166296@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -25,31 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 63a077e27648b4043b1ca1b4e29f0c42d99616b6 upstream.
+commit b9cdc88df8e63e81c723b82c286fc97f5d0dc325 upstream.
 
-Acer Aspire One 522 has the infamous digital mic unit that needs the
-phase inversion fixup for stereo.
+When using a virtio transport, the 9p net device may pass the physical
+address of a kernel buffer to userspace via a scatterlist inside a
+virtqueue. If the kernel buffer is mapped outside of the linear mapping
+(e.g. highmem), then virt_to_page will return a bogus value and we will
+populate the scatterlist with junk.
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=715737
+This patch uses kmap_to_page when populating the page array for a kernel
+buffer.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_conexant.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/9p/trans_virtio.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4453,6 +4453,7 @@ static const struct snd_pci_quirk cxt505
- };
- 
- static const struct snd_pci_quirk cxt5066_fixups[] = {
-+	SND_PCI_QUIRK(0x1025, 0x0543, "Acer Aspire One 522", CXT_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo T410", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x215f, "Lenovo T510", CXT_PINCFG_LENOVO_TP410),
+--- a/net/9p/trans_virtio.c
++++ b/net/9p/trans_virtio.c
+@@ -39,6 +39,7 @@
+ #include <linux/inet.h>
+ #include <linux/idr.h>
+ #include <linux/file.h>
++#include <linux/highmem.h>
+ #include <linux/slab.h>
+ #include <net/9p/9p.h>
+ #include <linux/parser.h>
+@@ -325,7 +326,7 @@ static int p9_get_mapped_pages(struct vi
+ 		int count = nr_pages;
+ 		while (nr_pages) {
+ 			s = rest_of_page(data);
+-			pages[index++] = virt_to_page(data);
++			pages[index++] = kmap_to_page(data);
+ 			data += s;
+ 			nr_pages--;
+ 		}
 
 
