@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933536Ab3AIUjQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:39:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42533 "EHLO mail.kernel.org"
+	id S933658Ab3AIVXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:23:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42623 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933473Ab3AIUjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:07 -0500
+	id S933535Ab3AIUjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xi Wang <xi.wang@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 43/80] nfs: fix null checking in nfs_get_option_str()
-Date: Wed,  9 Jan 2013 12:35:35 -0800
-Message-Id: <20130109201505.921682379@linuxfoundation.org>
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 47/80] usb: musb: cppi_dma: export cppi_interrupt()
+Date: Wed,  9 Jan 2013 12:35:39 -0800
+Message-Id: <20130109201506.434259192@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -26,39 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-commit e25fbe380c4e3c09afa98bcdcd9d3921443adab8 upstream.
+commit 8b416b0b25d5d8ddb3a91c1d20e1373582c50405 upstream.
 
-The following null pointer check is broken.
+Now that DaVinci glue layer can be modular, we must export cppi_interrupt()
+that it may call...
 
-	*option = match_strdup(args);
-	return !option;
-
-The pointer `option' must be non-null, and thus `!option' is always false.
-Use `!*option' instead.
-
-The bug was introduced in commit c5cb09b6f8 ("Cleanup: Factor out some
-cut-and-paste code.").
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/musb/cppi_dma.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -1138,7 +1138,7 @@ static int nfs_get_option_str(substring_
- {
- 	kfree(*option);
- 	*option = match_strdup(args);
--	return !option;
-+	return !*option;
- }
+--- a/drivers/usb/musb/cppi_dma.c
++++ b/drivers/usb/musb/cppi_dma.c
+@@ -1313,6 +1313,7 @@ irqreturn_t cppi_interrupt(int irq, void
  
- static int nfs_get_option_ul(substring_t args[], unsigned long *option)
+ 	return IRQ_HANDLED;
+ }
++EXPORT_SYMBOL_GPL(cppi_interrupt);
+ 
+ /* Instantiate a software object representing a DMA controller. */
+ struct dma_controller *__init
 
 
