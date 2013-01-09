@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934108Ab3AIUl2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:41:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43979 "EHLO mail.kernel.org"
+	id S934143Ab3AIUnS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:43:18 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44016 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934057Ab3AIUlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:24 -0500
+	id S933967Ab3AIUl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Edgar Toernig <froese@gmx.de>, Tony Prisk <linux@prisktech.co.nz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 117/123] drivers/rtc/rtc-vt8500.c: fix handling of data passed in struct rtc_time
-Date: Wed,  9 Jan 2013 12:35:56 -0800
-Message-Id: <20130109201513.370391920@linuxfoundation.org>
+        Ari Pollak <ari@scvngr.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 120/123] HID: Add Apple wireless keyboard 2011 ANSI to special driver list
+Date: Wed,  9 Jan 2013 12:35:59 -0800
+Message-Id: <20130109201513.714806611@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -27,50 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Prisk <linux@prisktech.co.nz>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 2f90b68309683f2c5765a1b04ca23d71e51f1494 upstream.
+commit f9af7b9edccb87d4d80b58687ab63e58f3b64c4c upstream.
 
-tm_mon is 0..11, whereas vt8500 expects 1..12 for the month field,
-causing invalid date errors for January, and causing the day field to
-roll over incorrectly.
+Commit 0a97e1e9f9a6 ('HID: apple: Add Apple wireless keyboard 2011 ANSI PID')
+did not update the special driver list in hid-core.c, so hid-generic may
+still bind to this device.
 
-The century flag is only handled in vt8500_rtc_read_time, but not set in
-vt8500_rtc_set_time.  This patch corrects the behaviour of the century
-flag.
-
-Signed-off-by: Edgar Toernig <froese@gmx.de>
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Ari Pollak <ari@scvngr.com>
+References: http://bugs.debian.org/694546
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-vt8500.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/hid/hid-core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -119,7 +119,7 @@ static int vt8500_rtc_read_time(struct d
- 	tm->tm_min = bcd2bin((time & TIME_MIN_MASK) >> TIME_MIN_S);
- 	tm->tm_hour = bcd2bin((time & TIME_HOUR_MASK) >> TIME_HOUR_S);
- 	tm->tm_mday = bcd2bin(date & DATE_DAY_MASK);
--	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S);
-+	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S) - 1;
- 	tm->tm_year = bcd2bin((date & DATE_YEAR_MASK) >> DATE_YEAR_S)
- 			+ ((date >> DATE_CENTURY_S) & 1 ? 200 : 100);
- 	tm->tm_wday = (time & TIME_DOW_MASK) >> TIME_DOW_S;
-@@ -138,8 +138,9 @@ static int vt8500_rtc_set_time(struct de
- 	}
- 
- 	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
--		| (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
--		| (bin2bcd(tm->tm_mday)),
-+		| (bin2bcd(tm->tm_mon + 1) << DATE_MONTH_S)
-+		| (bin2bcd(tm->tm_mday))
-+		| ((tm->tm_year >= 200) << DATE_CENTURY_S),
- 		vt8500_rtc->regbase + VT8500_RTC_DS);
- 	writel((bin2bcd(tm->tm_wday) << TIME_DOW_S)
- 		| (bin2bcd(tm->tm_hour) << TIME_HOUR_S)
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1538,6 +1538,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
++	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
 
 
