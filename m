@@ -1,167 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934102Ab3AIUyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:54:50 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36109 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933994Ab3AIUys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:54:48 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
-Date: Wed, 09 Jan 2013 22:00:32 +0100
-Message-ID: <2444115.yc4aG06zuI@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo5UD9362JVKzG4rcLJ6kKMLvMzdJ3kLRvRTSRdSqHOH9w@mail.gmail.com>
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <16794957.TmlpVGsGIb@vostro.rjw.lan> <CAErSpo5UD9362JVKzG4rcLJ6kKMLvMzdJ3kLRvRTSRdSqHOH9w@mail.gmail.com>
+	id S934174Ab3AIUyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:54:55 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38042 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933994Ab3AIUyv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:54:51 -0500
+Message-ID: <50EDD96A.5080900@metafoo.de>
+Date: Wed, 09 Jan 2013 21:56:10 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
+Subject: Re: [PATCH 1/3] spi: Add helper functions for setting up transfers
+References: <1357752671-30222-1-git-send-email-lars@metafoo.de> <50EDC309.5010104@kernel.org>
+In-Reply-To: <50EDC309.5010104@kernel.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 09, 2013 01:44:23 PM Bjorn Helgaas wrote:
-> [+cc Myron]
+On 01/09/2013 08:20 PM, Jonathan Cameron wrote:
+> On 01/09/2013 05:31 PM, Lars-Peter Clausen wrote:
+>> Quite often the pattern used for setting up and transferring a synchronous SPI
+>> transaction looks very much like the following:
+>>
+>> 	struct spi_message msg;
+>> 	struct spi_transfer xfers[] = {
+>> 		...
+>> 	};
+>>
+>> 	spi_message_init(&msg);
+>> 	spi_message_add_tail(&xfers[0], &msg);
+>> 	...
+>> 	spi_message_add_tail(&xfers[ARRAY_SIZE(xfers) - 1], &msg);
+>>
+>> 	ret = spi_sync(&msg);
+>>
+>> This patch adds two new helper functions for handling this case. The first
+>> helper function spi_message_init_with_transfers() takes a spi_message and an
+>> array of spi_transfers. It will initialize the message and then call
+>> spi_message_add_tail() for each transfer in the array. E.g. the following
+>>
+>> 	spi_message_init(&msg);
+>> 	spi_message_add_tail(&xfers[0], &msg);
+>> 	...
+>> 	spi_message_add_tail(&xfers[ARRAY_SIZE(xfers) - 1], &msg);
+>>
+>> can be rewritten as
+>>
+>> 	spi_message_init_with_transfers(&msg, xfers, ARRAY_SIZE(xfers));
+>>
+>> The second function spi_sync_transfer() takes a SPI device and an array of
+>> spi_transfers. It will allocate a new spi_message (on the stack) and add all
+>> transfers in the array to the message. Finally it will call spi_sync() on the
+>> message.
+>>
+>> E.g. the follwing
+>>
+>> 	struct spi_message msg;
+>> 	struct spi_transfer xfers[] = {
+>> 		...
+>> 	};
+>>
+>> 	spi_message_init(&msg);
+>> 	spi_message_add_tail(&xfers[0], &msg);
+>> 	...
+>> 	spi_message_add_tail(&xfers[ARRAY_SIZE(xfers) - 1], &msg);
+>>
+>> 	ret = spi_sync(spi, &msg);
+>>
+>> can be rewritten as
+>>
+>> 	struct spi_transfer xfers[] = {
+>> 		...
+>> 	};
+>>
+>> 	ret = spi_sync_transfer(spi, xfers, ARRAY_SIZE(xfers));
+>>
+>> The patch also adds a new cocci script which can detect such sequences as
+>> described above and transform them automatically to use the new helper
+>> functions.
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+>>
+> Principle looks good to me and some nice little duplication removal
+> savings.
 > 
-> On Wed, Jan 9, 2013 at 1:19 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, January 10, 2013 12:58:25 AM Jiang Liu wrote:
-> >> Hi Rafael,
-> >>       Thanks for your great efforts to review the patch.
-> >>
-> >> On 01/09/2013 08:01 AM, Rafael J. Wysocki wrote:
-> >> > Hi,
-> >> >
-> >> > On Wednesday, January 09, 2013 12:52:22 AM Jiang Liu wrote:
-> >> snip
-> >> >>
-> >> >> +static void acpi_pci_slot_notify_add(struct pci_dev *dev)
-> >> >> +{
-> >> >> +  acpi_handle handle;
-> >> >> +  struct callback_args context;
-> >> >> +
-> >> >> +  if (!dev->subordinate)
-> >> >> +          return;
-> >> >> +
-> >> >> +  mutex_lock(&slot_list_lock);
-> >> >> +  handle = DEVICE_ACPI_HANDLE(&dev->dev);
-> >> >> +  context.root_handle = acpi_find_root_bridge_handle(dev);
-> >> >
-> >> > There's a patch under discussion that removes this function.
-> >> >
-> >> > Isn't there any other way to do this?
-> >>       I will try to find a way to get rid of calling acpi_find_root_bridge_handle,
-> >> and it seems doable.
-> >>
-> >> >
-> >> >> +  if (handle && context.root_handle) {
-> >> >> +          context.pci_bus = dev->subordinate;
-> >> >> +          context.user_function = register_slot;
-> >> >> +          acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
-> >> >
-> >> > You can just pass 1 here I think.  Does the compiler complain?
-> >> Thanks for reminder, the (u32) is unnecessary.
-> >>
-> >> >
-> >> >> +                              register_slot, NULL, &context, NULL);
-> >> >> +  }
-> >> >> +  mutex_unlock(&slot_list_lock);
-> >> >> +}
-> >> >> +
-> >> >> +static void acpi_pci_slot_notify_del(struct pci_dev *dev)
-> >> >> +{
-> >> >> +  struct acpi_pci_slot *slot, *tmp;
-> >> >> +  struct pci_bus *bus = dev->subordinate;
-> >> >> +
-> >> >> +  if (!bus)
-> >> >> +          return;
-> >> >> +
-> >> >> +  mutex_lock(&slot_list_lock);
-> >> >> +  list_for_each_entry_safe(slot, tmp, &slot_list, list)
-> >> >> +          if (slot->pci_slot && slot->pci_slot->bus == bus) {
-> >> >> +                  list_del(&slot->list);
-> >> >> +                  pci_destroy_slot(slot->pci_slot);
-> >> >> +                  put_device(&bus->dev);
-> >> >> +                  kfree(slot);
-> >> >> +          }
-> >> >> +  mutex_unlock(&slot_list_lock);
-> >> >> +}
-> >> >> +
-> >> >> +static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
-> >> >> +                             unsigned long event, void *data)
-> >> >> +{
-> >> >> +  struct device *dev = data;
-> >> >> +
-> >> >> +  switch (event) {
-> >> >> +  case BUS_NOTIFY_ADD_DEVICE:
-> >> >> +          acpi_pci_slot_notify_add(to_pci_dev(dev));
-> >> >> +          break;
-> >> >
-> >> > Do I think correctly that this is going to be called for every PCI device
-> >> > added to the system, even if it's not a bridge?
-> >> You are right. Function acpi_pci_slot_notify_add() and acpi_pci_slot_notify_del()
-> >> will check whether it's a bridge. If preferred, I will move the check up into
-> >> acpi_pci_slot_notify_fn().
-> >>
-> >> >
-> >> >> +  case BUS_NOTIFY_DEL_DEVICE:
-> >> >> +          acpi_pci_slot_notify_del(to_pci_dev(dev));
-> >> >> +          break;
-> >> >> +  default:
-> >> >> +          return NOTIFY_DONE;
-> >> >> +  }
-> >> >> +
-> >> >> +  return NOTIFY_OK;
-> >> >> +}
-> >> >> +
-> >> >> +static struct notifier_block acpi_pci_slot_notifier = {
-> >> >> +  .notifier_call = &acpi_pci_slot_notify_fn,
-> >> >> +};
-> >> >> +
-> >> >>  static int __init
-> >> >>  acpi_pci_slot_init(void)
-> >> >>  {
-> >> >>    dmi_check_system(acpi_pci_slot_dmi_table);
-> >> >>    acpi_pci_register_driver(&acpi_pci_slot_driver);
-> >> >> +  bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
-> >> >
-> >> > I wonder if/why this has to be so convoluted?
-> >> >
-> >> > We have found a PCI bridge in the ACPI namespace, so we've created a struct
-> >> > acpi_device for it and we've walked the namespace below it already.
-> >> >
-> >> > Now we're creating a struct pci_dev for it and while registering it we're
-> >> > going to walk the namespace below the bridge again to find and register its
-> >> > slots and that is done indirectly from a bus type notifier.
-> >> >
-> >> > Why can't we enumerate the slots directly upfront?
-> >> Do you mean to create the PCI slot devices when creating the ACPI devices?
-> >> I think there are two factors prevent us from doing that.
-> >> The first is that the ACPI pci_slot driver could be built as a module, so
-> >> we can't call into it from the ACPI core.
-> >
-> > I didn't say about calling the pci_slot driver from the ACPI core, but about
-> > enumerating slots in a way suitable for consumption by the pci_slot driver
-> > when it's ready.
-> >
-> > That said I really don't see a value in having a modular pci_slot driver.  It
-> > is part of the hotplug infrastructure and should always be presend for this
-> > reason, so we don't need to worry about the "pci_slot driver not present" case.
+> My coccinelle isn't really up to checking that, but for the functions
+> Acked-by: Jonathan Cameron <jic23@kernel.org>
 > 
-> I agree that there's no value in supporting CONFIG_ACPI_PCI_SLOT=m.  I
-> think Myron has some patches that remove that case.
+> When all comments are in on the code we'll have to think about how to
+> merge this.  If you have much else planned that will hit those iio drivers
+> then things will get uggly unless it goes through that tree.
 > 
-> I'm not sure what the best way to merge them is.  We have a bunch of
-> stuff this cycle that touches both ACPI and PCI.
+> Guess it all depends on whether others like the patch though ;)
 
-Well, is there a possibility to pull my acpi-scan branch into your tree?
+The IIO patches can easily wait another release until the spi has made it's way
+up into mainline. I just didn't want to send out the helper functions without
+any realworld examples on how they can be used.
 
-Rafael
+- Lars
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
