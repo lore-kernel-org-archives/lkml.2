@@ -1,139 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758054Ab3AIRaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 12:30:00 -0500
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:40537 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab3AIR37 convert rfc822-to-8bit (ORCPT
+	id S1758073Ab3AIRaf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 12:30:35 -0500
+Received: from smtp-out-052.synserver.de ([212.40.185.52]:1053 "EHLO
+	smtp-out-052.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab3AIRae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 12:29:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAKgNAkggu9+AuMRqTFeNy9sJVCMcZVRZx43t=svF=gm+P4DnuQ@mail.gmail.com>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
- <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
- <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
- <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au>
- <CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
- <87ipa8o4mn.fsf@rustcorp.com.au> <CAKgNAkiVxUiqJ1pYNq3wW_yQxcyhqntUzcEWscFOhJ3GaVn1aQ@mail.gmail.com>
- <87sj97hs5e.fsf@rustcorp.com.au> <CAHO5Pa29_=3HNLG-qtULZ2fmkgPJ6JCZ0LTv9m=UowfvFufhMw@mail.gmail.com>
- <87fw2j5dlj.fsf@rustcorp.com.au> <CAKgNAkggu9+AuMRqTFeNy9sJVCMcZVRZx43t=svF=gm+P4DnuQ@mail.gmail.com>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Wed, 9 Jan 2013 15:29:37 -0200
-Message-ID: <CAMOw1v6Jk7adSeppunBe0GaW3w3MREU0_hW68_Fbh2599jctkg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-To: mtk.manpages@gmail.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        jonathon@jonmasters.org, linux-man@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Jan 2013 12:30:34 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 5469
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/3] spi: Add helper functions for setting up transfers
+Date: Wed,  9 Jan 2013 18:31:09 +0100
+Message-Id: <1357752671-30222-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 6, 2013 at 4:59 PM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> Hi Rusty, (and Lucas, and Kees)
->
-> On Thu, Jan 3, 2013 at 1:12 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> Michael Kerrisk <mtk.manpages@gmail.com> writes:
->>> Hi Rusty,
->>
->> Hi Michael,
->>
->>> The description here is rather thin. Could you supply a sentence or
->>> two for each of MODULE_INIT_IGNORE_MODVERSIONS and
->>> MODULE_INIT_IGNORE_VERMAGIC that would be suitable for the manual
->>> page?
->>>
->>> Thanks,
->>
->> There are one or two safety checks built into a module, which are
->> checked to match the kernel on module load.  The first is a "vermagic"
->> string containing the kernel version number and prominent features (such
->> as CPU type).  If the module was built with CONFIG_MODVERSIONS set, a
->> version hash is recorded for each symbol the module uses based on the
->> types it refers to: in this case, the kernel version number within the
->> "vermagic" string is ignored, as the symbol version hashes are assumed
->> to be sufficiently reliable.
->>
->> Using the MODULE_INIT_IGNORE_VERMAGIC flag indicates that the vermagic
->> is to be ignored, and the MODULE_INIT_IGNORE_MODVERSIONS flag indicates
->> that the version hashes are to be ignored.  If the kernel is built to
->> permit such forced loading (ie. CONFIG_MODULE_FORCE_LOAD is set) then
->> loading will continue, otherwise it will fail with ENOEXEC as expected
->> for malformed modules.
->>
->> Hope that is more usable?
->
-> Yes, that helps. I did some reworking of that text. Hopefully, I did
-> not introduce any errors.
->
-> Below is the text that is proposed to document finit_module() in the
-> man pages. I'd appreciate any review (Kees, Lucas, Rusty?)
->
-> Thanks,
->
-> Michael
->
->    finit_module()
->        The finit_module() system call is like init_module(), but reads
->        the module to be loaded from the file  descriptor  fd.   It  is
->        useful  when  the authenticity of a kernel module can be deter‐
->        mined from its location in the file system; in cases where that
->        is  possible,  the  overhead  of using cryptographically signed
->        modules to determine  the  authenticity  of  a  module  can  be
->        avoided.  The param_values argument is as for init_module().
->
->        The  flags  argument  modifies the operation of finit_module().
->        It is a bit mask value created by ORing together zero  or  more
->        of the following flags:
->
->        MODULE_INIT_IGNORE_MODVERSIONS
->               Ignore symbol version hashes.
->
->        MODULE_INIT_IGNORE_VERMAGIC
->               Ignore kernel version magic.
->
->        There are some safety checks built into a module to ensure that
->        it matches the kernel against which it is loaded.  These checks
->        are  recorded  when  the  module is built and verified when the
->        module is loaded.   First,  the  module  records  a  "vermagic"
->        string  containing the kernel version number and prominent fea‐
->        tures (such as the CPU type).  Second, if the module was  built
->        with  the  CONFIG_MODVERSIONS  configuration  option enabled, a
->        version hash is recorded for each symbol the module uses.  This
->        hash  is  based  on the types of the arguments and return value
->        for the function named by the symbol.  In this case, the kernel
->        version  number within the "vermagic" string is ignored, as the
->        symbol version hashes are assumed to be sufficiently reliable.
->
->        Using the MODULE_INIT_IGNORE_VERMAGIC flag indicates  that  the
->        "vermagic"   string   is   to   be   ignored,   and   the  MOD‐
->        ULE_INIT_IGNORE_MODVERSIONS flag indicates that the symbol ver‐
->        sion  hashes are to be ignored.  If the kernel is built to per‐
->        mit  forced  loading   (i.e.,   configured   with   CONFIG_MOD‐
->        ULE_FORCE_LOAD),  then loading will continue, otherwise it will
->        fail with ENOEXEC as expected for malformed modules.
-> ...
->    ERRORS
-> ...
->        The following errors may additionally occur for finit_module():
->
->        EBADF  The file referred to by fd is not opened for reading.
->
->        EFBIG  The file referred to by fd is too large.
->
->        EINVAL flags is invalid.
->
->        ENOEXEC
->               fd does not refer to an open file.
->
->
+Quite often the pattern used for setting up and transferring a synchronous SPI
+transaction looks very much like the following:
 
+	struct spi_message msg;
+	struct spi_transfer xfers[] = {
+		...
+	};
 
-Looks good to me.
+	spi_message_init(&msg);
+	spi_message_add_tail(&xfers[0], &msg);
+	...
+	spi_message_add_tail(&xfers[ARRAY_SIZE(xfers) - 1], &msg);
 
+	ret = spi_sync(&msg);
 
-regards,
-Lucas De Marchi
+This patch adds two new helper functions for handling this case. The first
+helper function spi_message_init_with_transfers() takes a spi_message and an
+array of spi_transfers. It will initialize the message and then call
+spi_message_add_tail() for each transfer in the array. E.g. the following
+
+	spi_message_init(&msg);
+	spi_message_add_tail(&xfers[0], &msg);
+	...
+	spi_message_add_tail(&xfers[ARRAY_SIZE(xfers) - 1], &msg);
+
+can be rewritten as
+
+	spi_message_init_with_transfers(&msg, xfers, ARRAY_SIZE(xfers));
+
+The second function spi_sync_transfer() takes a SPI device and an array of
+spi_transfers. It will allocate a new spi_message (on the stack) and add all
+transfers in the array to the message. Finally it will call spi_sync() on the
+message.
+
+E.g. the follwing
+
+	struct spi_message msg;
+	struct spi_transfer xfers[] = {
+		...
+	};
+
+	spi_message_init(&msg);
+	spi_message_add_tail(&xfers[0], &msg);
+	...
+	spi_message_add_tail(&xfers[ARRAY_SIZE(xfers) - 1], &msg);
+
+	ret = spi_sync(spi, &msg);
+
+can be rewritten as
+
+	struct spi_transfer xfers[] = {
+		...
+	};
+
+	ret = spi_sync_transfer(spi, xfers, ARRAY_SIZE(xfers));
+
+The patch also adds a new cocci script which can detect such sequences as
+described above and transform them automatically to use the new helper
+functions.
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+
+---
+I'm not entirely happy with names of the two new functions and I'm open for
+better suggestions.
+---
+ include/linux/spi/spi.h                        |  44 ++++++++
+ scripts/coccinelle/api/spi_sync_transfer.cocci | 141 +++++++++++++++++++++++++
+ 2 files changed, 185 insertions(+)
+ create mode 100644 scripts/coccinelle/api/spi_sync_transfer.cocci
+
+diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+index f629189..7dbe586 100644
+--- a/include/linux/spi/spi.h
++++ b/include/linux/spi/spi.h
+@@ -591,6 +591,26 @@ spi_transfer_del(struct spi_transfer *t)
+ 	list_del(&t->transfer_list);
+ }
+ 
++/**
++ * spi_message_init_with_transfers - Initialize spi_message and append transfers
++ * @m: spi_message to be initialized
++ * @xfers: An array of spi transfers
++ * @num_xfers: Number of items in the xfer array
++ *
++ * This function initializes the given spi_message and adds each spi_transfer in
++ * the given array to the message.
++ */
++static inline void
++spi_message_init_with_transfers(struct spi_message *m,
++struct spi_transfer *xfers, unsigned int num_xfers)
++{
++	unsigned int i;
++
++	spi_message_init(m);
++	for (i = 0; i < num_xfers; ++i)
++		spi_message_add_tail(&xfers[i], m);
++}
++
+ /* It's fine to embed message and transaction structures in other data
+  * structures so long as you don't free them while they're in use.
+  */
+@@ -683,6 +703,30 @@ spi_read(struct spi_device *spi, void *buf, size_t len)
+ 	return spi_sync(spi, &m);
+ }
+ 
++/**
++ * spi_sync_transfer - synchronous SPI data transfer
++ * @spi: device with which data will be exchanged
++ * @xfers: An array of spi_transfers
++ * @num_xfers: Number of items in the xfer array
++ * Context: can sleep
++ *
++ * Does a synchronous SPI data transfer of the given spi_transfer array.
++ *
++ * For more specific semantics see spi_sync().
++ *
++ * It returns zero on success, else a negative error code.
++ */
++static inline int
++spi_sync_transfer(struct spi_device *spi, struct spi_transfer *xfers,
++	unsigned int num_xfers)
++{
++	struct spi_message msg;
++
++	spi_message_init_with_transfers(&msg, xfers, num_xfers);
++
++	return spi_sync(spi, &msg);
++}
++
+ /* this copies txbuf and rxbuf data; for small transfers only! */
+ extern int spi_write_then_read(struct spi_device *spi,
+ 		const void *txbuf, unsigned n_tx,
+diff --git a/scripts/coccinelle/api/spi_sync_transfer.cocci b/scripts/coccinelle/api/spi_sync_transfer.cocci
+new file mode 100644
+index 0000000..1e2efe3
+--- /dev/null
++++ b/scripts/coccinelle/api/spi_sync_transfer.cocci
+@@ -0,0 +1,141 @@
++///
++/// Use spi_sync_transfer instead of open-coding it
++///
++// Confidence: High
++// Options: --no-includes
++//
++// Keywords: spi_sync, spi_sync_transfer
++// Version min: 3.9
++//
++
++virtual context
++virtual patch
++virtual org
++virtual report
++
++@r1@
++identifier fn;
++identifier xfers;
++@@
++fn(...)
++{
++	...
++(
++	struct spi_transfer xfers[...];
++|
++	struct spi_transfer xfers[];
++)
++	...
++}
++
++@depends on patch@
++identifier msg;
++expression spi;
++identifier r1.fn;
++identifier r1.xfers;
++@@
++fn(...)
++{
++...
++-struct spi_message msg;
++...
++-spi_message_init(&msg);
++<...
++-spi_message_add_tail(&xfers[...], &msg);
++...>
++
++-spi_sync(spi, &msg)
+++spi_sync_transfer(spi, xfers, ARRAY_SIZE(xfers))
++...
++}
++
++@r3 depends on context || org || report@
++identifier msg;
++expression spi;
++identifier r1.xfers;
++identifier r1.fn;
++position p;
++@@
++fn(...)
++{
++...
++*struct spi_message msg;
++...
++*spi_message_init(&msg);
++<...
++*spi_message_add_tail(&xfers[...], &msg);
++...>
++*spi_sync@p(spi, &msg)
++...
++}
++
++@r2@
++identifier fn;
++identifier xfer;
++@@
++fn(...)
++{
++	...
++	struct spi_transfer xfer;
++	...
++}
++
++@depends on patch@
++identifier msg;
++expression spi;
++identifier r2.xfer;
++identifier r2.fn;
++@@
++fn(...)
++{
++...
++-struct spi_message msg;
++...
++-spi_message_init(&msg);
++...
++-spi_message_add_tail(&xfer, &msg);
++...
++-spi_sync(spi, &msg)
+++spi_sync_transfer(spi, &xfer, 1)
++...
++}
++
++@r4 depends on context || org || report@
++identifier msg;
++expression spi;
++identifier r2.xfer;
++identifier r2.fn;
++position p;
++@@
++fn(...)
++{
++...
++*struct spi_message msg;
++...
++*spi_message_init(&msg);
++...
++*spi_message_add_tail(&xfer, &msg);
++...
++*spi_sync@p(spi, &msg)
++...
++}
++
++@script:python depends on report@
++p << r3.p;
++@@
++coccilib.report.print_report(p[0], "Consider using spi_sync_transfer instead of open-conding it.")
++
++@script:python depends on report@
++p << r4.p;
++@@
++coccilib.report.print_report(p[0], "Consider using spi_sync_transfer instead of open-conding it.")
++
++@script:python depends on org@
++p << r3.p;
++@@
++coccilib.org.print_todo(p[0], "Consider using spi_sync_transfer instead of open-conding it.")
++
++@script:python depends on org@
++p << r4.p;
++@@
++coccilib.org.print_todo(p[0], "Consider using spi_sync_transfer instead of open-conding it.")
+-- 
+1.8.0
+
