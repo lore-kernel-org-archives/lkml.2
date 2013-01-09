@@ -1,138 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757417Ab3AIIe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 03:34:56 -0500
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:33795 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750817Ab3AIIez (ORCPT
+	id S1757404Ab3AIIi3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 03:38:29 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43695 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab3AIIi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 03:34:55 -0500
-Message-ID: <50ED2B85.5030602@st.com>
-Date: Wed, 09 Jan 2013 09:34:13 +0100
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 9 Jan 2013 03:38:28 -0500
+Date: Wed, 9 Jan 2013 09:38:23 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: gregkh@linuxfoundation.org, p.zabel@pengutronix.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] staging: imx-drm: ipu-common: Remove unused variable
+Message-ID: <20130109083823.GP1906@pengutronix.de>
+References: <1357698722-7187-1-git-send-email-festevam@gmail.com>
 MIME-Version: 1.0
-To: Byungho An <bh74.an@samsung.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        jeffrey.t.kirsher@intel.com, kgene.kim@samsung.com
-Subject: Re: [PATCH 1/3] net: stmac: add gmac autonet set for SGMII, TBI,
- and RTBI
-References: <000901cdedf8$dfaf4390$9f0dcab0$@samsung.com>
-In-Reply-To: <000901cdedf8$dfaf4390$9f0dcab0$@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357698722-7187-1-git-send-email-festevam@gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:38:04 up 199 days, 23:49, 51 users,  load average: 0.26, 0.64,
+ 1.69
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Byungho
+On Wed, Jan 09, 2013 at 12:32:02AM -0200, Fabio Estevam wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+> 
+> Fix the following warning when building with W=1 option:
+> 
+> drivers/staging/imx-drm/ipu-v3/ipu-common.c: In function 'ipu_remove':
+> drivers/staging/imx-drm/ipu-v3/ipu-common.c:1145:19: warning: variable 'res' set but not used [-Wunused-but-set-variable]
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-On 1/9/2013 12:35 AM, Byungho An wrote:
->
-> This patch adds gmac autoneg set function for SGMII, TBI,
-> and RTBI interface. In case of PHY's autoneg is set, gmac's
-> autoneg enable bit should set. After checking phy's autoneg
-> if phydev's autoneg is '1' gmac's ANE bit set for those
-> interface.
->
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-I suppose I have to not look at this patch but I have to directly look 
-at the series:
+Sascha
 
-[PATCH v2 1/3] net: stmac: add gmac autonet set for SGMII, TBI, and RTBI
-[PATCH v2 2/3] net: stmmac: add autoneg complete irq
-[PATCH v2 3/3] net: stmmac: add gmac autonego set for ethtool support
-
-At any rate, I'm looking at them and they actually sound better than the 
-previous ones.
-Pls use stmmac instead of stmac.
-Also these patches add a new functionality and, IMO, they should be done 
-for net-next. In this case, pls verify if the patches are for this 
-branch and add in the subject net-next.
-
-I'll come back with further details asap.
-
-BR
-Peppe
-
-> Signed-off-by: Byungho An <bh74.an@samsung.com>
 > ---
->   drivers/net/ethernet/stmicro/stmmac/common.h         |    1 +
->   drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c |   11 +++++++++++
->   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c    |    9 +++++++++
->   3 files changed, 21 insertions(+)
->
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h
-> b/drivers/net/ethernet/stmicro/stmmac/common.h
-> index 186d148..72ba769 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/common.h
-> +++ b/drivers/net/ethernet/stmicro/stmmac/common.h
-> @@ -344,6 +344,7 @@ struct stmmac_ops {
->   	void (*reset_eee_mode) (void __iomem *ioaddr);
->   	void (*set_eee_timer) (void __iomem *ioaddr, int ls, int tw);
->   	void (*set_eee_pls) (void __iomem *ioaddr, int link);
-> +	void (*set_autoneg) (void __iomem *ioaddr);
->   };
->
->   struct mac_link {
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> index bfe0226..a0737b39 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> @@ -297,6 +297,16 @@ static void  dwmac1000_set_eee_timer(void __iomem
-> *ioaddr, int ls, int tw)
->   	writel(value, ioaddr + LPI_TIMER_CTRL);
->   }
->
-> +static void dwmac1000_set_autoneg(void __iomem *ioaddr)
-> +{
-> +	u32 value;
-> +
-> +	value = readl(ioaddr + GMAC_AN_CTRL);
-> +	value |= 0x1000;
-> +	writel(value, ioaddr + GMAC_AN_CTRL);
-> +}
-> +
-> +
->   static const struct stmmac_ops dwmac1000_ops = {
->   	.core_init = dwmac1000_core_init,
->   	.rx_ipc = dwmac1000_rx_ipc_enable,
-> @@ -311,6 +321,7 @@ static const struct stmmac_ops dwmac1000_ops = {
->   	.reset_eee_mode =  dwmac1000_reset_eee_mode,
->   	.set_eee_timer =  dwmac1000_set_eee_timer,
->   	.set_eee_pls =  dwmac1000_set_eee_pls,
-> +	.set_autoneg =  dwmac1000_set_autoneg,
->   };
->
->   struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr)
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> index f07c061..3e28934 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> @@ -1007,6 +1007,7 @@ static int stmmac_open(struct net_device *dev)
->   {
->   	struct stmmac_priv *priv = netdev_priv(dev);
->   	int ret;
-> +	int interface = priv->plat->interface;
->
->   	clk_prepare_enable(priv->stmmac_clk);
->
-> @@ -1041,6 +1042,14 @@ static int stmmac_open(struct net_device *dev)
->   	/* Initialize the MAC Core */
->   	priv->hw->mac->core_init(priv->ioaddr);
->
-> +	/* If phy autoneg is on, set gmac autoneg for SGMII, TBI and RTBI*/
-> +	if((interface == PHY_INTERFACE_MODE_SGMII) ||
-> +		(interface == PHY_INTERFACE_MODE_TBI) ||
-> +		(interface == PHY_INTERFACE_MODE_RTBI)) {
-> +		if (priv->phydev->autoneg)
-> +			priv->hw->mac->set_autoneg(priv->ioaddr);
-> +	}
-> +
->   	/* Request the IRQ lines */
->   	ret = request_irq(dev->irq, stmmac_interrupt,
->   			 IRQF_SHARED, dev->name, dev);
->
+>  drivers/staging/imx-drm/ipu-v3/ipu-common.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-common.c b/drivers/staging/imx-drm/ipu-v3/ipu-common.c
+> index f7059cd..366f259 100644
+> --- a/drivers/staging/imx-drm/ipu-v3/ipu-common.c
+> +++ b/drivers/staging/imx-drm/ipu-v3/ipu-common.c
+> @@ -1142,9 +1142,6 @@ failed_ioremap:
+>  static int ipu_remove(struct platform_device *pdev)
+>  {
+>  	struct ipu_soc *ipu = platform_get_drvdata(pdev);
+> -	struct resource *res;
+> -
+> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  
+>  	platform_device_unregister_children(pdev);
+>  	ipu_submodules_exit(ipu);
+> -- 
+> 1.7.9.5
+> 
+> 
 
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
