@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685Ab3AIVQU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:16:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42803 "EHLO mail.kernel.org"
+	id S933977Ab3AIVQk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:16:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42797 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933621Ab3AIUje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933618Ab3AIUje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jan 2013 15:39:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andre Przywara <osp@andrep.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 55/80] x86, amd: Disable way access filter on Piledriver CPUs
-Date: Wed,  9 Jan 2013 12:35:47 -0800
-Message-Id: <20130109201507.498886142@linuxfoundation.org>
+        Julius Werner <jwerner@chromium.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 066/123] xhci: fix null-pointer dereference when destroying half-built segment rings
+Date: Wed,  9 Jan 2013 12:35:05 -0800
+Message-Id: <20130109201507.085900066@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
+From: Julius Werner <jwerner@chromium.org>
 
-commit 2bbf0a1427c377350f001fbc6260995334739ad7 upstream.
+commit 68e5254adb88bede68285f11fb442a4d34fb550c upstream.
 
-The Way Access Filter in recent AMD CPUs may hurt the performance of
-some workloads, caused by aliasing issues in the L1 cache.
-This patch disables it on the affected CPUs.
+xhci_alloc_segments_for_ring() builds a list of xhci_segments and links
+the tail to head at the end (forming a ring). When it bails out for OOM
+reasons half-way through, it tries to destroy its half-built list with
+xhci_free_segments_for_ring(), even though it is not a ring yet. This
+causes a null-pointer dereference upon hitting the last element.
 
-The issue is similar to that one of last year:
-http://lkml.indiana.edu/hypermail/linux/kernel/1107.3/00041.html
-This new patch does not replace the old one, we just need another
-quirk for newer CPUs.
+Furthermore, one of its callers (xhci_ring_alloc()) mistakenly believes
+the output parameters to be valid upon this kind of OOM failure, and
+calls xhci_ring_free() on them. Since the (incomplete) list/ring should
+already be destroyed in that case, this would lead to a use after free.
 
-The performance penalty without the patch depends on the
-circumstances, but is a bit less than the last year's 3%.
+This patch fixes those issues by having xhci_alloc_segments_for_ring()
+destroy its half-built, non-circular list manually and destroying the
+invalid struct xhci_ring in xhci_ring_alloc() with a plain kfree().
 
-The workloads affected would be those that access code from the same
-physical page under different virtual addresses, so different
-processes using the same libraries with ASLR or multiple instances of
-PIE-binaries. The code needs to be accessed simultaneously from both
-cores of the same compute unit.
+This patch should be backported to kernels as old as 2.6.31, that
+contains the commit 0ebbab37422315a5d0cb29792271085bafdf38c0 "USB: xhci:
+Ring allocation and initialization."
 
-More details can be found here:
-http://developer.amd.com/Assets/SharedL1InstructionCacheonAMD15hCPU.pdf
+A separate patch will need to be developed for kernels older than 3.4,
+since the ring allocation code was refactored in that kernel.
 
-CPUs affected are anything with the core known as Piledriver.
-That includes the new parts of the AMD A-Series (aka Trinity) and the
-just released new CPUs of the FX-Series (aka Vishera).
-The model numbering is a bit odd here: FX CPUs have model 2,
-A-Series has model 10h, with possible extensions to 1Fh. Hence the
-range of model ids.
-
-Signed-off-by: Andre Przywara <osp@andrep.de>
-Link: http://lkml.kernel.org/r/1351700450-9277-1-git-send-email-osp@andrep.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/amd.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/usb/host/xhci-mem.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -598,6 +598,20 @@ static void __cpuinit init_amd(struct cp
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -205,7 +205,12 @@ static int xhci_alloc_segments_for_ring(
+ 
+ 		next = xhci_segment_alloc(xhci, cycle_state, flags);
+ 		if (!next) {
+-			xhci_free_segments_for_ring(xhci, *first);
++			prev = *first;
++			while (prev) {
++				next = prev->next;
++				xhci_segment_free(xhci, prev);
++				prev = next;
++			}
+ 			return -ENOMEM;
  		}
- 	}
+ 		xhci_link_segments(xhci, prev, next, type);
+@@ -258,7 +263,7 @@ static struct xhci_ring *xhci_ring_alloc
+ 	return ring;
  
-+	/*
-+	 * The way access filter has a performance penalty on some workloads.
-+	 * Disable it on the affected CPUs.
-+	 */
-+	if ((c->x86 == 0x15) &&
-+	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
-+		u64 val;
-+
-+		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
-+			val |= 0x1E;
-+			checking_wrmsrl(0xc0011021, val);
-+		}
-+	}
-+
- 	cpu_detect_cache_sizes(c);
+ fail:
+-	xhci_ring_free(xhci, ring);
++	kfree(ring);
+ 	return NULL;
+ }
  
- 	/* Multi core CPU? */
 
 
