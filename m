@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447Ab3AISpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 13:45:53 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:40202 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932292Ab3AISpv (ORCPT
+	id S932451Ab3AISqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 13:46:19 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:52354 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932254Ab3AISqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 13:45:51 -0500
+	Wed, 9 Jan 2013 13:46:18 -0500
+Date: Wed, 9 Jan 2013 13:46:17 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
+        rp@svcs.cs.pdx.edu
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [RELEASE] Userspace RCU 0.7.6
+Message-ID: <20130109184616.GA14968@Krystal>
 MIME-Version: 1.0
-In-Reply-To: <50EDA154.6060407@pobox.com>
-References: <1357668987-3610-1-git-send-email-josh.coombs@gmail.com>
-	<50EDA154.6060407@pobox.com>
-Date: Wed, 9 Jan 2013 13:45:50 -0500
-Message-ID: <CAMW5UfaTX=2fQt=+2KiJCgnnUzeOXM4waMjYgyBj=RfQg6pDcQ@mail.gmail.com>
-Subject: Re: [PATCH] Allow Marvell SATA driver to work with LEDS_TRIGGER_IDE_DISK
-From: Josh Coombs <josh.coombs@gmail.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: Bryan Wu <cooloney@gmail.com>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        linux ARM <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Digging back through the archives, this came up once in 2007, Alan Cox
-did not like the idea of globally adding this call into the critical
-paths of libata at the time. (I've seen it done via external patches
-in ata_qc_issue and ata_qc_complete for example.)  If that concern is
-no longer in place, I can redo with it within libata so it'll work for
-all libata driven devices similar to how it's handled for legacy IDE
-drivers now.
+liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
+data synchronization library provides read-side access which scales
+linearly with the number of cores. It does so by allowing multiples
+copies of a given data structure to live at the same time, and by
+monitoring the data structure accesses to detect grace periods after
+which memory reclamation is possible.
 
-Josh C
+liburcu-cds provides efficient data structures based on RCU and
+lock-free algorithms. Those structures include hash tables, queues,
+stacks, and doubly-linked lists.
 
-On Wed, Jan 9, 2013 at 11:56 AM, Jeff Garzik <jgarzik@pobox.com> wrote:
-> On 01/08/2013 01:16 PM, Joshua Coombs wrote:
->>
->> Add a call to the IDE LED Trigger within the Marvell SATA driver to allow
->> Marvell SoC devices to show SATA activity via GPIO connected LEDs.
->>
->> Signed-off-by: Joshua Coombs <josh.coombs@gmail.com>
->> ---
->>   drivers/ata/sata_mv.c | 3 +++
->>   drivers/leds/Kconfig  | 3 +--
->>   2 files changed, 4 insertions(+), 2 deletions(-)
->
->
-> NAK.  This is not appropriate at the specific driver level.  This would be
-> better implemented at a higher level.
->
->
->
+This is a bugfix release, mainly fixing handling of processes using
+call_rcu, then fork() without following exec(), and then continuing use
+of synchronize_rcu() or call_rcu() in the child process. A hang in
+synchronize_rcu() in the child could occur, which is fixed by this
+release.
+
+Changelog:
+2013-01-09 Userspace RCU 0.7.6
+        * Discourage use of pthread_atfork() for call_rcu handlers
+        * Fix call_rcu fork handling
+        * test: fork handling
+        * Fix TLS detection: test with linker, add --disable-compiler-tls
+        * Cleanup: cast pthread_self() return value to unsigned long
+        * Fallback mechanism not working on platform where TLS is unsupported
+
+Project website: http://lttng.org/urcu
+Download link: http://lttng.org/files/urcu/
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
