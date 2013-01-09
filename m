@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab3AIB3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 20:29:47 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:41415 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756301Ab3AIB2e (ORCPT
+	id S1756898Ab3AIBaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 20:30:10 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52574 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756389Ab3AIBaH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 20:28:34 -0500
-From: Michel Lespinasse <walken@google.com>
-To: Rik van Riel <riel@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Matt Turner <mattst88@gmail.com>, David Howells <dhowells@redhat.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
-        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org
-Subject: [PATCH 4/8] mm: use vm_unmapped_area() on ia64 architecture
-Date: Tue,  8 Jan 2013 17:28:11 -0800
-Message-Id: <1357694895-520-5-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1357694895-520-1-git-send-email-walken@google.com>
-References: <1357694895-520-1-git-send-email-walken@google.com>
+	Tue, 8 Jan 2013 20:30:07 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Jason Cooper <jason@lakedaemon.net>, Josh Coombs <josh.coombs@gmail.com>
+CC: "cooloney@gmail.com" <cooloney@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        linux ARM <linux-arm-kernel@lists.infradead.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
+Subject: RE: [PATCH] Allow Marvell SATA driver to work with
+ LEDS_TRIGGER_IDE_DISK
+Thread-Topic: [PATCH] Allow Marvell SATA driver to work with
+ LEDS_TRIGGER_IDE_DISK
+Thread-Index: AQHN7cxO6Pxdsvbbfkaax4OUs3GcPpg/RPQAgAADGgCAAAzKAIAA24Cw
+Date: Wed, 9 Jan 2013 01:29:44 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E12010@DQHE02.ent.ti.com>
+References: <1357668987-3610-1-git-send-email-josh.coombs@gmail.com>
+ <20130108190657.GW5075@titan.lakedaemon.net>
+ <CAMW5UfY2vKEJ7K8tLJ1+JeKsr_hxtUTva9HGJxLan6k+KGdmvg@mail.gmail.com>
+ <20130108200350.GX5075@titan.lakedaemon.net>
+In-Reply-To: <20130108200350.GX5075@titan.lakedaemon.net>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the ia64 arch_get_unmapped_area function to make use of
-vm_unmapped_area() instead of implementing a brute force search.
+> -----Original Message-----
+> From: linux-leds-owner@vger.kernel.org [mailto:linux-leds-
+> owner@vger.kernel.org] On Behalf Of Jason Cooper
+> Sent: Wednesday, January 09, 2013 5:04 AM
+> To: Josh Coombs
+> Cc: cooloney@gmail.com; linux-kernel@vger.kernel.org; linux-
+> ide@vger.kernel.org; rpurdie@rpsys.net; linux ARM; jgarzik@pobox.com;
+> linux-leds@vger.kernel.org
+> Subject: Re: [PATCH] Allow Marvell SATA driver to work with
+> LEDS_TRIGGER_IDE_DISK
+> 
+> On Tue, Jan 08, 2013 at 02:18:04PM -0500, Josh Coombs wrote:
+> > Would it make more sense to add a second trigger
+> > for SATA instead?
+> 
+> I'll leave that up to the led guys, I just wanted to raise the point
+> that the driver could logically support other types of disks, and we
+> should come up with a migration path instead of adding capabilities
+> ad-hoc.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
+I agree with Jason's suggestion. One more thing to consider.
 
----
- arch/ia64/kernel/sys_ia64.c |   37 ++++++++++++-------------------------
- 1 files changed, 12 insertions(+), 25 deletions(-)
+If we replace the name, 'ide-disk' or 'ide_disk' with general one,
+then we should change the value of 'default_trigger' under arch directory also.
+LED trigger works if the name is matched with trigger name of LED device.
 
-diff --git a/arch/ia64/kernel/sys_ia64.c b/arch/ia64/kernel/sys_ia64.c
-index d9439ef2f661..41e33f84c185 100644
---- a/arch/ia64/kernel/sys_ia64.c
-+++ b/arch/ia64/kernel/sys_ia64.c
-@@ -25,9 +25,9 @@ arch_get_unmapped_area (struct file *filp, unsigned long addr, unsigned long len
- 			unsigned long pgoff, unsigned long flags)
- {
- 	long map_shared = (flags & MAP_SHARED);
--	unsigned long start_addr, align_mask = PAGE_SIZE - 1;
-+	unsigned long align_mask = 0;
- 	struct mm_struct *mm = current->mm;
--	struct vm_area_struct *vma;
-+	struct vm_unmapped_area_info info;
- 
- 	if (len > RGN_MAP_LIMIT)
- 		return -ENOMEM;
-@@ -44,7 +44,7 @@ arch_get_unmapped_area (struct file *filp, unsigned long addr, unsigned long len
- 		addr = 0;
- #endif
- 	if (!addr)
--		addr = mm->free_area_cache;
-+		addr = TASK_UNMAPPED_BASE;
- 
- 	if (map_shared && (TASK_SIZE > 0xfffffffful))
- 		/*
-@@ -53,28 +53,15 @@ arch_get_unmapped_area (struct file *filp, unsigned long addr, unsigned long len
- 		 * tasks, we prefer to avoid exhausting the address space too quickly by
- 		 * limiting alignment to a single page.
- 		 */
--		align_mask = SHMLBA - 1;
--
--  full_search:
--	start_addr = addr = (addr + align_mask) & ~align_mask;
--
--	for (vma = find_vma(mm, addr); ; vma = vma->vm_next) {
--		/* At this point:  (!vma || addr < vma->vm_end). */
--		if (TASK_SIZE - len < addr || RGN_MAP_LIMIT - len < REGION_OFFSET(addr)) {
--			if (start_addr != TASK_UNMAPPED_BASE) {
--				/* Start a new search --- just in case we missed some holes.  */
--				addr = TASK_UNMAPPED_BASE;
--				goto full_search;
--			}
--			return -ENOMEM;
--		}
--		if (!vma || addr + len <= vma->vm_start) {
--			/* Remember the address where we stopped this search:  */
--			mm->free_area_cache = addr + len;
--			return addr;
--		}
--		addr = (vma->vm_end + align_mask) & ~align_mask;
--	}
-+		align_mask = PAGE_MASK & (SHMLBA - 1);
-+
-+	info.flags = 0;
-+	info.length = len;
-+	info.low_limit = addr;
-+	info.high_limit = TASK_SIZE;
-+	info.align_mask = align_mask;
-+	info.align_offset = 0;
-+	return vm_unmapped_area(&info);
- }
- 
- asmlinkage long
--- 
-1.7.7.3
+Thanks,
+Milo
