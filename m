@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934069Ab3AIUwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:52:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43831 "EHLO mail.kernel.org"
+	id S934118Ab3AIUxE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:53:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43819 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932537Ab3AIUlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934022Ab3AIUlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jan 2013 15:41:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 097/123] ARM: missing ->mmap_sem around find_vma() in swp_emulate.c
-Date: Wed,  9 Jan 2013 12:35:36 -0800
-Message-Id: <20130109201511.063690993@linuxfoundation.org>
+        Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 104/123] PCI/PM: Keep runtime PM enabled for unbound PCI devices
+Date: Wed,  9 Jan 2013 12:35:43 -0800
+Message-Id: <20130109201511.857321882@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,38 +27,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Huang Ying <ying.huang@intel.com>
 
-commit 7bf9b7bef881aac820bf1f2e9951a17b09bd7e04 upstream.
+commit 967577b062417b4e4b8e27b711220f4124f5153a upstream.
 
-find_vma() is *not* safe when somebody else is removing vmas.  Not just
-the return value might get bogus just as you are getting it (this instance
-doesn't try to dereference the resulting vma), the search itself can get
-buggered in rather spectacular ways.  IOW, ->mmap_sem really, really is
-not optional here.
+For unbound PCI devices, what we need is:
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+ - Always in D0 state, because some devices do not work again after
+   being put into D3 by the PCI bus.
+
+ - In SUSPENDED state if allowed, so that the parent devices can still
+   be put into low power state.
+
+To satisfy these requirements, the runtime PM for the unbound PCI
+devices are disabled and set to SUSPENDED state.  One issue of this
+solution is that the PCI devices will be put into SUSPENDED state even
+if the SUSPENDED state is forbidden via the sysfs interface
+(.../power/control) of the device.  This is not an issue for most
+devices, because most PCI devices are not used at all if unbound.
+But there are exceptions.  For example, unbound VGA card can be used
+for display, but suspending its parents makes it stop working.
+
+To fix the issue, we keep the runtime PM enabled when the PCI devices
+are unbound.  But the runtime PM callbacks will do nothing if the PCI
+devices are unbound.  This way, we can put the PCI devices into
+SUSPENDED state without putting the PCI devices into D3 state.
+
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=48201
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/swp_emulate.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/pci/pci-driver.c |   69 +++++++++++++++++++++++++++--------------------
+ drivers/pci/pci.c        |    2 +
+ 2 files changed, 43 insertions(+), 28 deletions(-)
 
---- a/arch/arm/kernel/swp_emulate.c
-+++ b/arch/arm/kernel/swp_emulate.c
-@@ -109,10 +109,12 @@ static void set_segfault(struct pt_regs
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -256,31 +256,26 @@ struct drv_dev_and_id {
+ static long local_pci_probe(void *_ddi)
  {
- 	siginfo_t info;
+ 	struct drv_dev_and_id *ddi = _ddi;
+-	struct device *dev = &ddi->dev->dev;
+-	struct device *parent = dev->parent;
++	struct pci_dev *pci_dev = ddi->dev;
++	struct pci_driver *pci_drv = ddi->drv;
++	struct device *dev = &pci_dev->dev;
+ 	int rc;
  
-+	down_read(&current->mm->mmap_sem);
- 	if (find_vma(current->mm, addr) == NULL)
- 		info.si_code = SEGV_MAPERR;
- 	else
- 		info.si_code = SEGV_ACCERR;
-+	up_read(&current->mm->mmap_sem);
+-	/* The parent bridge must be in active state when probing */
+-	if (parent)
+-		pm_runtime_get_sync(parent);
+-	/* Unbound PCI devices are always set to disabled and suspended.
+-	 * During probe, the device is set to enabled and active and the
+-	 * usage count is incremented.  If the driver supports runtime PM,
+-	 * it should call pm_runtime_put_noidle() in its probe routine and
+-	 * pm_runtime_get_noresume() in its remove routine.
+-	 */
+-	pm_runtime_get_noresume(dev);
+-	pm_runtime_set_active(dev);
+-	pm_runtime_enable(dev);
+-
+-	rc = ddi->drv->probe(ddi->dev, ddi->id);
++	/*
++	 * Unbound PCI devices are always put in D0, regardless of
++	 * runtime PM status.  During probe, the device is set to
++	 * active and the usage count is incremented.  If the driver
++	 * supports runtime PM, it should call pm_runtime_put_noidle()
++	 * in its probe routine and pm_runtime_get_noresume() in its
++	 * remove routine.
++	 */
++	pm_runtime_get_sync(dev);
++	pci_dev->driver = pci_drv;
++	rc = pci_drv->probe(pci_dev, ddi->id);
+ 	if (rc) {
+-		pm_runtime_disable(dev);
+-		pm_runtime_set_suspended(dev);
+-		pm_runtime_put_noidle(dev);
++		pci_dev->driver = NULL;
++		pm_runtime_put_sync(dev);
+ 	}
+-	if (parent)
+-		pm_runtime_put(parent);
+ 	return rc;
+ }
  
- 	info.si_signo = SIGSEGV;
- 	info.si_errno = 0;
+@@ -330,10 +325,8 @@ __pci_device_probe(struct pci_driver *dr
+ 		id = pci_match_device(drv, pci_dev);
+ 		if (id)
+ 			error = pci_call_probe(drv, pci_dev, id);
+-		if (error >= 0) {
+-			pci_dev->driver = drv;
++		if (error >= 0)
+ 			error = 0;
+-		}
+ 	}
+ 	return error;
+ }
+@@ -369,9 +362,7 @@ static int pci_device_remove(struct devi
+ 	}
+ 
+ 	/* Undo the runtime PM settings in local_pci_probe() */
+-	pm_runtime_disable(dev);
+-	pm_runtime_set_suspended(dev);
+-	pm_runtime_put_noidle(dev);
++	pm_runtime_put_sync(dev);
+ 
+ 	/*
+ 	 * If the device is still on, set the power state as "unknown",
+@@ -994,6 +985,13 @@ static int pci_pm_runtime_suspend(struct
+ 	pci_power_t prev = pci_dev->current_state;
+ 	int error;
+ 
++	/*
++	 * If pci_dev->driver is not set (unbound), the device should
++	 * always remain in D0 regardless of the runtime PM status
++	 */
++	if (!pci_dev->driver)
++		return 0;
++
+ 	if (!pm || !pm->runtime_suspend)
+ 		return -ENOSYS;
+ 
+@@ -1029,6 +1027,13 @@ static int pci_pm_runtime_resume(struct
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 
++	/*
++	 * If pci_dev->driver is not set (unbound), the device should
++	 * always remain in D0 regardless of the runtime PM status
++	 */
++	if (!pci_dev->driver)
++		return 0;
++
+ 	if (!pm || !pm->runtime_resume)
+ 		return -ENOSYS;
+ 
+@@ -1046,8 +1051,16 @@ static int pci_pm_runtime_resume(struct
+ 
+ static int pci_pm_runtime_idle(struct device *dev)
+ {
++	struct pci_dev *pci_dev = to_pci_dev(dev);
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 
++	/*
++	 * If pci_dev->driver is not set (unbound), the device should
++	 * always remain in D0 regardless of the runtime PM status
++	 */
++	if (!pci_dev->driver)
++		goto out;
++
+ 	if (!pm)
+ 		return -ENOSYS;
+ 
+@@ -1057,8 +1070,8 @@ static int pci_pm_runtime_idle(struct de
+ 			return ret;
+ 	}
+ 
++out:
+ 	pm_runtime_suspend(dev);
+-
+ 	return 0;
+ }
+ 
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1900,6 +1900,8 @@ void pci_pm_init(struct pci_dev *dev)
+ 	u16 pmc;
+ 
+ 	pm_runtime_forbid(&dev->dev);
++	pm_runtime_set_active(&dev->dev);
++	pm_runtime_enable(&dev->dev);
+ 	device_enable_async_suspend(&dev->dev);
+ 	dev->wakeup_prepared = false;
+ 
 
 
