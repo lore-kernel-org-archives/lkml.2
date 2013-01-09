@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab3AISoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 13:44:24 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:47833 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393Ab3AISoX (ORCPT
+	id S932426Ab3AISpc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 13:45:32 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:58620 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932292Ab3AISpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 13:44:23 -0500
-Date: Wed, 9 Jan 2013 19:42:53 +0100
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: andrew.cooper3@citrix.com, x86@kernel.org, tglx@linutronix.de,
-        kexec@lists.infradead.org, virtualization@lists.linux-foundation.org,
-        xen-devel <xen-devel@lists.xen.org>, konrad.wilk@oracle.com,
-        maxim.uvarov@oracle.com, mingo@redhat.com, vgoyal@redhat.com,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
-Subject: Re: [PATCH v3 02/11] x86/kexec: Add extra pointers to transition
- page table PGD, PUD, PMD and PTE
-Message-ID: <20130109184253.GA5150@host-192-168-1-59.local.net-space.pl>
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
- <1356574740-6806-2-git-send-email-daniel.kiper@oracle.com>
- <1356574740-6806-3-git-send-email-daniel.kiper@oracle.com>
- <50E55ECF02000078000B2A13@nat28.tlf.novell.com>
- <20130104151542.GD3346@host-192-168-1-59.local.net-space.pl>
- <50E70D8002000078000B336D@nat28.tlf.novell.com>
- <20130104172538.GC3472@host-192-168-1-59.local.net-space.pl>
- <50EAA7F402000078000B34C3@nat28.tlf.novell.com>
- <20130107125211.GB2927@host-192-168-1-59.local.net-space.pl>
- <50EAD61602000078000B36A0@nat28.tlf.novell.com>
+	Wed, 9 Jan 2013 13:45:31 -0500
+X-Greylist: delayed 342 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Jan 2013 13:45:31 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EAD61602000078000B36A0@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <CAE9FiQUxxjZmd3C33_ujSeL1EjcKHHSoGusQwfBD+Zd=cwCDZA@mail.gmail.com>
+References: <20121030040237.GA10472@google.com> <1352003971-22278-1-git-send-email-yinghai@kernel.org>
+ <CAE9FiQUn=bcgOLFzBwsBT1-O1poRNy9qYTb0w9EAya3_inKqAw@mail.gmail.com>
+ <CAErSpo5Z57asEXbfesOjXMEPj4WM3YMbzQH3s-v_NBrnPNmuVQ@mail.gmail.com>
+ <CAErSpo4LS7ShCbeOm1s9ob1MjPfUSWn9J96UHRBP6van54swQA@mail.gmail.com>
+ <CAE9FiQV5x1S1BNHrXq0wMRDx7PD5BoCh3fOnq2vS_AOAGL8Rrw@mail.gmail.com>
+ <CAErSpo5vEb=63jGsqfau1G=f54oqq17pc3ZzcpzhL7hQrtYhng@mail.gmail.com> <CAE9FiQUxxjZmd3C33_ujSeL1EjcKHHSoGusQwfBD+Zd=cwCDZA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 9 Jan 2013 11:39:28 -0700
+Message-ID: <CAErSpo6qX3ih9DXLqxqJw141OAeTFu0YfSih6LyD0sd2gS-Vyg@mail.gmail.com>
+Subject: Re: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for
+ hot-add root bus
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 01:05:10PM +0000, Jan Beulich wrote:
-> >>> On 07.01.13 at 13:52, Daniel Kiper <daniel.kiper@oracle.com> wrote:
-> > On Mon, Jan 07, 2013 at 09:48:20AM +0000, Jan Beulich wrote:
-> >> >>> On 04.01.13 at 18:25, Daniel Kiper <daniel.kiper@oracle.com> wrote:
-> >> > Right, so where is virtual mapping of control page established?
-> >> > I could not find relevant code in SLES kernel which does that.
-> >>
-> >> In the hypervisor (xen/arch/x86/machine_kexec.c:machine_kexec_load()).
-> >> xen/arch/x86/machine_kexec.c:machine_kexec() then simply uses
-> >> image->page_list[1].
-> >
-> > This (xen/arch/x86/machine_kexec.c:machine_kexec_load()) maps relevant
-> > page (allocated earlier by dom0) in hypervisor fixmap area. However,
-> > it does not make relevant mapping in transition page table which
-> > leads to crash when %cr3 is switched from Xen page table to
-> > transition page table.
+On Wed, Jan 9, 2013 at 10:53 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Wed, Jan 9, 2013 at 9:35 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> I don't know, that could be separated patcheset after we conclude
+>>> pci root bus hotplug support.
+>>
+>> The main reason I review patches before merging them is to identify
+>> issues that we can fix before they affect everybody.  It makes my life
+>> a lot easier if I don't have to keep track of pending unaddressed
+>> review comments.  Is there an advantage to waiting and doing this work
+>> later?
+>>
+>>>>> In general these look good.  My main concern is that they only touch
+>>>>> x86, without touching the similar code in frv, microblaze, mn10300,
+>>>>> and powerpc.
 >
-> That indeed could explain _random_ failures - the fixmap entries
-> get created with _PAGE_GLOBAL set, i.e. don't get flushed with
-> the CR3 write unless CR4.PGE is clear.
+> the reason why we need to change those codes for x86, we want to make it support
+> pci root bus hotplug. So it would be reasonable for us to align other
+> platform to x86
+> changes after pci root bus hotplug change is completely done.
 
-This does not matter. As I stated earlier virtual mapping is wrong.
-relocate_kernel() is mapped at its virtual address in Linux kernel
-instead of control page at its virtual address in Xen hypervisor.
-I tested SLES kernel once again. It does not work.
-
-> And I don't see how your allocation of intermediate page tables
-> would help: You wouldn't know where the mapping of the control
-> page lives until you're actually in the early relocate_kernel code.
-
-Right. Allocation itself is not a solution for this problem.
-It should be acompanied by code which establishes transition
-page table in relocate_kernel() (which is later copied
-to control page, i.e. code of relocate_kernel()).
-
-> Or was it that what distinguishes your cloned code from the
-> native original?
-
-No, my code is based on native original.
-There are some implementation differences.
-
-Daniel
+OK, I opened https://bugzilla.kernel.org/show_bug.cgi?id=52531 as a
+way to keep track of this consistency issue and merged
+pci/yinghai-survey-resources to my -next branch.
