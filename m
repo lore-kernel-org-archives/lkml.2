@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187Ab3AIXTZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 18:19:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35795 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758160Ab3AIXTW (ORCPT
+	id S1758189Ab3AIXUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 18:20:49 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:53837 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758160Ab3AIXUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 18:19:22 -0500
-Date: Wed, 9 Jan 2013 15:19:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, glommer@parallels.com, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH v6 04/15] memory-hotplug: remove /sys/firmware/memmap/X
- sysfs
-Message-Id: <20130109151920.fb9b4029.akpm@linux-foundation.org>
-In-Reply-To: <1357723959-5416-5-git-send-email-tangchen@cn.fujitsu.com>
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1357723959-5416-5-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jan 2013 18:20:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130109174922.GA31211@redhat.com>
+References: <CANN689HRmVTLCjNL9c=JqhWy5F5vwr=A7coo3TVKLZGSVUpQjw@mail.gmail.com>
+	<20130109174922.GA31211@redhat.com>
+Date: Wed, 9 Jan 2013 15:20:47 -0800
+Message-ID: <CANN689FEr+vFdNekW9hm7xwji1aX4FCUQ1BS=P3FhyKiC70qjg@mail.gmail.com>
+Subject: Re: rwlock_t unfairness and tasklist_lock
+From: Michel Lespinasse <walken@google.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: David Howells <dhowells@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Salman Qazi <sqazi@google.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jan 2013 17:32:28 +0800
-Tang Chen <tangchen@cn.fujitsu.com> wrote:
-
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
-> sysfs files are created. But there is no code to remove these files. The patch
-> implements the function to remove them.
-> 
-> Note: The code does not free firmware_map_entry which is allocated by bootmem.
->       So the patch makes memory leak. But I think the memory leak size is
->       very samll. And it does not affect the system.
-> 
-> ...
+On Wed, Jan 9, 2013 at 9:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 01/08, Michel Lespinasse wrote:
+>> Like others before me, I have discovered how easy it is to DOS a
+>> system by abusing the rwlock_t unfairness and causing the
+>> tasklist_lock read side to be continuously held
 >
-> +static struct firmware_map_entry * __meminit
-> +firmware_map_find_entry(u64 start, u64 end, const char *type)
-> +{
-> +	struct firmware_map_entry *entry;
-> +
-> +	spin_lock(&map_entries_lock);
-> +	list_for_each_entry(entry, &map_entries, list)
-> +		if ((entry->start == start) && (entry->end == end) &&
-> +		    (!strcmp(entry->type, type))) {
-> +			spin_unlock(&map_entries_lock);
-> +			return entry;
-> +		}
-> +
-> +	spin_unlock(&map_entries_lock);
-> +	return NULL;
-> +}
+> Yes. Plus it has perfomance problems.
 >
-> ...
+> It should die. We still need the global lock to protect, say,
+> init_task.tasks list, but otherwise we need the per-process locking.
+
+To be clear: I'm not trying to defend tasklist_lock here. However,
+given how long this has been a known issue, I think we should consider
+attacking the problem from the lock fairness perspective first and
+stop waiting for an eventual tasklist_lock death.
+
+>> - Would there be any fundamental objection to implementing a fair
+>> rwlock_t and dealing with the reentrancy issues in tasklist_lock ? My
+>> proposal there would be along the lines of:
 >
-> +	entry = firmware_map_find_entry(start, end - 1, type);
-> +	if (!entry)
-> +		return -EINVAL;
-> +
-> +	firmware_map_remove_entry(entry);
->
-> ...
->
+> I don't really understand your proposal in details, but until we kill
+> tasklist_lock, perhaps it makes sense to implement something simple, say,
+> write-biased rwlock and add "int task_struct->tasklist_read_lock_counter"
+> to avoid the read-write-read deadlock.
 
-The above code looks racy.  After firmware_map_find_entry() does the
-spin_unlock() there is nothing to prevent a concurrent
-firmware_map_remove_entry() from removing the entry, so the kernel ends
-up calling firmware_map_remove_entry() twice against the same entry.
+Right. But one complexity that has to be dealt with, is how to handle
+reentrant uses of the tasklist_lock read side, when such uses come
+from a different context (say, the lock was first taken in process
+context and the reentrant use is in irq or softirq context).
 
-An easy fix for this is to hold the spinlock across the entire
-lookup/remove operation.
+If in process context we take the tasklist_lock read side, and *then*
+increment the tasklist_read_lock_counter, there is still the
+possibility of an irq coming up in before the counter is incremented.
+So to deal with that, I think we have to explicitly detect the
+tasklist_lock uses that are in irq/softirq context and deal with these
+differently from those in process context - we would have to either
+ignore the tasklist_lock write bias when in irq/softirq context, or we
+could deal with it by taking a separate lock then (as in my proposal).
 
-
-This problem is inherent to firmware_map_find_entry() as you have
-implemented it, so this function simply should not exist in the current
-form - no caller can use it without being buggy!  A simple fix for this
-is to remove the spin_lock()/spin_unlock() from
-firmware_map_find_entry() and add locking documentation to
-firmware_map_find_entry(), explaining that the caller must hold
-map_entries_lock and must not release that lock until processing of
-firmware_map_find_entry()'s return value has completed.
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
