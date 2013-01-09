@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab3AIASx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 19:18:53 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:1083 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753983Ab3AIASw (ORCPT
+	id S1756119Ab3AIATO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 19:19:14 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:42647 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab3AIATM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 19:18:52 -0500
-Message-ID: <1357690721.1890.15.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH] x86: srat: simplify memory affinity init error handling
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 08 Jan 2013 16:18:41 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jan 2013 19:19:12 -0500
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>
+Cc: linux-kernel@vger.kernel.org, durgadoss.r@intel.com
+Subject: [PATCH] Thermal: Fix to use read critical temperature when required
+Date: Tue,  8 Jan 2013 16:18:59 -0800
+Message-Id: <1357690739-17009-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The acpi_numa_memory_affinity_init() function can fail in several
-scenarios, use a single point of error return.
+This patch modifies the code to use get_crit_temp instead of
+the normal get_trip_temp when critical threshold point is crossed
+or queried about.
 
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- arch/x86/mm/srat.c | 29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
+ drivers/thermal/thermal_sys.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index 4ddf497..1100423 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -149,39 +149,40 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 	int node, pxm;
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index ecdfc7d..0dc6403 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -345,7 +345,10 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
+ {
+ 	long trip_temp;
  
- 	if (srat_disabled())
--		return -1;
--	if (ma->header.length != sizeof(struct acpi_srat_mem_affinity)) {
--		bad_srat();
--		return -1;
--	}
-+		goto err;
-+	if (ma->header.length != sizeof(struct acpi_srat_mem_affinity))
-+		goto badsrat;
- 	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
--		return -1;
--
-+		goto err;
- 	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
--		return -1;
-+		goto err;
+-	tz->ops->get_trip_temp(tz, trip, &trip_temp);
++	if (tz->ops->get_crit_temp)
++		tz->ops->get_crit_temp(tz, &trip_temp);
++	else
++		tz->ops->get_trip_temp(tz, trip, &trip_temp);
+ 
+ 	/* If we have not crossed the trip_temp, we do not care. */
+ 	if (tz->temperature < trip_temp)
+@@ -550,6 +553,7 @@ trip_point_temp_show(struct device *dev, struct device_attribute *attr,
+ 	struct thermal_zone_device *tz = to_thermal_zone(dev);
+ 	int trip, ret;
+ 	long temperature;
++	enum thermal_trip_type type;
+ 
+ 	if (!tz->ops->get_trip_temp)
+ 		return -EPERM;
+@@ -557,7 +561,14 @@ trip_point_temp_show(struct device *dev, struct device_attribute *attr,
+ 	if (!sscanf(attr->attr.name, "trip_point_%d_temp", &trip))
+ 		return -EINVAL;
+ 
+-	ret = tz->ops->get_trip_temp(tz, trip, &temperature);
++	ret = tz->ops->get_trip_type(tz, trip, &type);
++	if (ret)
++		return ret;
 +
- 	start = ma->base_address;
- 	end = start + ma->length;
- 	pxm = ma->proximity_domain;
- 	if (acpi_srat_revision <= 1)
- 		pxm &= 0xff;
-+
- 	node = setup_node(pxm);
- 	if (node < 0) {
- 		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
--		bad_srat();
--		return -1;
-+		goto badsrat;
- 	}
++	if (type == THERMAL_TRIP_CRITICAL && tz->ops->get_crit_temp)
++		ret = tz->ops->get_crit_temp(tz, &temperature);
++	else
++		ret = tz->ops->get_trip_temp(tz, trip, &temperature);
  
--	if (numa_add_memblk(node, start, end) < 0) {
--		bad_srat();
--		return -1;
--	}
-+	if (numa_add_memblk(node, start, end) < 0)
-+		goto badsrat;
- 
- 	node_set(node, numa_nodes_parsed);
- 
- 	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
- 	       node, pxm,
- 	       (unsigned long long) start, (unsigned long long) end - 1);
-+
- 	return 0;
-+badsrat:
-+	bad_srat();
-+err:
-+	return -1;
- }
- 
- void __init acpi_numa_arch_fixup(void) {}
+ 	if (ret)
+ 		return ret;
 -- 
-1.7.11.7
-
-
+1.7.10.4
 
