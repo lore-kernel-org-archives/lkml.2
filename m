@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab3AIUiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:38:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41792 "EHLO mail.kernel.org"
+	id S933190Ab3AIUiI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:38:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41897 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933139Ab3AIUhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:53 -0500
+	id S933173Ab3AIUiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <keescook@chromium.org>, halfdog <me@halfdog.net>,
-        P J P <ppandit@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 17/80] exec: do not leave bprm->interp on stack
-Date: Wed,  9 Jan 2013 12:35:09 -0800
-Message-Id: <20130109201502.578237407@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 14/80] b43: fix tx path skb leaks
+Date: Wed,  9 Jan 2013 12:35:06 -0800
+Message-Id: <20130109201502.212799346@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -28,114 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit b66c5984017533316fd1951770302649baf1aa33 upstream.
+commit 78f18df4b323d2ac14d6c82e2fc3c8dc4556bccc upstream.
 
-If a series of scripts are executed, each triggering module loading via
-unprintable bytes in the script header, kernel stack contents can leak
-into the command line.
+ieee80211_free_txskb() needs to be used instead of dev_kfree_skb_any for
+tx packets passed to the driver from mac80211
 
-Normally execution of binfmt_script and binfmt_misc happens recursively.
-However, when modules are enabled, and unprintable bytes exist in the
-bprm->buf, execution will restart after attempting to load matching
-binfmt modules.  Unfortunately, the logic in binfmt_script and
-binfmt_misc does not expect to get restarted.  They leave bprm->interp
-pointing to their local stack.  This means on restart bprm->interp is
-left pointing into unused stack memory which can then be copied into the
-userspace argv areas.
-
-After additional study, it seems that both recursion and restart remains
-the desirable way to handle exec with scripts, misc, and modules.  As
-such, we need to protect the changes to interp.
-
-This changes the logic to require allocation for any changes to the
-bprm->interp.  To avoid adding a new kmalloc to every exec, the default
-value is left as-is.  Only when passing through binfmt_script or
-binfmt_misc does an allocation take place.
-
-For a proof of concept, see DoTest.sh from:
-
-   http://www.halfdog.net/Security/2012/LinuxKernelBinfmtScriptStackDataDisclosure/
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: halfdog <me@halfdog.net>
-Cc: P J P <ppandit@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/binfmt_misc.c        |    5 ++++-
- fs/binfmt_script.c      |    4 +++-
- fs/exec.c               |   15 +++++++++++++++
- include/linux/binfmts.h |    1 +
- 4 files changed, 23 insertions(+), 2 deletions(-)
+ drivers/net/wireless/b43/dma.c  |    7 +++++--
+ drivers/net/wireless/b43/main.c |   12 ++++++++----
+ drivers/net/wireless/b43/pio.c  |    4 ++--
+ 3 files changed, 15 insertions(+), 8 deletions(-)
 
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -176,7 +176,10 @@ static int load_misc_binary(struct linux
- 		goto _error;
- 	bprm->argc ++;
- 
--	bprm->interp = iname;	/* for binfmt_script */
-+	/* Update interp in case binfmt_script needs it. */
-+	retval = bprm_change_interp(iname, bprm);
-+	if (retval < 0)
-+		goto _error;
- 
- 	interp_file = open_exec (iname);
- 	retval = PTR_ERR (interp_file);
---- a/fs/binfmt_script.c
-+++ b/fs/binfmt_script.c
-@@ -82,7 +82,9 @@ static int load_script(struct linux_binp
- 	retval = copy_strings_kernel(1, &i_name, bprm);
- 	if (retval) return retval; 
- 	bprm->argc++;
--	bprm->interp = interp;
-+	retval = bprm_change_interp(interp, bprm);
-+	if (retval < 0)
-+		return retval;
- 
- 	/*
- 	 * OK, now restart the process with the interpreter's dentry.
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1206,9 +1206,24 @@ void free_bprm(struct linux_binprm *bprm
- 		mutex_unlock(&current->signal->cred_guard_mutex);
- 		abort_creds(bprm->cred);
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -409,7 +409,10 @@ static inline
+ 				struct b43_dmadesc_meta *meta)
+ {
+ 	if (meta->skb) {
+-		dev_kfree_skb_any(meta->skb);
++		if (ring->tx)
++			ieee80211_free_txskb(ring->dev->wl->hw, meta->skb);
++		else
++			dev_kfree_skb_any(meta->skb);
+ 		meta->skb = NULL;
  	}
-+	/* If a binfmt changed the interp, free it. */
-+	if (bprm->interp != bprm->filename)
-+		kfree(bprm->interp);
- 	kfree(bprm);
  }
+@@ -1454,7 +1457,7 @@ int b43_dma_tx(struct b43_wldev *dev, st
+ 	if (unlikely(err == -ENOKEY)) {
+ 		/* Drop this packet, as we don't have the encryption key
+ 		 * anymore and must not transmit it unencrypted. */
+-		dev_kfree_skb_any(skb);
++		ieee80211_free_txskb(dev->wl->hw, skb);
+ 		err = 0;
+ 		goto out;
+ 	}
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -3393,7 +3393,7 @@ static void b43_tx_work(struct work_stru
+ 				break;
+ 			}
+ 			if (unlikely(err))
+-				dev_kfree_skb(skb); /* Drop it */
++				ieee80211_free_txskb(wl->hw, skb);
+ 			err = 0;
+ 		}
  
-+int bprm_change_interp(char *interp, struct linux_binprm *bprm)
-+{
-+	/* If a binfmt changed the interp, free it first. */
-+	if (bprm->interp != bprm->filename)
-+		kfree(bprm->interp);
-+	bprm->interp = kstrdup(interp, GFP_KERNEL);
-+	if (!bprm->interp)
-+		return -ENOMEM;
-+	return 0;
-+}
-+EXPORT_SYMBOL(bprm_change_interp);
+@@ -3414,7 +3414,7 @@ static void b43_op_tx(struct ieee80211_h
+ 
+ 	if (unlikely(skb->len < 2 + 2 + 6)) {
+ 		/* Too short, this can't be a valid frame. */
+-		dev_kfree_skb_any(skb);
++		ieee80211_free_txskb(hw, skb);
+ 		return;
+ 	}
+ 	B43_WARN_ON(skb_shinfo(skb)->nr_frags);
+@@ -4210,8 +4210,12 @@ redo:
+ 
+ 	/* Drain all TX queues. */
+ 	for (queue_num = 0; queue_num < B43_QOS_QUEUE_NUM; queue_num++) {
+-		while (skb_queue_len(&wl->tx_queue[queue_num]))
+-			dev_kfree_skb(skb_dequeue(&wl->tx_queue[queue_num]));
++		while (skb_queue_len(&wl->tx_queue[queue_num])) {
++			struct sk_buff *skb;
 +
- /*
-  * install the new credentials for this executable
-  */
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -128,6 +128,7 @@ extern int setup_arg_pages(struct linux_
- 			   unsigned long stack_top,
- 			   int executable_stack);
- extern int bprm_mm_init(struct linux_binprm *bprm);
-+extern int bprm_change_interp(char *interp, struct linux_binprm *bprm);
- extern int copy_strings_kernel(int argc, const char *const *argv,
- 			       struct linux_binprm *bprm);
- extern int prepare_bprm_creds(struct linux_binprm *bprm);
++			skb = skb_dequeue(&wl->tx_queue[queue_num]);
++			ieee80211_free_txskb(wl->hw, skb);
++		}
+ 	}
+ 
+ 	b43_mac_suspend(dev);
+--- a/drivers/net/wireless/b43/pio.c
++++ b/drivers/net/wireless/b43/pio.c
+@@ -196,7 +196,7 @@ static void b43_pio_cancel_tx_packets(st
+ 	for (i = 0; i < ARRAY_SIZE(q->packets); i++) {
+ 		pack = &(q->packets[i]);
+ 		if (pack->skb) {
+-			dev_kfree_skb_any(pack->skb);
++			ieee80211_free_txskb(q->dev->wl->hw, pack->skb);
+ 			pack->skb = NULL;
+ 		}
+ 	}
+@@ -552,7 +552,7 @@ int b43_pio_tx(struct b43_wldev *dev, st
+ 	if (unlikely(err == -ENOKEY)) {
+ 		/* Drop this packet, as we don't have the encryption key
+ 		 * anymore and must not transmit it unencrypted. */
+-		dev_kfree_skb_any(skb);
++		ieee80211_free_txskb(dev->wl->hw, skb);
+ 		err = 0;
+ 		goto out;
+ 	}
 
 
