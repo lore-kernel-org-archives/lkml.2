@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933352Ab3AIVf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:35:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42274 "EHLO mail.kernel.org"
+	id S933293Ab3AIUig (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:38:36 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42209 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933297Ab3AIUih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:37 -0500
+	id S933141Ab3AIUib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 032/123] usb: gadget: phonet: free requests in pn_bind()s error path
-Date: Wed,  9 Jan 2013 12:34:31 -0800
-Message-Id: <20130109201502.655153554@linuxfoundation.org>
+        Tomasz Guszkowski <tsg@o2.pl>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 28/80] p54usb: add USB ID for T-Com Sinus 154 data II
+Date: Wed,  9 Jan 2013 12:35:20 -0800
+Message-Id: <20130109201503.950749028@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Tomasz Guszkowski <tsg@o2.pl>
 
-commit d0eca719dd11ad0619e8dd6a1f3eceb95b0216dd upstream.
+commit 3194b7fcdf6caea338b5d2c72d76fed80437649c upstream.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Added USB ID for T-Com Sinus 154 data II.
+
+Signed-off-by: Tomasz Guszkowski <tsg@o2.pl>
+Acked-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_phonet.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/wireless/p54/p54usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/gadget/f_phonet.c
-+++ b/drivers/usb/gadget/f_phonet.c
-@@ -531,7 +531,7 @@ int pn_bind(struct usb_configuration *c,
- 
- 		req = usb_ep_alloc_request(fp->out_ep, GFP_KERNEL);
- 		if (!req)
--			goto err;
-+			goto err_req;
- 
- 		req->complete = pn_rx_complete;
- 		fp->out_reqv[i] = req;
-@@ -540,14 +540,18 @@ int pn_bind(struct usb_configuration *c,
- 	/* Outgoing USB requests */
- 	fp->in_req = usb_ep_alloc_request(fp->in_ep, GFP_KERNEL);
- 	if (!fp->in_req)
--		goto err;
-+		goto err_req;
- 
- 	INFO(cdev, "USB CDC Phonet function\n");
- 	INFO(cdev, "using %s, OUT %s, IN %s\n", cdev->gadget->name,
- 		fp->out_ep->name, fp->in_ep->name);
- 	return 0;
- 
-+err_req:
-+	for (i = 0; i < phonet_rxq_size && fp->out_reqv[i]; i++)
-+		usb_ep_free_request(fp->out_ep, fp->out_reqv[i]);
- err:
-+
- 	if (fp->out_ep)
- 		fp->out_ep->driver_data = NULL;
- 	if (fp->in_ep)
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -82,6 +82,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
+ 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
+ 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
++	{USB_DEVICE(0x083a, 0x4503)},	/* T-Com Sinus 154 data II */
+ 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
+ 	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
+ 	{USB_DEVICE(0x083a, 0xf503)},	/* Accton FD7050E ver 1010ec  */
 
 
