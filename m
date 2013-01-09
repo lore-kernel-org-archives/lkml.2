@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933937Ab3AIVBk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:01:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43472 "EHLO mail.kernel.org"
+	id S933891Ab3AIVCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:02:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43450 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933868Ab3AIUkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:32 -0500
+	id S933853Ab3AIUkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tony Prisk <linux@prisktech.co.nz>, Edgar Toernig <froese@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 76/80] drivers/rtc/rtc-vt8500.c: correct handling of CR_24H bitfield
-Date: Wed,  9 Jan 2013 12:36:08 -0800
-Message-Id: <20130109201510.145312746@linuxfoundation.org>
+        Duan Jiong <djduanjiong@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 086/123] ipv6: Change skb->data before using icmpv6_notify() to propagate redirect
+Date: Wed,  9 Jan 2013 12:35:25 -0800
+Message-Id: <20130109201509.644094471@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tony Prisk <linux@prisktech.co.nz>
 
-commit 532db570e5181abc8f4f7bfa6c77c69ec2240198 upstream.
+From: Duan Jiong <djduanjiong@gmail.com>
 
-Control register bitfield for 12H/24H mode is handled incorrectly.
-Setting CR_24H actually enables 12H mode.  This patch renames the define
-and changes the initialization code to correctly set 24H mode.
+[ Upstream commit 093d04d42fa094f6740bb188f0ad0c215ff61e2c ]
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Cc: Edgar Toernig <froese@gmx.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In function ndisc_redirect_rcv(), the skb->data points to the transport
+header, but function icmpv6_notify() need the skb->data points to the
+inner IP packet. So before using icmpv6_notify() to propagate redirect,
+change skb->data to point the inner IP packet that triggered the sending
+of the Redirect, and introduce struct rd_msg to make it easy.
+
+Signed-off-by: Duan Jiong <djduanjiong@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/rtc/rtc-vt8500.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/net/ndisc.h |    7 +++++++
+ net/ipv6/ndisc.c    |   17 +++++++++++++++++
+ 2 files changed, 24 insertions(+)
 
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -69,7 +69,7 @@
- 				| ALARM_SEC_BIT)
+--- a/include/net/ndisc.h
++++ b/include/net/ndisc.h
+@@ -78,6 +78,13 @@ struct ra_msg {
+ 	__be32			retrans_timer;
+ };
  
- #define VT8500_RTC_CR_ENABLE	(1 << 0)	/* Enable RTC */
--#define VT8500_RTC_CR_24H	(1 << 1)	/* 24h time format */
-+#define VT8500_RTC_CR_12H	(1 << 1)	/* 12h time format */
- #define VT8500_RTC_CR_SM_ENABLE	(1 << 2)	/* Enable periodic irqs */
- #define VT8500_RTC_CR_SM_SEC	(1 << 3)	/* 0: 1Hz/60, 1: 1Hz */
- #define VT8500_RTC_CR_CALIB	(1 << 4)	/* Enable calibration */
-@@ -248,7 +248,7 @@ static int __devinit vt8500_rtc_probe(st
++struct rd_msg {
++	struct icmp6hdr icmph;
++	struct in6_addr	target;
++	struct in6_addr	dest;
++	__u8		opt[0];
++};
++
+ struct nd_opt_hdr {
+ 	__u8		nd_opt_type;
+ 	__u8		nd_opt_len;
+--- a/net/ipv6/ndisc.c
++++ b/net/ipv6/ndisc.c
+@@ -1333,6 +1333,12 @@ out:
+ 
+ static void ndisc_redirect_rcv(struct sk_buff *skb)
+ {
++	u8 *hdr;
++	struct ndisc_options ndopts;
++	struct rd_msg *msg = (struct rd_msg *)skb_transport_header(skb);
++	u32 ndoptlen = skb->tail - (skb->transport_header +
++				    offsetof(struct rd_msg, opt));
++
+ #ifdef CONFIG_IPV6_NDISC_NODETYPE
+ 	switch (skb->ndisc_nodetype) {
+ 	case NDISC_NODETYPE_HOST:
+@@ -1349,6 +1355,17 @@ static void ndisc_redirect_rcv(struct sk
+ 		return;
  	}
  
- 	/* Enable RTC and set it to 24-hour mode */
--	writel(VT8500_RTC_CR_ENABLE | VT8500_RTC_CR_24H,
-+	writel(VT8500_RTC_CR_ENABLE,
- 	       vt8500_rtc->regbase + VT8500_RTC_CR);
++	if (!ndisc_parse_options(msg->opt, ndoptlen, &ndopts))
++		return;
++
++	if (!ndopts.nd_opts_rh)
++		return;
++
++	hdr = (u8 *)ndopts.nd_opts_rh;
++	hdr += 8;
++	if (!pskb_pull(skb, hdr - skb_transport_header(skb)))
++		return;
++
+ 	icmpv6_notify(skb, NDISC_REDIRECT, 0, 0);
+ }
  
- 	vt8500_rtc->rtc = rtc_device_register("vt8500-rtc", &pdev->dev,
 
 
