@@ -1,64 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757811Ab3AIJjK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 04:39:10 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47766 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757582Ab3AIJjH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 04:39:07 -0500
-Message-ID: <50ED3AB8.90006@parallels.com>
-Date: Wed, 9 Jan 2013 13:39:04 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: <bfields@fieldses.org>
-CC: <toralf.foerster@gmx.de>, <linux-nfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH] nfsd: fix unused "nn" variable warning in free_client()
-References: <20130109093834.13789.270.stgit@localhost.localdomain>
-In-Reply-To: <20130109093834.13789.270.stgit@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.18.163]
+	id S1757831Ab3AIJjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 04:39:37 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:9001 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757409Ab3AIJdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 04:33:38 -0500
+X-IronPort-AV: E=Sophos;i="4.84,437,1355068800"; 
+   d="scan'208";a="6551293"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, hpa@zytor.com,
+        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
+        yinghai@kernel.org, glommer@parallels.com
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Subject: [PATCH v6 03/15] memory-hotplug: remove redundant codes
+Date: Wed, 9 Jan 2013 17:32:27 +0800
+Message-Id: <1357723959-5416-4-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/09 17:32:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/09 17:32:58,
+	Serialize complete at 2013/01/09 17:32:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bruce, sorry, forgot to add:
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+offlining memory blocks and checking whether memory blocks are offlined
+are very similar. This patch introduces a new function to remove
+redundant codes.
 
-09.01.2013 13:38, Stanislav Kinsbursky пишет:
-> If CONFIG_LOCKDEP is disabled, then there would be a warning like this:
->
->    CC [M]  fs/nfsd/nfs4state.o
-> fs/nfsd/nfs4state.c: In function ‘free_client’:
-> fs/nfsd/nfs4state.c:1051:19: warning: unused variable ‘nn’ [-Wunused-variable]
->
-> So, let's add "maybe_unused" tag to this variable.
->
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> ---
->   fs/nfsd/nfs4state.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index 8f7362c..739a6c2 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -1048,7 +1048,7 @@ static struct nfs4_client *alloc_client(struct xdr_netobj name)
->   static inline void
->   free_client(struct nfs4_client *clp)
->   {
-> -	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-> +	struct nfsd_net __maybe_unused *nn = net_generic(clp->net, nfsd_net_id);
->
->   	lockdep_assert_held(&nn->client_lock);
->   	while (!list_empty(&clp->cl_sessions)) {
->
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memory_hotplug.c |  129 ++++++++++++++++++++++++++++++++------------------
+ 1 files changed, 82 insertions(+), 47 deletions(-)
 
-
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 5808045..69d62eb 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1381,20 +1381,26 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+ 	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
+ }
+ 
+-int remove_memory(u64 start, u64 size)
++/**
++ * walk_memory_range - walks through all mem sections in [start_pfn, end_pfn)
++ * @start_pfn: start pfn of the memory range
++ * @end_pfn: end pft of the memory range
++ * @arg: argument passed to func
++ * @func: callback for each memory section walked
++ *
++ * This function walks through all present mem sections in range
++ * [start_pfn, end_pfn) and call func on each mem section.
++ *
++ * Returns the return value of func.
++ */
++static int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
++		void *arg, int (*func)(struct memory_block *, void *))
+ {
+ 	struct memory_block *mem = NULL;
+ 	struct mem_section *section;
+-	unsigned long start_pfn, end_pfn;
+ 	unsigned long pfn, section_nr;
+ 	int ret;
+-	int return_on_error = 0;
+-	int retry = 0;
+-
+-	start_pfn = PFN_DOWN(start);
+-	end_pfn = start_pfn + PFN_DOWN(size);
+ 
+-repeat:
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+ 		section_nr = pfn_to_section_nr(pfn);
+ 		if (!present_section_nr(section_nr))
+@@ -1411,22 +1417,76 @@ repeat:
+ 		if (!mem)
+ 			continue;
+ 
+-		ret = offline_memory_block(mem);
++		ret = func(mem, arg);
+ 		if (ret) {
+-			if (return_on_error) {
+-				kobject_put(&mem->dev.kobj);
+-				return ret;
+-			} else {
+-				retry = 1;
+-			}
++			kobject_put(&mem->dev.kobj);
++			return ret;
+ 		}
+ 	}
+ 
+ 	if (mem)
+ 		kobject_put(&mem->dev.kobj);
+ 
+-	if (retry) {
+-		return_on_error = 1;
++	return 0;
++}
++
++/**
++ * offline_memory_block_cb - callback function for offlining memory block
++ * @mem: the memory block to be offlined
++ * @arg: buffer to hold error msg
++ *
++ * Always return 0, and put the error msg in arg if any.
++ */
++static int offline_memory_block_cb(struct memory_block *mem, void *arg)
++{
++	int *ret = arg;
++	int error = offline_memory_block(mem);
++
++	if (error != 0 && *ret == 0)
++		*ret = error;
++
++	return 0;
++}
++
++static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
++{
++	int ret = !is_memblock_offlined(mem);
++
++	if (unlikely(ret))
++		pr_warn("removing memory fails, because memory "
++			"[%#010llx-%#010llx] is onlined\n",
++			PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
++			PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1))-1);
++
++	return ret;
++}
++
++int remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn, end_pfn;
++	int ret = 0;
++	int retry = 1;
++
++	start_pfn = PFN_DOWN(start);
++	end_pfn = start_pfn + PFN_DOWN(size);
++
++	/*
++	 * When CONFIG_MEMCG is on, one memory block may be used by other
++	 * blocks to store page cgroup when onlining pages. But we don't know
++	 * in what order pages are onlined. So we iterate twice to offline
++	 * memory:
++	 * 1st iterate: offline every non primary memory block.
++	 * 2nd iterate: offline primary (i.e. first added) memory block.
++	 */
++repeat:
++	walk_memory_range(start_pfn, end_pfn, &ret,
++			  offline_memory_block_cb);
++	if (ret) {
++		if (!retry)
++			return ret;
++
++		retry = 0;
++		ret = 0;
+ 		goto repeat;
+ 	}
+ 
+@@ -1444,38 +1504,13 @@ repeat:
+ 	 * memory blocks are offlined.
+ 	 */
+ 
+-	mem = NULL;
+-	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+-		section_nr = pfn_to_section_nr(pfn);
+-		if (!present_section_nr(section_nr))
+-			continue;
+-
+-		section = __nr_to_section(section_nr);
+-		/* same memblock? */
+-		if (mem)
+-			if ((section_nr >= mem->start_section_nr) &&
+-			    (section_nr <= mem->end_section_nr))
+-				continue;
+-
+-		mem = find_memory_block_hinted(section, mem);
+-		if (!mem)
+-			continue;
+-
+-		ret = is_memblock_offlined(mem);
+-		if (!ret) {
+-			pr_warn("removing memory fails, because memory "
+-				"[%#010llx-%#010llx] is onlined\n",
+-				PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
+-				PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1)) - 1);
+-
+-			kobject_put(&mem->dev.kobj);
+-			unlock_memory_hotplug();
+-			return ret;
+-		}
++	ret = walk_memory_range(start_pfn, end_pfn, NULL,
++				is_memblock_offlined_cb);
++	if (ret) {
++		unlock_memory_hotplug();
++		return ret;
+ 	}
+ 
+-	if (mem)
+-		kobject_put(&mem->dev.kobj);
+ 	unlock_memory_hotplug();
+ 
+ 	return 0;
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.1
+
