@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934034Ab3AIUyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:54:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43795 "EHLO mail.kernel.org"
+	id S933834Ab3AIUlD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:41:03 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43728 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934002Ab3AIUlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:04 -0500
+	id S933968Ab3AIUk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tim Perry <tdparmor-sambabugs@yahoo.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [ 102/123] cifs: adjust sequence number downward after signing NT_CANCEL request
-Date: Wed,  9 Jan 2013 12:35:41 -0800
-Message-Id: <20130109201511.635053640@linuxfoundation.org>
+        Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [ 096/123] ARM: mm: use pteval_t to represent page protection values
+Date: Wed,  9 Jan 2013 12:35:35 -0800
+Message-Id: <20130109201510.925282646@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,41 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 31efee60f489c759c341454d755a9fd13de8c03d upstream.
+commit 864aa04cd02979c2c755cb28b5f4fe56039171c0 upstream.
 
-When a call goes out, the signing code adjusts the sequence number
-upward by two to account for the request and the response. An NT_CANCEL
-however doesn't get a response of its own, it just hurries the server
-along to get it to respond to the original request more quickly.
-Therefore, we must adjust the sequence number back down by one after
-signing a NT_CANCEL request.
+When updating the page protection map after calculating the user_pgprot
+value, the base protection map is temporarily stored in an unsigned long
+type, causing truncation of the protection bits when LPAE is enabled.
+This effectively means that calls to mprotect() will corrupt the upper
+page attributes, clearing the XN bit unconditionally.
 
-Reported-by: Tim Perry <tdparmor-sambabugs@yahoo.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+This patch uses pteval_t to store the intermediate protection values,
+preserving the upper bits for 64-bit descriptors.
+
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/smb1ops.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/arm/mm/mmu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/smb1ops.c
-+++ b/fs/cifs/smb1ops.c
-@@ -53,6 +53,13 @@ send_nt_cancel(struct TCP_Server_Info *s
- 		mutex_unlock(&server->srv_mutex);
- 		return rc;
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -488,7 +488,7 @@ static void __init build_mem_type_table(
+ #endif
+ 
+ 	for (i = 0; i < 16; i++) {
+-		unsigned long v = pgprot_val(protection_map[i]);
++		pteval_t v = pgprot_val(protection_map[i]);
+ 		protection_map[i] = __pgprot(v | user_pgprot);
  	}
-+
-+	/*
-+	 * The response to this call was already factored into the sequence
-+	 * number when the call went out, so we must adjust it back downward
-+	 * after signing here.
-+	 */
-+	--server->sequence_number;
- 	rc = smb_send(server, in_buf, be32_to_cpu(in_buf->smb_buf_length));
- 	mutex_unlock(&server->srv_mutex);
  
 
 
