@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296Ab3AIILk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 03:11:40 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:56846 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757193Ab3AIILh (ORCPT
+	id S1757284Ab3AIIPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 03:15:00 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57731 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756051Ab3AIIO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 03:11:37 -0500
-Date: Wed, 9 Jan 2013 08:11:31 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jon Loeliger <jdl@jdl.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH 1/5] capemgr: Beaglebone DT overlay based cape manager
-Message-ID: <20130109081131.GH21994@gmail.com>
-References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com>
- <201301081212.29089.arnd@arndb.de>
- <51A6DFCC-BBC8-475D-88C4-1B22186339C1@antoniou-consulting.com>
- <201301081612.59292.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201301081612.59292.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 Jan 2013 03:14:59 -0500
+X-AuditID: 9c930197-b7cefae0000002d7-71-50ed27016949
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>,
+        Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH] Fix build error due to bio_endio_batch
+Date: Wed,  9 Jan 2013 17:14:55 +0900
+Message-Id: <1357719296-10562-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Jan 2013, Arnd Bergmann wrote:
+This patch fixes build error of recent mmotm.
 
-> On Tuesday 08 January 2013, Pantelis Antoniou wrote:
-> > On Jan 8, 2013, at 2:12 PM, Arnd Bergmann wrote:
-> > 
-> > > On Tuesday 08 January 2013, Lee Jones wrote:
-> > >>> If there is not, there is no way to automatically load the overlays; you can always
-> > >>> use the kernel command line, or have the a user space application to request the loading
-> > >>> of a specific board's overlay.
-> > >> 
-> > >> Unfortunately, there is no way to probe the UIBs. :(
-> > > 
-> > > I thought that some of the newer UIBs had it, just not the old ones.
-> > > As Pantelis says, we could at least detect the ones that have an EEPROM
-> > > on them, and use a command line option or device tree attribute for the others.
-> > > 
-> > >       Arnd
-> > 
-> > So I gather the new ones have an eeprom?
-> 
-> I don't remember the details unfortunately. Lee should be the one who can find out.
-> IIRC there was at least a single integeger number on them.
+Cc: Kent Overstreet <koverstreet@google.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+I don't know who already fix it.
 
-Not as far as I can remember. There was (is?) a crude method of
-identifying UIBs, but attempting to obtain certain I2C lines and
-testing which ones were accessible. However, if there is an issue
-with I2C, the wrong UIB was 'probed'.
+ include/linux/bio.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index ad62bdb..5f5491767 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -69,6 +69,8 @@
+ #define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_idx)
+ #define bio_sectors(bio)	((bio)->bi_size >> 9)
+ 
++void bio_endio_batch(struct bio *bio, int error, struct batch_complete *batch);
++
+ static inline unsigned int bio_cur_bytes(struct bio *bio)
+ {
+ 	if (bio->bi_vcnt)
+@@ -542,8 +544,6 @@ static inline struct bio *bio_list_get(struct bio_list *bl)
+ 	return bio;
+ }
+ 
+-void bio_endio_batch(struct bio *bio, int error, struct batch_complete *batch);
+-
+ static inline void batch_complete_init(struct batch_complete *batch)
+ {
+ 	bio_list_init(&batch->bio);
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
