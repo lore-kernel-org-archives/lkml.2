@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab3AIV6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:58:38 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50808 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932431Ab3AIV6f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:58:35 -0500
-Date: Wed, 9 Jan 2013 22:58:15 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
-Message-ID: <20130109215815.GC13648@avionic-0098.adnet.avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
- <1357764194-12677-11-git-send-email-thierry.reding@avionic-design.de>
- <201301092122.08011.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZwgA9U+XZDXt4+m+"
-Content-Disposition: inline
-In-Reply-To: <201301092122.08011.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:8x8sNGj+CLeyulyNRk3X5OOzgfHhM9IZqQ9RYrBu+NK
- yC4VolE5xonep8omacFk4I41NQ1mTCHF/oH/YZt5T4FZSY85RP
- iWzNSX8aEELOT+0YJcA2S0rqrEg+v9Piw8Jq0h2J5Td+8MJ/ET
- UKD3EGvA08Kn6Qt3kPHRz/APHuihX+pUoNTyikClFjLc9JC2ee
- 2zOeSOYSvQfC4dyEAVrBIumI+aWAYrbMl0f601gn3Vq2HdNDE0
- q14yBDzbmxoEwKZznrqP9KQckNnWtaYitaetDNVjmROWe/SagC
- vQ+OHl9WGfFHyEMQYk7L1AG6yLiEtVj74KBEJQ94Grt77gelGJ
- IUwvZKBtJyTcyF/p9fY/2XiE5/PRKaeVo3pkGonET3QyvMXQP8
- V0Yb+SPj8Jv2GFaTmiV0axGqcNEj55eqwAC+VcjsKN6zLlotnx
- SbgYi
+	id S932885Ab3AIV7E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:59:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41164 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932850Ab3AIUgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:36:53 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 17/47] p54usb: add USBIDs for two more p54usb devices
+Date: Wed,  9 Jan 2013 12:35:12 -0800
+Message-Id: <20130109201731.458109513@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
---ZwgA9U+XZDXt4+m+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Wed, Jan 09, 2013 at 09:22:07PM +0000, Arnd Bergmann wrote:
-> On Wednesday 09 January 2013, Thierry Reding wrote:
-> > Move the PCIe driver from arch/arm/mach-tegra into the drivers/pci/host
-> > directory. The motivation is to collect various host controller drivers
-> > in the same location in order to facilitate refactoring.
-> >=20
-> > The Tegra PCIe driver has been largely rewritten, both in order to turn
-> > it into a proper platform driver and to add MSI (based on code by
-> > Krishna Kishore <kthota@nvidia.com>) as well as device tree support.
-> >=20
-> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->=20
-> Can you split this patch into two patches, one that moves the file,
-> and another one that does all the changes? It's a little hard to
-> review when I can't easily see which code is actually new here.
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-Stephen suggested I post this as removal/addition because pretty much
-everything changed. Reviewing the individual changes would be more
-confusing than actually reviewing a new driver.
+commit 4010fe21a315b4223c25376714c6a2b61b722e5c upstream.
 
-Thierry
+This patch adds USBIDs for:
+	- DrayTek Vigor 530
+	- Zoom 4410a
 
---ZwgA9U+XZDXt4+m+
-Content-Type: application/pgp-signature
+It also adds a note about Gemtek WUBI-100GW
+and SparkLAN WL-682 USBID conflict [WUBI-100GW
+is a ISL3886+NET2280 (LM86 firmare) solution,
+whereas WL-682 is a ISL3887 (LM87 firmware)]
+device.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Source: <http://www.wikidevi.com/wiki/Intersil/p54/usb/windows>
 
-iQIcBAEBAgAGBQJQ7ef2AAoJEN0jrNd/PrOhdEkP/2GUkig98fNrXYHKCPF9or9+
-cJisvvH8SPAGt09p5RYaO5XgBGJK4XnmAdGConWD3EtKP1pk2SEYCJ5pvjNgXftM
-T4QokPjKjttA1NYU8zVQhdYG1qr13is7mpNEEjCHD9q0b8TXYh1E7pvFf8KPvwKE
-uE0qpbOMMdd33UsrLEkJyVPJ1zfrCrCCHUrBbSwyYgknDPb66yxTlNYOVyR0t5UP
-6Nq/30GPGMiv+hl7sZeddZ9sLh5NzJE+QaElYQ0N0EW/iwzlKmKyFXUzBW9ZZB6Q
-4quSKUxZKgTSCi2Urjct/zP67/d6ZGw8eeaTxgp0Hy0K8jJ4MJ4+cL9w6vUGhS7C
-bqqC9TokrGVmlRyOj/wSkdoYWzbqGyIRSHcWBD3cioywfo8LQizJqcdXrgtqfa0Q
-iBNDS+S/2cG25lqiCbeTwv0Q7lYWRvQjPRc4Db9HpvA1E8aHucqGV0EUqaXQOZD1
-X/VSEyWVBefJiF1ta6DvCznJ0JJae4FBenlkPHYOSjF/3QJkX7PHb/3EqR6sOUw6
-tqypC0HMiKA1eAa2PT9tO1fno7c+rCKSwmHLasExTF1Q6E5o6c1/rzVNXACyvFXf
-isB2EcwOx/+9BJlz5UxBZNY5dmMGOOpfB/xsXMLAbe+CjIkt6XJGs8fJWuaorrf/
-uTEEPPGoykfodSDltlw2
-=GWfc
------END PGP SIGNATURE-----
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---ZwgA9U+XZDXt4+m+--
+---
+ drivers/net/wireless/p54/p54usb.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -46,6 +46,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x0411, 0x0050)},	/* Buffalo WLI2-USB2-G54 */
+ 	{USB_DEVICE(0x045e, 0x00c2)},	/* Microsoft MN-710 */
+ 	{USB_DEVICE(0x0506, 0x0a11)},	/* 3COM 3CRWE254G72 */
++	{USB_DEVICE(0x0675, 0x0530)},	/* DrayTek Vigor 530 */
+ 	{USB_DEVICE(0x06b9, 0x0120)},	/* Thomson SpeedTouch 120g */
+ 	{USB_DEVICE(0x0707, 0xee06)},	/* SMC 2862W-G */
+ 	{USB_DEVICE(0x07aa, 0x001c)},	/* Corega CG-WLUSB2GT */
+@@ -81,6 +82,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
+ 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
+ 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
++	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
+ 	{USB_DEVICE(0x083a, 0x4503)},	/* T-Com Sinus 154 data II */
+ 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
+ 	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
+@@ -101,6 +103,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x13B1, 0x000C)},	/* Linksys WUSB54AG */
+ 	{USB_DEVICE(0x1413, 0x5400)},   /* Telsey 802.11g USB2.0 Adapter */
+ 	{USB_DEVICE(0x1435, 0x0427)},	/* Inventel UR054G */
++	/* {USB_DEVICE(0x15a9, 0x0002)}, * Also SparkLAN WL-682 with 3887 */
+ 	{USB_DEVICE(0x1668, 0x1050)},	/* Actiontec 802UIG-1 */
+ 	{USB_DEVICE(0x1740, 0x1000)},	/* Senao NUB-350 */
+ 	{USB_DEVICE(0x2001, 0x3704)},	/* DLink DWL-G122 rev A2 */
+
+
