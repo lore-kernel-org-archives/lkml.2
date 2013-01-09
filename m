@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab3AIVu5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:50:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41484 "EHLO mail.kernel.org"
+	id S933134Ab3AIVvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:51:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41460 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933010Ab3AIUh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:27 -0500
+	id S933002Ab3AIUhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Will Deacon <will.deacon@arm.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 013/123] virtio: 9p: correctly pass physical address to userspace for high pages
-Date: Wed,  9 Jan 2013 12:34:12 -0800
-Message-Id: <20130109201500.230166296@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [ 27/47] cgroup: remove incorrect dget/dput() pair in cgroup_create_dir()
+Date: Wed,  9 Jan 2013 12:35:22 -0800
+Message-Id: <20130109201732.629935434@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit b9cdc88df8e63e81c723b82c286fc97f5d0dc325 upstream.
+commit 175431635ec09b1d1bba04979b006b99e8305a83 upstream.
 
-When using a virtio transport, the 9p net device may pass the physical
-address of a kernel buffer to userspace via a scatterlist inside a
-virtqueue. If the kernel buffer is mapped outside of the linear mapping
-(e.g. highmem), then virt_to_page will return a bogus value and we will
-populate the scatterlist with junk.
+cgroup_create_dir() does weird dancing with dentry refcnt.  On
+success, it gets and then puts it achieving nothing.  On failure, it
+puts but there isn't no matching get anywhere leading to the following
+oops if cgroup_create_file() fails for whatever reason.
 
-This patch uses kmap_to_page when populating the page array for a kernel
-buffer.
+  ------------[ cut here ]------------
+  kernel BUG at /work/os/work/fs/dcache.c:552!
+  invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+  Modules linked in:
+  CPU 2
+  Pid: 697, comm: mkdir Not tainted 3.7.0-rc4-work+ #3 Bochs Bochs
+  RIP: 0010:[<ffffffff811d9c0c>]  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
+  RSP: 0018:ffff88001a3ebef8  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: ffff88000e5b1ef8 RCX: 0000000000000403
+  RDX: 0000000000000303 RSI: 2000000000000000 RDI: ffff88000e5b1f58
+  RBP: ffff88001a3ebf18 R08: ffffffff82c76960 R09: 0000000000000001
+  R10: ffff880015022080 R11: ffd9bed70f48a041 R12: 00000000ffffffea
+  R13: 0000000000000001 R14: ffff88000e5b1f58 R15: 00007fff57656d60
+  FS:  00007ff05fcb3800(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 00000000004046f0 CR3: 000000001315f000 CR4: 00000000000006e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process mkdir (pid: 697, threadinfo ffff88001a3ea000, task ffff880015022080)
+  Stack:
+   ffff88001a3ebf48 00000000ffffffea 0000000000000001 0000000000000000
+   ffff88001a3ebf38 ffffffff811cc889 0000000000000001 ffff88000e5b1ef8
+   ffff88001a3ebf68 ffffffff811d1fc9 ffff8800198d7f18 ffff880019106ef8
+  Call Trace:
+   [<ffffffff811cc889>] done_path_create+0x19/0x50
+   [<ffffffff811d1fc9>] sys_mkdirat+0x59/0x80
+   [<ffffffff811d2009>] sys_mkdir+0x19/0x20
+   [<ffffffff81be1e02>] system_call_fastpath+0x16/0x1b
+  Code: 00 48 8d 90 18 01 00 00 48 89 93 c0 00 00 00 4c 89 a0 18 01 00 00 48 8b 83 a0 00 00 00 83 80 28 01 00 00 01 e8 e6 6f a0 00 eb 92 <0f> 0b 66 90 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 49 89 fe 41
+  RIP  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
+   RSP <ffff88001a3ebef8>
+  ---[ end trace 1277bcfd9561ddb0 ]---
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Fix it by dropping the unnecessary dget/dput() pair.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/9p/trans_virtio.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/cgroup.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -39,6 +39,7 @@
- #include <linux/inet.h>
- #include <linux/idr.h>
- #include <linux/file.h>
-+#include <linux/highmem.h>
- #include <linux/slab.h>
- #include <net/9p/9p.h>
- #include <linux/parser.h>
-@@ -325,7 +326,7 @@ static int p9_get_mapped_pages(struct vi
- 		int count = nr_pages;
- 		while (nr_pages) {
- 			s = rest_of_page(data);
--			pages[index++] = virt_to_page(data);
-+			pages[index++] = kmap_to_page(data);
- 			data += s;
- 			nr_pages--;
- 		}
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2630,9 +2630,7 @@ static int cgroup_create_dir(struct cgro
+ 		dentry->d_fsdata = cgrp;
+ 		inc_nlink(parent->d_inode);
+ 		rcu_assign_pointer(cgrp->dentry, dentry);
+-		dget(dentry);
+ 	}
+-	dput(dentry);
+ 
+ 	return error;
+ }
 
 
