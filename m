@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934120Ab3AIUtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:49:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43937 "EHLO mail.kernel.org"
+	id S934133Ab3AIUt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:49:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43914 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933810Ab3AIUlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:20 -0500
+	id S934068Ab3AIUlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Corey Minyard <cminyard@mvista.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 114/123] CRIS: fix I/O macros
-Date: Wed,  9 Jan 2013 12:35:53 -0800
-Message-Id: <20130109201513.025462911@linuxfoundation.org>
+        Tony Lindgren <tony@atomide.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [ 112/123] lib: atomic64: Initialize locks statically to fix early users
+Date: Wed,  9 Jan 2013 12:35:51 -0800
+Message-Id: <20130109201512.794583191@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -30,79 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corey Minyard <cminyard@mvista.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit c24bf9b4cc6a0f330ea355d73bfdf1dae7e63a05 upstream.
+commit fcc16882ac4532aaa644bff444f0c5d6228ba71e upstream.
 
-The inb/outb macros for CRIS are broken from a number of points of view,
-missing () around parameters and they have an unprotected if statement
-in them.  This was breaking the compile of IPMI on CRIS and thus I was
-being annoyed by build regressions, so I fixed them.
+The atomic64 library uses a handful of static spin locks to implement
+atomic 64-bit operations on architectures without support for atomic
+64-bit instructions.
 
-Plus I don't think they would have worked at all, since the data values
-were missing "&" and the outsl had a "3" instead of a "4" for the size.
->From what I can tell, this stuff is not used at all, so this can't be
-any more broken than it was before, anyway.
+Unfortunately, the spinlocks are initialized in a pure initcall and that
+is too late for the vfs namespace code which wants to use atomic64
+operations before the initcall is run.
 
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+This became a problem as of commit 8823c079ba71: "vfs: Add setns support
+for the mount namespace".
+
+This leads to BUG messages such as:
+
+  BUG: spinlock bad magic on CPU#0, swapper/0/0
+   lock: atomic64_lock+0x240/0x400, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
+    do_raw_spin_lock+0x158/0x198
+    _raw_spin_lock_irqsave+0x4c/0x58
+    atomic64_add_return+0x30/0x5c
+    alloc_mnt_ns.clone.14+0x44/0xac
+    create_mnt_ns+0xc/0x54
+    mnt_init+0x120/0x1d4
+    vfs_caches_init+0xe0/0x10c
+    start_kernel+0x29c/0x300
+
+coming out early on during boot when spinlock debugging is enabled.
+
+Fix this by initializing the spinlocks statically at compile time.
+
+Reported-and-tested-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
+Tested-by: Tony Lindgren <tony@atomide.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/cris/include/asm/io.h |   39 +++++++++++++++++++++++++++++++++------
- 1 file changed, 33 insertions(+), 6 deletions(-)
+ lib/atomic64.c |   17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
 
---- a/arch/cris/include/asm/io.h
-+++ b/arch/cris/include/asm/io.h
-@@ -133,12 +133,39 @@ static inline void writel(unsigned int b
- #define insb(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,1,count) : 0)
- #define insw(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,2,count) : 0)
- #define insl(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,4,count) : 0)
--#define outb(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,1,1)
--#define outw(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,2,1)
--#define outl(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,4,1)
--#define outsb(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,1,count)
--#define outsw(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,2,count)
--#define outsl(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,3,count)
-+static inline void outb(unsigned char data, unsigned int port)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *) &data, 1, 1);
-+}
-+static inline void outw(unsigned short data, unsigned int port)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *) &data, 2, 1);
-+}
-+static inline void outl(unsigned int data, unsigned int port)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *) &data, 4, 1);
-+}
-+static inline void outsb(unsigned int port, const void *addr,
-+			 unsigned long count)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *)addr, 1, count);
-+}
-+static inline void outsw(unsigned int port, const void *addr,
-+			 unsigned long count)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *)addr, 2, count);
-+}
-+static inline void outsl(unsigned int port, const void *addr,
-+			 unsigned long count)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *)addr, 4, count);
-+}
+--- a/lib/atomic64.c
++++ b/lib/atomic64.c
+@@ -31,7 +31,11 @@
+ static union {
+ 	raw_spinlock_t lock;
+ 	char pad[L1_CACHE_BYTES];
+-} atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp;
++} atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp = {
++	[0 ... (NR_LOCKS - 1)] = {
++		.lock =  __RAW_SPIN_LOCK_UNLOCKED(atomic64_lock.lock),
++	},
++};
  
- /*
-  * Convert a physical pointer to a virtual kernel pointer for /dev/mem
+ static inline raw_spinlock_t *lock_addr(const atomic64_t *v)
+ {
+@@ -173,14 +177,3 @@ int atomic64_add_unless(atomic64_t *v, l
+ 	return ret;
+ }
+ EXPORT_SYMBOL(atomic64_add_unless);
+-
+-static int init_atomic64_lock(void)
+-{
+-	int i;
+-
+-	for (i = 0; i < NR_LOCKS; ++i)
+-		raw_spin_lock_init(&atomic64_lock[i].lock);
+-	return 0;
+-}
+-
+-pure_initcall(init_atomic64_lock);
 
 
