@@ -1,82 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426Ab3AIVnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:43:53 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41828 "EHLO mail.kernel.org"
+	id S933430Ab3AIVoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:44:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41815 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932999Ab3AIUh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:57 -0500
+	id S932793Ab3AIUhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 18/80] x86, 8042: Enable A20 using KBC to fix S3 resume on some MSI laptops
-Date: Wed,  9 Jan 2013 12:35:10 -0800
-Message-Id: <20130109201502.717976776@linuxfoundation.org>
+        Corey Minyard <cminyard@mvista.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 43/47] CRIS: fix I/O macros
+Date: Wed,  9 Jan 2013 12:35:38 -0800
+Message-Id: <20130109201734.421726474@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ondrej Zary <linux@rainbow-software.org>
+From: Corey Minyard <cminyard@mvista.com>
 
-commit ad68652412276f68ad4fe3e1ecf5ee6880876783 upstream.
+commit c24bf9b4cc6a0f330ea355d73bfdf1dae7e63a05 upstream.
 
-Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
-line but resume code assumes that KBC was used.
-The laptop will not resume from S3 otherwise but powers off after a while
-and then powers on again stuck with a blank screen.
+The inb/outb macros for CRIS are broken from a number of points of view,
+missing () around parameters and they have an unprotected if statement
+in them.  This was breaking the compile of IPMI on CRIS and thus I was
+being annoyed by build regressions, so I fixed them.
 
-Fix it by enabling A20 using KBC in i8042_platform_init for x86.
+Plus I don't think they would have worked at all, since the data values
+were missing "&" and the outsl had a "3" instead of a "4" for the size.
+>From what I can tell, this stuff is not used at all, so this can't be
+any more broken than it was before, anyway.
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Link: http://lkml.kernel.org/r/201212112218.06551.linux@rainbow-software.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/cris/include/asm/io.h |   39 +++++++++++++++++++++++++++++++++------
+ 1 file changed, 33 insertions(+), 6 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -921,6 +921,7 @@ static int __init i8042_platform_init(vo
- 	int retval;
+--- a/arch/cris/include/asm/io.h
++++ b/arch/cris/include/asm/io.h
+@@ -133,12 +133,39 @@ static inline void writel(unsigned int b
+ #define insb(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,1,count) : 0)
+ #define insw(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,2,count) : 0)
+ #define insl(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,4,count) : 0)
+-#define outb(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,1,1)
+-#define outw(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,2,1)
+-#define outl(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,4,1)
+-#define outsb(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,1,count)
+-#define outsw(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,2,count)
+-#define outsl(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,3,count)
++static inline void outb(unsigned char data, unsigned int port)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *) &data, 1, 1);
++}
++static inline void outw(unsigned short data, unsigned int port)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *) &data, 2, 1);
++}
++static inline void outl(unsigned int data, unsigned int port)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *) &data, 4, 1);
++}
++static inline void outsb(unsigned int port, const void *addr,
++			 unsigned long count)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *)addr, 1, count);
++}
++static inline void outsw(unsigned int port, const void *addr,
++			 unsigned long count)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *)addr, 2, count);
++}
++static inline void outsl(unsigned int port, const void *addr,
++			 unsigned long count)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *)addr, 4, count);
++}
  
- #ifdef CONFIG_X86
-+	u8 a20_on = 0xdf;
- 	/* Just return if pre-detection shows no i8042 controller exist */
- 	if (!x86_platform.i8042_detect())
- 		return -ENODEV;
-@@ -960,6 +961,14 @@ static int __init i8042_platform_init(vo
- 
- 	if (dmi_check_system(i8042_dmi_dritek_table))
- 		i8042_dritek = true;
-+
-+	/*
-+	 * A20 was already enabled during early kernel init. But some buggy
-+	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
-+	 * resume from S3. So we do it here and hope that nothing breaks.
-+	 */
-+	i8042_command(&a20_on, 0x10d1);
-+	i8042_command(NULL, 0x00ff);	/* Null command for SMM firmware */
- #endif /* CONFIG_X86 */
- 
- 	return retval;
+ /*
+  * Convert a physical pointer to a virtual kernel pointer for /dev/mem
 
 
