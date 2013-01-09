@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933134Ab3AIVvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:51:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41460 "EHLO mail.kernel.org"
+	id S933097Ab3AIVvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:51:18 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41470 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933002Ab3AIUhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:25 -0500
+	id S932702Ab3AIUh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [ 27/47] cgroup: remove incorrect dget/dput() pair in cgroup_create_dir()
-Date: Wed,  9 Jan 2013 12:35:22 -0800
-Message-Id: <20130109201732.629935434@linuxfoundation.org>
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Jay Vosburgh <fubar@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 02/80] bonding: fix race condition in bonding_store_slaves_active
+Date: Wed,  9 Jan 2013 12:34:54 -0800
+Message-Id: <20130109201500.702702566@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
 
-commit 175431635ec09b1d1bba04979b006b99e8305a83 upstream.
+From: "nikolay@redhat.com" <nikolay@redhat.com>
 
-cgroup_create_dir() does weird dancing with dentry refcnt.  On
-success, it gets and then puts it achieving nothing.  On failure, it
-puts but there isn't no matching get anywhere leading to the following
-oops if cgroup_create_file() fails for whatever reason.
+[ Upstream commit e196c0e579902f42cf72414461fb034e5a1ffbf7 ]
 
-  ------------[ cut here ]------------
-  kernel BUG at /work/os/work/fs/dcache.c:552!
-  invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-  Modules linked in:
-  CPU 2
-  Pid: 697, comm: mkdir Not tainted 3.7.0-rc4-work+ #3 Bochs Bochs
-  RIP: 0010:[<ffffffff811d9c0c>]  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
-  RSP: 0018:ffff88001a3ebef8  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: ffff88000e5b1ef8 RCX: 0000000000000403
-  RDX: 0000000000000303 RSI: 2000000000000000 RDI: ffff88000e5b1f58
-  RBP: ffff88001a3ebf18 R08: ffffffff82c76960 R09: 0000000000000001
-  R10: ffff880015022080 R11: ffd9bed70f48a041 R12: 00000000ffffffea
-  R13: 0000000000000001 R14: ffff88000e5b1f58 R15: 00007fff57656d60
-  FS:  00007ff05fcb3800(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 00000000004046f0 CR3: 000000001315f000 CR4: 00000000000006e0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process mkdir (pid: 697, threadinfo ffff88001a3ea000, task ffff880015022080)
-  Stack:
-   ffff88001a3ebf48 00000000ffffffea 0000000000000001 0000000000000000
-   ffff88001a3ebf38 ffffffff811cc889 0000000000000001 ffff88000e5b1ef8
-   ffff88001a3ebf68 ffffffff811d1fc9 ffff8800198d7f18 ffff880019106ef8
-  Call Trace:
-   [<ffffffff811cc889>] done_path_create+0x19/0x50
-   [<ffffffff811d1fc9>] sys_mkdirat+0x59/0x80
-   [<ffffffff811d2009>] sys_mkdir+0x19/0x20
-   [<ffffffff81be1e02>] system_call_fastpath+0x16/0x1b
-  Code: 00 48 8d 90 18 01 00 00 48 89 93 c0 00 00 00 4c 89 a0 18 01 00 00 48 8b 83 a0 00 00 00 83 80 28 01 00 00 01 e8 e6 6f a0 00 eb 92 <0f> 0b 66 90 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 49 89 fe 41
-  RIP  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
-   RSP <ffff88001a3ebef8>
-  ---[ end trace 1277bcfd9561ddb0 ]---
+Race between bonding_store_slaves_active() and slave manipulation
+ functions. The bond_for_each_slave use in bonding_store_slaves_active()
+ is not protected by any synchronization mechanism.
+ NULL pointer dereference is easy to reach.
+ Fixed by acquiring the bond->lock for the slave walk.
 
-Fix it by dropping the unnecessary dget/dput() pair.
+ v2: Make description text < 75 columns
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/cgroup.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/net/bonding/bond_sysfs.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2630,9 +2630,7 @@ static int cgroup_create_dir(struct cgro
- 		dentry->d_fsdata = cgrp;
- 		inc_nlink(parent->d_inode);
- 		rcu_assign_pointer(cgrp->dentry, dentry);
--		dget(dentry);
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -1578,6 +1578,7 @@ static ssize_t bonding_store_slaves_acti
+ 		goto out;
  	}
--	dput(dentry);
  
- 	return error;
++	read_lock(&bond->lock);
+ 	bond_for_each_slave(bond, slave, i) {
+ 		if (!bond_is_active_slave(slave)) {
+ 			if (new_value)
+@@ -1586,6 +1587,7 @@ static ssize_t bonding_store_slaves_acti
+ 				slave->inactive = 1;
+ 		}
+ 	}
++	read_unlock(&bond->lock);
+ out:
+ 	return ret;
  }
 
 
