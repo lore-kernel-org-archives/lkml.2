@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933022Ab3AIUh2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41394 "EHLO mail.kernel.org"
+	id S932754Ab3AIUhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:37:31 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41494 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932971Ab3AIUhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:16 -0500
+	id S933021Ab3AIUh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        Kiran Kumar Kella <kkiran@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 32/47] tcp: implement RFC 5961 3.2
-Date: Wed,  9 Jan 2013 12:35:27 -0800
-Message-Id: <20130109201733.185558289@linuxfoundation.org>
+        Peter Popovec <popovec@fei.tuke.sk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 24/47] Input: walkera0701 - fix crash on startup
+Date: Wed,  9 Jan 2013 12:35:19 -0800
+Message-Id: <20130109201732.288985773@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
 References: <20130109201729.435233560@linuxfoundation.org>
@@ -27,154 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Peter Popovec <popovec@oko.fei.tuke.sk>
 
-From: Eric Dumazet <edumazet@google.com>
+commit a455e2985f57e2a71566bb8850094af38b2c932d upstream.
 
-[ Upstream commit 282f23c6ee343126156dd41218b22ece96d747e3 ]
+The driver's timer must be set up before enabling IRQ handler, otherwise
+bad things may happen.
 
-Implement the RFC 5691 mitigation against Blind
-Reset attack using RST bit.
-
-Idea is to validate incoming RST sequence,
-to match RCV.NXT value, instead of previouly accepted
-window : (RCV.NXT <= SEG.SEQ < RCV.NXT+RCV.WND)
-
-If sequence is in window but not an exact match, send
-a "challenge ACK", so that the other part can resend an
-RST with the appropriate sequence.
-
-Add a new sysctl, tcp_challenge_ack_limit, to limit
-number of challenge ACK sent per second.
-
-Add a new SNMP counter to count number of challenge acks sent.
-(netstat -s | grep TCPChallengeACK)
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Kiran Kumar Kella <kkiran@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Peter Popovec <popovec@fei.tuke.sk>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- Documentation/networking/ip-sysctl.txt |    5 +++++
- include/linux/snmp.h                   |    1 +
- include/net/tcp.h                      |    1 +
- net/ipv4/proc.c                        |    1 +
- net/ipv4/sysctl_net_ipv4.c             |    7 +++++++
- net/ipv4/tcp_input.c                   |   31 ++++++++++++++++++++++++++++++-
- 6 files changed, 45 insertions(+), 1 deletion(-)
 
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -534,6 +534,11 @@ tcp_thin_dupack - BOOLEAN
- 	Documentation/networking/tcp-thin.txt
- 	Default: 0
+---
+ drivers/input/joystick/walkera0701.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+--- a/drivers/input/joystick/walkera0701.c
++++ b/drivers/input/joystick/walkera0701.c
+@@ -196,6 +196,7 @@ static void walkera0701_close(struct inp
+ 	struct walkera_dev *w = input_get_drvdata(dev);
  
-+tcp_challenge_ack_limit - INTEGER
-+	Limits number of Challenge ACK sent per second, as recommended
-+	in RFC 5961 (Improving TCP's Robustness to Blind In-Window Attacks)
-+	Default: 100
-+
- UDP variables:
- 
- udp_mem - vector of 3 INTEGERs: min, pressure, max
---- a/include/linux/snmp.h
-+++ b/include/linux/snmp.h
-@@ -231,6 +231,7 @@ enum
- 	LINUX_MIB_TCPDEFERACCEPTDROP,
- 	LINUX_MIB_IPRPFILTER, /* IP Reverse Path Filter (rp_filter) */
- 	LINUX_MIB_TCPTIMEWAITOVERFLOW,		/* TCPTimeWaitOverflow */
-+	LINUX_MIB_TCPCHALLENGEACK,		/* TCPChallengeACK */
- 	__LINUX_MIB_MAX
- };
- 
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -246,6 +246,7 @@ extern int sysctl_tcp_max_ssthresh;
- extern int sysctl_tcp_cookie_size;
- extern int sysctl_tcp_thin_linear_timeouts;
- extern int sysctl_tcp_thin_dupack;
-+extern int sysctl_tcp_challenge_ack_limit;
- 
- extern atomic_long_t tcp_memory_allocated;
- extern struct percpu_counter tcp_sockets_allocated;
---- a/net/ipv4/proc.c
-+++ b/net/ipv4/proc.c
-@@ -254,6 +254,7 @@ static const struct snmp_mib snmp4_net_l
- 	SNMP_MIB_ITEM("TCPDeferAcceptDrop", LINUX_MIB_TCPDEFERACCEPTDROP),
- 	SNMP_MIB_ITEM("IPReversePathFilter", LINUX_MIB_IPRPFILTER),
- 	SNMP_MIB_ITEM("TCPTimeWaitOverflow", LINUX_MIB_TCPTIMEWAITOVERFLOW),
-+	SNMP_MIB_ITEM("TCPChallengeACK", LINUX_MIB_TCPCHALLENGEACK),
- 	SNMP_MIB_SENTINEL
- };
- 
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -566,6 +566,13 @@ static struct ctl_table ipv4_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
-+	{
-+		.procname	= "tcp_challenge_ack_limit",
-+		.data		= &sysctl_tcp_challenge_ack_limit,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec
-+	},
- #ifdef CONFIG_NET_DMA
- 	{
- 		.procname	= "tcp_dma_copybreak",
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -86,6 +86,9 @@ int sysctl_tcp_app_win __read_mostly = 3
- int sysctl_tcp_adv_win_scale __read_mostly = 1;
- EXPORT_SYMBOL(sysctl_tcp_adv_win_scale);
- 
-+/* rfc5961 challenge ack rate limiting */
-+int sysctl_tcp_challenge_ack_limit = 100;
-+
- int sysctl_tcp_stdurg __read_mostly;
- int sysctl_tcp_rfc1337 __read_mostly;
- int sysctl_tcp_max_orphans __read_mostly = NR_FILE;
-@@ -5165,6 +5168,23 @@ out:
+ 	parport_disable_irq(w->parport);
++	hrtimer_cancel(&w->timer);
  }
- #endif /* CONFIG_NET_DMA */
  
-+static void tcp_send_challenge_ack(struct sock *sk)
-+{
-+	/* unprotected vars, we dont care of overwrites */
-+	static u32 challenge_timestamp;
-+	static unsigned int challenge_count;
-+	u32 now = jiffies / HZ;
+ static int walkera0701_connect(struct walkera_dev *w, int parport)
+@@ -224,6 +225,9 @@ static int walkera0701_connect(struct wa
+ 	if (parport_claim(w->pardevice))
+ 		goto init_err1;
+ 
++	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	w->timer.function = timer_handler;
 +
-+	if (now != challenge_timestamp) {
-+		challenge_timestamp = now;
-+		challenge_count = 0;
-+	}
-+	if (++challenge_count <= sysctl_tcp_challenge_ack_limit) {
-+		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPCHALLENGEACK);
-+		tcp_send_ack(sk);
-+	}
-+}
-+
- /* Does PAWS and seqno based validation of an incoming segment, flags will
-  * play significant role here.
-  */
-@@ -5201,7 +5221,16 @@ static int tcp_validate_incoming(struct
+ 	w->input_dev = input_allocate_device();
+ 	if (!w->input_dev)
+ 		goto init_err2;
+@@ -254,8 +258,6 @@ static int walkera0701_connect(struct wa
+ 	if (err)
+ 		goto init_err3;
  
- 	/* Step 2: check RST bit */
- 	if (th->rst) {
--		tcp_reset(sk);
-+		/* RFC 5961 3.2 :
-+		 * If sequence number exactly matches RCV.NXT, then
-+		 *     RESET the connection
-+		 * else
-+		 *     Send a challenge ACK
-+		 */
-+		if (TCP_SKB_CB(skb)->seq == tp->rcv_nxt)
-+			tcp_reset(sk);
-+		else
-+			tcp_send_challenge_ack(sk);
- 		goto discard;
- 	}
+-	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-	w->timer.function = timer_handler;
+ 	return 0;
  
+  init_err3:
+@@ -271,7 +273,6 @@ static int walkera0701_connect(struct wa
+ 
+ static void walkera0701_disconnect(struct walkera_dev *w)
+ {
+-	hrtimer_cancel(&w->timer);
+ 	input_unregister_device(w->input_dev);
+ 	parport_release(w->pardevice);
+ 	parport_unregister_device(w->pardevice);
 
 
