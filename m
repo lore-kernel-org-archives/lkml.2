@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab3AINhw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 08:37:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47111 "EHLO mx2.suse.de"
+	id S1757879Ab3AINiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 08:38:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63155 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757764Ab3AINhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 08:37:51 -0500
-Date: Wed, 9 Jan 2013 13:37:46 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
-Message-ID: <20130109133746.GD13304@suse.de>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <20130102200848.GA4500@dcvr.yhbt.net>
- <20130104160148.GB3885@suse.de>
- <20130106120700.GA24671@dcvr.yhbt.net>
- <20130107122516.GC3885@suse.de>
- <20130107223850.GA21311@dcvr.yhbt.net>
- <20130108224313.GA13304@suse.de>
- <20130108232325.GA5948@dcvr.yhbt.net>
+	id S1757866Ab3AINiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 08:38:14 -0500
+Message-ID: <50ED732B.5070608@redhat.com>
+Date: Wed, 09 Jan 2013 08:39:55 -0500
+From: Tony Camuso <tcamuso@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130108232325.GA5948@dcvr.yhbt.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: minyard@acm.org
+CC: Corey Minyard <tcminyard@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        openipmi-developer@lists.sourceforge.net, grant.likely@secretlab.ca,
+        k-tanaka@ce.jp.nec.com, myamazak@redhat.com
+Subject: Re: [PATCH] ipmi: replace call to try_smi_init() with call to add_smi()
+References: <1355424008-20491-1-git-send-email-tcamuso@redhat.com> <50CA31BB.2030507@acm.org> <50CB3662.5080100@redhat.com> <50EC7DAF.8030606@redhat.com>
+In-Reply-To: <50EC7DAF.8030606@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 11:23:25PM +0000, Eric Wong wrote:
-> Mel Gorman <mgorman@suse.de> wrote:
-> > Please try the following patch. However, even if it works the benefit of
-> > capture may be so marginal that partially reverting it and simplifying
-> > compaction.c is the better decision.
-> 
-> I already got my VM stuck on this one.  I had two twosleepy instances,
-> 2774 was the one that got stuck (also confirmed by watching top).
-> 
+Rescinding.
 
-page->pfmemalloc can be left set for captured pages so try this but as
-capture is rarely used I'm strongly favouring a partial revert even if
-this works for you. I haven't reproduced this using your workload yet
-but I have found that high-order allocation stress tests for 3.8-rc2 are
-completely screwed. 71% success rates at rest in 3.7 and 6% in 3.8-rc2 so
-I have to chase that down too.
+This hunk is already upstream.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9d20c13..c242d21 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2180,8 +2180,10 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	current->flags &= ~PF_MEMALLOC;
- 
- 	/* If compaction captured a page, prep and use it */
--	if (page && !prep_new_page(page, order, gfp_mask))
-+	if (page && !prep_new_page(page, order, gfp_mask)) {
-+		page->pfmemalloc = false;
- 		goto got_page;
-+	}
- 
- 	if (*did_some_progress != COMPACT_SKIPPED) {
- 		/* Page migration frees to the PCP lists but we want merging */
+On 01/08/2013 03:12 PM, Tony Camuso wrote:
+> Upstream commit 9e368fa0 added function ipmi_pnp_probe(), which
+> calls try_smi_init() directly.
+>
+> try_smi_init() allocates resources for IPMI driver. However
+> try_smi_init() can be called again, and the allocated resources
+> can be unexpectedly released when the same IPMI resource
+> information is found on both ACPI namespace and SMBIOS table.
+> ipmi_pnp_probe() should call add_smi() instead of try_smi_init()
+>
+> For reference, see upstream commit ...
+> 2407d77a1a013b88ee3b817f2b934e420e5376f5
+>
+> Signed-off-by: Tony Camuso <tcamuso@redhat.com>
+>
+> ---
+>   drivers/char/ipmi/ipmi_si_intf.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+> index afb89be..20d13c6 100644
+> --- a/drivers/char/ipmi/ipmi_si_intf.c
+> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+> @@ -2223,7 +2223,7 @@ static int __devinit ipmi_pnp_probe(struct pnp_dev *dev,
+>       info->dev = &dev->dev;
+>       pnp_set_drvdata(dev, info);
+>
+> -    return try_smi_init(info);
+> +    return add_smi(info);
+>
+>   err_free:
+>       kfree(info);
+
