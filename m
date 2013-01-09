@@ -1,96 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262Ab3AIVlB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:41:01 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41919 "EHLO mail.kernel.org"
+	id S933234Ab3AIVlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:41:23 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41909 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933179Ab3AIUiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:06 -0500
+	id S933139Ab3AIUiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andy Lutomirski <luto@amacapital.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, Chris Ball <cjb@laptop.org>,
-        Manoj Iyer <manoj.iyer@canonical.com>
-Subject: [ 40/47] PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz
-Date: Wed,  9 Jan 2013 12:35:35 -0800
-Message-Id: <20130109201734.094759086@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 025/123] ALSA: hda - add mute LED for HP Pavilion 17 (Realtek codec)
+Date: Wed,  9 Jan 2013 12:34:24 -0800
+Message-Id: <20130109201501.732600063@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 812089e01b9f65f90fc8fc670d8cce72a0e01fbb upstream.
+commit 6d3cd5d444223c41eabb70dccff14fae4e8cb8b1 upstream.
 
-Otherwise it fails like this on cards like the Transcend 16GB SDHC card:
+The mute LED is in this case connected to the Mic1 VREF.
 
-    mmc0: new SDHC card at address b368
-    mmcblk0: mmc0:b368 SDC   15.0 GiB
-    mmcblk0: error -110 sending status command, retrying
-    mmcblk0: error -84 transferring data, sector 0, nr 8, cmd response 0x900, card status 0xb0
+The machine also exposes the following string in BIOS:
+"HP_Mute_LED_0_A", so if more machines are coming, it probably
+makes sense to try to do something more generic, like for the
+IDT codec.
 
-Tested on my Lenovo x200 laptop.
-
-[bhelgaas: changelog]
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Chris Ball <cjb@laptop.org>
-CC: Manoj Iyer <manoj.iyer@canonical.com>
+BugLink: https://bugs.launchpad.net/bugs/1096789
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/quirks.c    |    7 +++++--
- include/linux/pci_ids.h |    1 +
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |   30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2746,7 +2746,7 @@ static void ricoh_mmc_fixup_r5c832(struc
- 	if (PCI_FUNC(dev->devfn))
- 		return;
- 	/*
--	 * RICOH 0xe823 SD/MMC card reader fails to recognize
-+	 * RICOH 0xe822 and 0xe823 SD/MMC card readers fail to recognize
- 	 * certain types of SD/MMC cards. Lowering the SD base
- 	 * clock frequency from 200Mhz to 50Mhz fixes this issue.
- 	 *
-@@ -2757,7 +2757,8 @@ static void ricoh_mmc_fixup_r5c832(struc
- 	 * 0xf9  - Key register for 0x150
- 	 * 0xfc  - key register for 0xe1
- 	 */
--	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
-+	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE822 ||
-+	    dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
- 		pci_write_config_byte(dev, 0xf9, 0xfc);
- 		pci_write_config_byte(dev, 0x150, 0x10);
- 		pci_write_config_byte(dev, 0xf9, 0x00);
-@@ -2784,6 +2785,8 @@ static void ricoh_mmc_fixup_r5c832(struc
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5986,6 +5986,30 @@ static void alc269_fixup_quanta_mute(str
+ 	spec->automute_hook = alc269_quanta_automute;
  }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
-+DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
- #endif /*CONFIG_MMC_RICOH_MMC*/
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1537,6 +1537,7 @@
- #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
- #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
- #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
-+#define PCI_DEVICE_ID_RICOH_R5CE822	0xe822
- #define PCI_DEVICE_ID_RICOH_R5CE823	0xe823
- #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
- #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
+ 
++/* update mute-LED according to the speaker mute state via mic1 VREF pin */
++static void alc269_fixup_mic1_mute_hook(void *private_data, int enabled)
++{
++	struct hda_codec *codec = private_data;
++	unsigned int pinval = AC_PINCTL_IN_EN + (enabled ?
++			      AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80);
++	snd_hda_set_pin_ctl_cache(codec, 0x18, pinval);
++}
++
++static void alc269_fixup_mic1_mute(struct hda_codec *codec,
++				   const struct alc_fixup *fix, int action)
++{
++	struct alc_spec *spec = codec->spec;
++	switch (action) {
++	case ALC_FIXUP_ACT_BUILD:
++		spec->vmaster_mute.hook = alc269_fixup_mic1_mute_hook;
++		snd_hda_add_vmaster_hook(codec, &spec->vmaster_mute, true);
++		/* fallthru */
++	case ALC_FIXUP_ACT_INIT:
++		snd_hda_sync_vmaster_hook(&spec->vmaster_mute);
++		break;
++	}
++}
++
+ /* update mute-LED according to the speaker mute state via mic2 VREF pin */
+ static void alc269_fixup_mic2_mute_hook(void *private_data, int enabled)
+ {
+@@ -6027,6 +6051,7 @@ enum {
+ 	ALC269_FIXUP_DMIC,
+ 	ALC269VB_FIXUP_AMIC,
+ 	ALC269VB_FIXUP_DMIC,
++	ALC269_FIXUP_MIC1_MUTE_LED,
+ 	ALC269_FIXUP_MIC2_MUTE_LED,
+ 	ALC269_FIXUP_INV_DMIC,
+ 	ALC269_FIXUP_LENOVO_DOCK,
+@@ -6153,6 +6178,10 @@ static const struct alc_fixup alc269_fix
+ 			{ }
+ 		},
+ 	},
++	[ALC269_FIXUP_MIC1_MUTE_LED] = {
++		.type = ALC_FIXUP_FUNC,
++		.v.func = alc269_fixup_mic1_mute,
++	},
+ 	[ALC269_FIXUP_MIC2_MUTE_LED] = {
+ 		.type = ALC_FIXUP_FUNC,
+ 		.v.func = alc269_fixup_mic2_mute,
+@@ -6181,6 +6210,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x1025, 0x029b, "Acer 1810TZ", ALC269_FIXUP_INV_DMIC),
+ 	SND_PCI_QUIRK(0x1025, 0x0349, "Acer AOD260", ALC269_FIXUP_INV_DMIC),
+ 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_MIC2_MUTE_LED),
++	SND_PCI_QUIRK(0x103c, 0x1972, "HP Pavilion 17", ALC269_FIXUP_MIC1_MUTE_LED),
+ 	SND_PCI_QUIRK(0x1043, 0x1427, "Asus Zenbook UX31E", ALC269VB_FIXUP_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x1517, "Asus Zenbook UX31A", ALC269VB_FIXUP_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x1a13, "Asus G73Jw", ALC269_FIXUP_ASUS_G73JW),
 
 
