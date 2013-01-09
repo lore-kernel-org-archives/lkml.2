@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932862Ab3AIUgy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:36:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41143 "EHLO mail.kernel.org"
+	id S932920Ab3AIUhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:37:05 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41221 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932778Ab3AIUgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:52 -0500
+	id S932861Ab3AIUg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:36:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [ 002/123] firmware loader: Fix the race FW_STATUS_DONE is followed by class_timeout
-Date: Wed,  9 Jan 2013 12:34:01 -0800
-Message-Id: <20130109201458.708495445@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 005/123] b43: fix tx path skb leaks
+Date: Wed,  9 Jan 2013 12:34:04 -0800
+Message-Id: <20130109201459.058631693@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,112 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuansheng Liu <chuansheng.liu@intel.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit ce2fcbd99cef580623116bb33531dbc3e6f690b0 upstream.
+commit 78f18df4b323d2ac14d6c82e2fc3c8dc4556bccc upstream.
 
-There is a race as below when calling request_firmware():
-CPU1                                   CPU2
-write 0 > loading
-mutex_lock(&fw_lock)
-...
-set_bit FW_STATUS_DONE                 class_timeout is coming
-                                       set_bit FW_STATUS_ABORT
-complete_all &completion
-...
-mutex_unlock(&fw_lock)
+ieee80211_free_txskb() needs to be used instead of dev_kfree_skb_any for
+tx packets passed to the driver from mac80211
 
-In this time, the bit FW_STATUS_DONE and FW_STATUS_ABORT are set,
-and request_firmware() will return failure due to condition in
-_request_firmware_load():
-	if (!buf->size || test_bit(FW_STATUS_ABORT, &buf->status))
-		retval = -ENOENT;
-
-But from the above scenerio, it should be a successful requesting.
-So we need judge if the bit FW_STATUS_DONE is already set before
-calling fw_load_abort() in timeout function.
-
-As Ming's proposal, we need change the timer into sched_work to
-benefit from using &fw_lock mutex also.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-Acked-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/firmware_class.c |   24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+ drivers/net/wireless/b43/dma.c  |    7 +++++--
+ drivers/net/wireless/b43/main.c |   12 ++++++++----
+ drivers/net/wireless/b43/pio.c  |    4 ++--
+ 3 files changed, 15 insertions(+), 8 deletions(-)
 
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -143,7 +143,7 @@ struct fw_cache_entry {
- };
- 
- struct firmware_priv {
--	struct timer_list timeout;
-+	struct delayed_work timeout_work;
- 	bool nowait;
- 	struct device dev;
- 	struct firmware_buf *buf;
-@@ -667,11 +667,18 @@ static struct bin_attribute firmware_att
- 	.write = firmware_data_write,
- };
- 
--static void firmware_class_timeout(u_long data)
-+static void firmware_class_timeout_work(struct work_struct *work)
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -409,7 +409,10 @@ static inline
+ 				struct b43_dmadesc_meta *meta)
  {
--	struct firmware_priv *fw_priv = (struct firmware_priv *) data;
-+	struct firmware_priv *fw_priv = container_of(work,
-+			struct firmware_priv, timeout_work.work);
- 
-+	mutex_lock(&fw_lock);
-+	if (test_bit(FW_STATUS_DONE, &(fw_priv->buf->status))) {
-+		mutex_unlock(&fw_lock);
-+		return;
-+	}
- 	fw_load_abort(fw_priv);
-+	mutex_unlock(&fw_lock);
+ 	if (meta->skb) {
+-		dev_kfree_skb_any(meta->skb);
++		if (ring->tx)
++			ieee80211_free_txskb(ring->dev->wl->hw, meta->skb);
++		else
++			dev_kfree_skb_any(meta->skb);
+ 		meta->skb = NULL;
+ 	}
  }
+@@ -1454,7 +1457,7 @@ int b43_dma_tx(struct b43_wldev *dev, st
+ 	if (unlikely(err == -ENOKEY)) {
+ 		/* Drop this packet, as we don't have the encryption key
+ 		 * anymore and must not transmit it unencrypted. */
+-		dev_kfree_skb_any(skb);
++		ieee80211_free_txskb(dev->wl->hw, skb);
+ 		err = 0;
+ 		goto out;
+ 	}
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -3397,7 +3397,7 @@ static void b43_tx_work(struct work_stru
+ 				break;
+ 			}
+ 			if (unlikely(err))
+-				dev_kfree_skb(skb); /* Drop it */
++				ieee80211_free_txskb(wl->hw, skb);
+ 			err = 0;
+ 		}
  
- static struct firmware_priv *
-@@ -690,8 +697,8 @@ fw_create_instance(struct firmware *firm
+@@ -3419,7 +3419,7 @@ static void b43_op_tx(struct ieee80211_h
  
- 	fw_priv->nowait = nowait;
- 	fw_priv->fw = firmware;
--	setup_timer(&fw_priv->timeout,
--		    firmware_class_timeout, (u_long) fw_priv);
-+	INIT_DELAYED_WORK(&fw_priv->timeout_work,
-+		firmware_class_timeout_work);
+ 	if (unlikely(skb->len < 2 + 2 + 6)) {
+ 		/* Too short, this can't be a valid frame. */
+-		dev_kfree_skb_any(skb);
++		ieee80211_free_txskb(hw, skb);
+ 		return;
+ 	}
+ 	B43_WARN_ON(skb_shinfo(skb)->nr_frags);
+@@ -4229,8 +4229,12 @@ redo:
  
- 	f_dev = &fw_priv->dev;
- 
-@@ -858,7 +865,9 @@ static int _request_firmware_load(struct
- 		dev_dbg(f_dev->parent, "firmware: direct-loading"
- 			" firmware %s\n", buf->fw_id);
- 
-+		mutex_lock(&fw_lock);
- 		set_bit(FW_STATUS_DONE, &buf->status);
-+		mutex_unlock(&fw_lock);
- 		complete_all(&buf->completion);
- 		direct_load = 1;
- 		goto handle_fw;
-@@ -894,15 +903,14 @@ static int _request_firmware_load(struct
- 		dev_set_uevent_suppress(f_dev, false);
- 		dev_dbg(f_dev, "firmware: requesting %s\n", buf->fw_id);
- 		if (timeout != MAX_SCHEDULE_TIMEOUT)
--			mod_timer(&fw_priv->timeout,
--				  round_jiffies_up(jiffies + timeout));
-+			schedule_delayed_work(&fw_priv->timeout_work, timeout);
- 
- 		kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
+ 	/* Drain all TX queues. */
+ 	for (queue_num = 0; queue_num < B43_QOS_QUEUE_NUM; queue_num++) {
+-		while (skb_queue_len(&wl->tx_queue[queue_num]))
+-			dev_kfree_skb(skb_dequeue(&wl->tx_queue[queue_num]));
++		while (skb_queue_len(&wl->tx_queue[queue_num])) {
++			struct sk_buff *skb;
++
++			skb = skb_dequeue(&wl->tx_queue[queue_num]);
++			ieee80211_free_txskb(wl->hw, skb);
++		}
  	}
  
- 	wait_for_completion(&buf->completion);
- 
--	del_timer_sync(&fw_priv->timeout);
-+	cancel_delayed_work_sync(&fw_priv->timeout_work);
- 
- handle_fw:
- 	mutex_lock(&fw_lock);
+ 	b43_mac_suspend(dev);
+--- a/drivers/net/wireless/b43/pio.c
++++ b/drivers/net/wireless/b43/pio.c
+@@ -196,7 +196,7 @@ static void b43_pio_cancel_tx_packets(st
+ 	for (i = 0; i < ARRAY_SIZE(q->packets); i++) {
+ 		pack = &(q->packets[i]);
+ 		if (pack->skb) {
+-			dev_kfree_skb_any(pack->skb);
++			ieee80211_free_txskb(q->dev->wl->hw, pack->skb);
+ 			pack->skb = NULL;
+ 		}
+ 	}
+@@ -552,7 +552,7 @@ int b43_pio_tx(struct b43_wldev *dev, st
+ 	if (unlikely(err == -ENOKEY)) {
+ 		/* Drop this packet, as we don't have the encryption key
+ 		 * anymore and must not transmit it unencrypted. */
+-		dev_kfree_skb_any(skb);
++		ieee80211_free_txskb(dev->wl->hw, skb);
+ 		err = 0;
+ 		goto out;
+ 	}
 
 
