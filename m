@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758207Ab3AIXKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 18:10:53 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:31010 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758177Ab3AIXKq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 18:10:46 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
-        fweisbec@gmail.com, rusty@rustcorp.com.au, ananth@in.ibm.com,
-        anil.s.keshavamurthy@intel.com, masami.hiramatsu.pt@hitachi.com,
-        jbaron@redhat.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 5/5] ftrace: constify ftrace_text_reserved
-Date: Wed,  9 Jan 2013 18:09:20 -0500
-Message-Id: <1357772960-4436-5-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com>
-References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S932229Ab3AIXLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 18:11:40 -0500
+Received: from mga03.intel.com ([143.182.124.21]:40532 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758186Ab3AIXKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 18:10:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,440,1355126400"; 
+   d="scan'208";a="242025325"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        sedat.dilek@gmail.com, Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next] mei: drop the warning when cl is not initialized during unlinking
+Date: Thu, 10 Jan 2013 01:10:33 +0200
+Message-Id: <1357773033-22910-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- include/linux/ftrace.h | 4 ++--
- kernel/trace/ftrace.c  | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+On systems where wd and amthif is not initialized
+we will hit cl->dev == NULL. This condition is okay
+so we don't need to be laud about it.
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 92691d8..cbd927f 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -277,7 +277,7 @@ extern void
- unregister_ftrace_function_probe_func(char *glob, struct ftrace_probe_ops *ops);
- extern void unregister_ftrace_function_probe_all(char *glob);
+Fixes the follwing warning during suspend
+[  137.061985] WARNING: at drivers/misc/mei/client.c:315 mei_cl_unlink+0x86/0x90 [mei]()
+[  137.061986] Hardware name: 530U3BI/530U4BI/530U4BH
+[  137.062140] Modules linked in: snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel snd_hda_intel snd_hda_codec kvm arc4 iwldvm snd_hwdep i915 snd_pcm mac80211 ghash_clmulni_intel snd_page_alloc aesni_intel snd_seq_midi xts snd_seq_midi_event aes_x86_64 rfcomm snd_rawmidi parport_pc bnep lrw snd_seq uvcvideo i2c_algo_bit ppdev gf128mul iwlwifi snd_timer drm_kms_helper ablk_helper cryptd drm snd_seq_device videobuf2_vmalloc psmouse videobuf2_memops snd cfg80211 btusb videobuf2_core soundcore videodev lp bluetooth samsung_laptop wmi microcode mei serio_raw mac_hid video hid_generic lpc_ich parport usbhid hid r8169
+[  137.062143] Pid: 2706, comm: kworker/u:15 Tainted: G      D W    3.8.0-rc2-next20130109-1-iniza-generic #1
+[  137.062144] Call Trace:
+[  137.062156]  [<ffffffff8105860f>] warn_slowpath_common+0x7f/0xc0
+[  137.062159]  [<ffffffff8135b1ea>] ? ioread32+0x3a/0x40
+[  137.062162]  [<ffffffff8105866a>] warn_slowpath_null+0x1a/0x20
+[  137.062168]  [<ffffffffa0076be6>] mei_cl_unlink+0x86/0x90 [mei]
+[  137.062173]  [<ffffffffa0071325>] mei_reset+0xc5/0x240 [mei]
+[  137.062178]  [<ffffffffa0073703>] mei_pci_resume+0xa3/0x110 [mei]
+[  137.062183]  [<ffffffff81379cae>] pci_pm_resume+0x7e/0xe0
+[  137.062185]  [<ffffffff81379c30>] ? pci_pm_thaw+0x80/0x80
+[  137.062189]  [<ffffffff8145a415>] dpm_run_callback.isra.6+0x25/0x50
+[  137.062192]  [<ffffffff8145a6cf>] device_resume+0x9f/0x140
+[  137.062194]  [<ffffffff8145a791>] async_resume+0x21/0x50
+[  137.062200]  [<ffffffff810858b0>] async_run_entry_fn+0x90/0x1c0
+[  137.062203]  [<ffffffff810778e5>] process_one_work+0x155/0x460
+[  137.062207]  [<ffffffff81078578>] worker_thread+0x168/0x400
+[  137.062210]  [<ffffffff81078410>] ? manage_workers+0x2b0/0x2b0
+[  137.062214]  [<ffffffff8107d9f0>] kthread+0xc0/0xd0
+[  137.062218]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
+[  137.062222]  [<ffffffff816bac6c>] ret_from_fork+0x7c/0xb0
+[  137.062228]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
+
+Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/client.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index d566dd8..82ffd48 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -312,8 +312,9 @@ int mei_cl_unlink(struct mei_cl *cl)
+ 	if (!cl)
+ 		return 0;
  
--extern int ftrace_text_reserved(void *start, void *end);
-+extern int ftrace_text_reserved(const void *start, const void *end);
+-	if (WARN_ON(!cl->dev))
+-		return -EINVAL;
++	/* wd and amthif might not be initialzed */
++	if (!cl->dev)
++		return 0;
  
- extern int ftrace_nr_registered_ops(void);
- 
-@@ -534,7 +534,7 @@ static inline int unregister_ftrace_command(char *cmd_name)
- {
- 	return -EINVAL;
- }
--static inline int ftrace_text_reserved(void *start, void *end)
-+static inline int ftrace_text_reserved(const void *start, const void *end)
- {
- 	return 0;
- }
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 3ffe4c5..4ecdcf8 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1469,7 +1469,7 @@ unsigned long ftrace_location(unsigned long ip)
-  * the function tracer. It checks the ftrace internal tables to
-  * determine if the address belongs or not.
-  */
--int ftrace_text_reserved(void *start, void *end)
-+int ftrace_text_reserved(const void *start, const void *end)
- {
- 	unsigned long ret;
+ 	dev = cl->dev;
  
 -- 
-1.8.1
+1.7.4.4
 
