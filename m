@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab3AIWEB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:04:01 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40946 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932691Ab3AIUgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:32 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jay Purohit <jspurohit@velocitylimitless.com>,
-        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
-        Jan Ceuleers <jan.ceuleers@computer.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 07/47] usb/ipheth: Add iPhone 5 support
-Date: Wed,  9 Jan 2013 12:35:02 -0800
-Message-Id: <20130109201730.346728221@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1758114Ab3AIWEP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:04:15 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:60954 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757582Ab3AIWEM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 17:04:12 -0500
+Date: Wed, 9 Jan 2013 14:04:06 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Glauber Costa <glommer@parallels.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 1/2] Add mempressure cgroup
+Message-ID: <20130109220406.GE20454@htj.dyndns.org>
+References: <20130104082751.GA22227@lizard.gateway.2wire.net>
+ <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
+ <20130109203731.GA20454@htj.dyndns.org>
+ <50EDDF1E.6010705@parallels.com>
+ <20130109213604.GA9475@lizard.fhda.edu>
+ <20130109215514.GD20454@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130109215514.GD20454@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jan 09, 2013 at 01:55:14PM -0800, Tejun Heo wrote:
+> Please talk with memcg people and fold it into memcg.  It can (and
+> should) be done in a way to not incur overhead when only root memcg is
+> in use and how this is done defines userland-visible interface, so
+> let's please not repeat past mistakes.
 
-------------------
+CC'ing KAMEZAWA, Johannes, Li and cgroup mailing list.  Please keep
+them cc'd for further discussion.
 
+Thanks.
 
-From: Jay Purohit <jspurohit@velocitylimitless.com>
-
-[ Upstream commit af1b85e49089f945deb46258b0fc4bc9910afb22 ]
-
-I noticed that the iPhone ethernet driver did not support
-iPhone 5. I quickly added support to it in my kernel, here's
-a patch.
-
-Signed-off-by: Jay Purohit <jspurohit@velocitylimitless.com>
-Acked-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-Signed-off-by: Jan Ceuleers <jan.ceuleers@computer.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/usb/ipheth.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
---- a/drivers/net/usb/ipheth.c
-+++ b/drivers/net/usb/ipheth.c
-@@ -62,6 +62,7 @@
- #define USB_PRODUCT_IPAD 0x129a
- #define USB_PRODUCT_IPHONE_4_VZW 0x129c
- #define USB_PRODUCT_IPHONE_4S	0x12a0
-+#define USB_PRODUCT_IPHONE_5	0x12a8
- 
- #define IPHETH_USBINTF_CLASS    255
- #define IPHETH_USBINTF_SUBCLASS 253
-@@ -113,6 +114,10 @@ static struct usb_device_id ipheth_table
- 		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_4S,
- 		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
- 		IPHETH_USBINTF_PROTO) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(
-+		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_5,
-+		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
-+		IPHETH_USBINTF_PROTO) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(usb, ipheth_table);
-
-
+-- 
+tejun
