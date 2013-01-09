@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868Ab3AIWIo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:08:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40472 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756635Ab3AIWIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 17:08:43 -0500
-Message-ID: <1357765795.1342.21.camel@localhost>
-Subject: Re: Friendlier EPERM - Request for input
-From: Eric Paris <eparis@redhat.com>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        libc-alpha@sourceware.org, dwalsh@redhat.com, dmalcolm@redhat.com,
-        sds@tycho.nsa.gov, segoon@openwall.com,
-        linux-security-module@vger.kernel.org
-Date: Wed, 09 Jan 2013 16:09:55 -0500
-In-Reply-To: <20130109205947.GE26036@sunsite.ms.mff.cuni.cz>
-References: <1357747463.2593.28.camel@localhost>
-	 <1357760637.2593.55.camel@localhost> <50EDCFC0.3010401@schaufler-ca.com>
-	 <1357763560.1342.7.camel@localhost> <50EDD8D4.60003@schaufler-ca.com>
-	 <20130109205947.GE26036@sunsite.ms.mff.cuni.cz>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757694Ab3AIWKU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:10:20 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64163 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab3AIWKS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 17:10:18 -0500
+Date: Wed, 9 Jan 2013 14:06:41 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 1/2] Add mempressure cgroup
+Message-ID: <20130109220641.GA12865@lizard.fhda.edu>
+References: <20130104082751.GA22227@lizard.gateway.2wire.net>
+ <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
+ <20130109203731.GA20454@htj.dyndns.org>
+ <50EDDF1E.6010705@parallels.com>
+ <20130109213604.GA9475@lizard.fhda.edu>
+ <20130109215514.GD20454@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130109215514.GD20454@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-09 at 21:59 +0100, Jakub Jelinek wrote:
-> On Wed, Jan 09, 2013 at 12:53:40PM -0800, Casey Schaufler wrote:
-> > I'm suggesting that the string returned by get_extended_error_info()
-> > ought to be the audit record the system call would generate, regardless
-> > of whether the audit system would emit it or not.
+On Wed, Jan 09, 2013 at 01:55:14PM -0800, Tejun Heo wrote:
+[...]
+> > We can use mempressure w/o memcg, and even then it can (or should :) be
+> > useful (for cpuset, for example).
 > 
-> What system call would that info be for and would it be reset on next
-> syscall that succeeded, or also failed?
-> 
-> The thing is, various functions e.g. perform some syscall, save errno, do
-> some other syscall, and if they decide that the first syscall should be what
-> determines the whole function's errno, just restore errno from the saved
-> value and return.  Similarly, various functions just set errno upon
-> detecting some error condition in userspace.
-> There is no 1:1 mapping between many libc library calls and syscalls.
-> So, when would it be safe to call this new get_extended_error_info function
-> and how to determine to which syscall it was relevant?
+> The problem is that you end with, at the very least, duplicate
+> hierarchical accounting mechanisms which overlap with each other
+> while, most likely, being slightly different.  About the same thing
+> happened with cpu and cpuacct controllers and we're now trying to
+> deprecate the latter.
 
-I was thinking of it to be the last kernel error.  So if the first and
-that second operation caused the kernel to want to make available
-extended errno information you would end up with the second.  I see this
-is an informative piece of information, not normative.  Not a
-replacement for errno.  I'm hoping for a best effort way to provide
-extended errno information.
+Yeah. I started answering your comments about hierarchical accounting,
+looked into the memcg code, and realized that *this* is where I need the
+memcg stuff. :)
 
-It would be really neat for libc to have a way to save and restore the
-extended errno information, maybe even supply its own if it made the
-choice in userspace, but that sounds really hard for the first pass.
+Thus yes, I guess I'll have to integrate it with memcg, or sort of.
 
-I mean it would be great if we could rewrite every system call with a
-cookie so userspace could reliably match things back up, but I just
-don't see that as practical.  Instead we do the best we can and help
-admins and developers most of the time, instead of none of the time.
+I will surely Cc you on the next interations.
 
--Eric
-
+Thanks,
+Anton
