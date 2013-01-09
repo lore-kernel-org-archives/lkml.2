@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab3AICyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 21:54:47 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:49700 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756271Ab3AICyp (ORCPT
+	id S1756949Ab3AIC4f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 21:56:35 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:59770 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271Ab3AIC4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 21:54:45 -0500
-Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
-From: Eric Dumazet <erdnetdev@gmail.com>
-To: Eric Wong <normalperson@yhbt.net>, Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1357698749.27446.6.camel@edumazet-glaptop>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
-	 <20130102200848.GA4500@dcvr.yhbt.net> <20130104160148.GB3885@suse.de>
-	 <20130106120700.GA24671@dcvr.yhbt.net> <20130107122516.GC3885@suse.de>
-	 <20130107223850.GA21311@dcvr.yhbt.net> <20130108224313.GA13304@suse.de>
-	 <20130108232325.GA5948@dcvr.yhbt.net>
-	 <1357697647.18156.1217.camel@edumazet-glaptop>
-	 <1357698749.27446.6.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Jan 2013 18:54:42 -0800
-Message-ID: <1357700082.27446.11.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jan 2013 21:56:34 -0500
+Date: Tue, 8 Jan 2013 21:56:31 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [v2.6.34-stable 71/77] crypto: ghash - Avoid null pointer
+ dereference if no key is set
+Message-ID: <20130109025631.GA12832@elliptictech.com>
+References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
+ <1357688156-25387-72-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357688156-25387-72-git-send-email-paul.gortmaker@windriver.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-08 at 18:32 -0800, Eric Dumazet wrote:
-
+On 2013-01-08 18:35 -0500, Paul Gortmaker wrote:
+> From: Nick Bowler <nbowler@elliptictech.com>
 > 
-> Hmm, it seems sk_filter() can return -ENOMEM because skb has the
-> pfmemalloc() set.
-
+>                    -------------------
+>     This is a commit scheduled for the next v2.6.34 longterm release.
+>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+>     If you see a problem with using this for longterm, please comment.
+>                    -------------------
 > 
-> One TCP socket keeps retransmitting an SKB via loopback, and TCP stack 
-> drops the packet again and again.
+> commit 7ed47b7d142ec99ad6880bbbec51e9f12b3af74c upstream.
+> 
+> The ghash_update function passes a pointer to gf128mul_4k_lle which will
+> be NULL if ghash_setkey is not called or if the most recent call to
+> ghash_setkey failed to allocate memory.  This causes an oops.  Fix this
+> up by returning an error code in the null case.
+> 
+> This is trivially triggered from unprivileged userspace through the
+> AF_ALG interface by simply writing to the socket without setting a key.
 
-sock_init_data() sets sk->sk_allocation to GFP_KERNEL
+I haven't been following 2.6.34-longterm development, but unless
+you've also backported the AF_ALG userspace interface from 2.6.38,
+this sequence can only be triggered by kernel code.  So while this
+patch shouldn't break anything, it isn't really necessary.
 
-Shouldnt it use (GFP_KERNEL | __GFP_NOMEMALLOC) instead ?
-
-
-
-diff --git a/net/core/sock.c b/net/core/sock.c
-index bc131d4..76c4b39 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -286,6 +286,7 @@ void sk_set_memalloc(struct sock *sk)
- {
- 	sock_set_flag(sk, SOCK_MEMALLOC);
- 	sk->sk_allocation |= __GFP_MEMALLOC;
-+	sk->sk_allocation &= ~__GFP_NOMEMALLOC;
- 	static_key_slow_inc(&memalloc_socks);
- }
- EXPORT_SYMBOL_GPL(sk_set_memalloc);
-@@ -294,6 +295,7 @@ void sk_clear_memalloc(struct sock *sk)
- {
- 	sock_reset_flag(sk, SOCK_MEMALLOC);
- 	sk->sk_allocation &= ~__GFP_MEMALLOC;
-+	sk->sk_allocation |= __GFP_NOMEMALLOC;
- 	static_key_slow_dec(&memalloc_socks);
- 
- 	/*
-@@ -2230,7 +2232,7 @@ void sock_init_data(struct socket *sock, struct sock *sk)
- 
- 	init_timer(&sk->sk_timer);
- 
--	sk->sk_allocation	=	GFP_KERNEL;
-+	sk->sk_allocation	=	GFP_KERNEL | __GFP_NOMEMALLOC;
- 	sk->sk_rcvbuf		=	sysctl_rmem_default;
- 	sk->sk_sndbuf		=	sysctl_wmem_default;
- 	sk->sk_state		=	TCP_CLOSE;
-
-
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
