@@ -1,208 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934118Ab3AIUxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:53:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43819 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934022Ab3AIUlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:08 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 104/123] PCI/PM: Keep runtime PM enabled for unbound PCI devices
-Date: Wed,  9 Jan 2013 12:35:43 -0800
-Message-Id: <20130109201511.857321882@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S934050Ab3AIUx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:53:29 -0500
+Received: from nm26-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.225]:47999
+	"EHLO nm26-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932537Ab3AIUx0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:53:26 -0500
+X-Yahoo-Newman-Id: 208642.20183.bm@smtp104.biz.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: e3nBPR0VM1kibMfU66MYJRhnKZ_m2bJMX572EoDjA6IobpZ
+ m5W8AdSp0I3FKZgQqx1ltZnTKOv.2XWUe805c5iJNKnIPnScrWOAi7HBQhKv
+ 57RvjN5xWBSO_56DwGYPuyIn3ht8XxmvuPUUEy2xVGbFdiwWU_zqiQIZPMOj
+ geLGmSx2JFkP4R.JMJHVJhjcg9KBtSfgai4VY.VmR39gGW9th_8fPvfklN2W
+ ckmfyVSSB67lPSb9focfy9.xVnpXi4RnfD.7y3l25B2Rp2ENDEIZdk.BYNmz
+ b02VRICd93p5e_11esWgDI_zAXXkyAyvSWHOh8TFxjMulu9GxmZKZJ5iJjIY
+ FE3OCv0u9pXTrzXmPcoT2wnGkIsaF1JnVuSBvxNRDrDJVcFXwBcE1uHiRMky
+ pIw9_v88GkGoAUP4RMv7DdLS9e.qRVtkGw2rSOlPO4B3C62I2jfKFKFQb21H
+ Rc_hX
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50EDD8D4.60003@schaufler-ca.com>
+Date: Wed, 09 Jan 2013 12:53:40 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Eric Paris <eparis@redhat.com>
+CC: linux-kernel@vger.kernel.org, libc-alpha@sourceware.org, dwalsh@redhat.com,
+        dmalcolm@redhat.com, sds@tycho.nsa.gov, segoon@openwall.com,
+        linux-security-module@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: Friendlier EPERM - Request for input
+References: <1357747463.2593.28.camel@localhost>  <1357760637.2593.55.camel@localhost> <50EDCFC0.3010401@schaufler-ca.com> <1357763560.1342.7.camel@localhost>
+In-Reply-To: <1357763560.1342.7.camel@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On 1/9/2013 12:32 PM, Eric Paris wrote:
+> On Wed, 2013-01-09 at 12:14 -0800, Casey Schaufler wrote:
+>> On 1/9/2013 11:43 AM, Eric Paris wrote:
+>>> I know many people are worried about information leaks, so I'll right up
+>>> front say lets add the sysctl to disable the interface for those who are
+>>> concerned about the metadata information leak.  But for most of us I
+>>> want that data right when it happens, where it happens, so It can be
+>>> exposed, used, and acted upon by the admin trying to troubleshoot why
+>>> the shit just hit the fan.
+>> How on earth is your webadmin supposed to match the failure
+>> of a system call with the content of /proc/8675309/whydiditfail
+>> at the time of the failure? It's not like he's going to go into
+>> the apache source and add code to look at what's there.
+>>
+>> Unfortunately, what you probably need is an interface that gives
+>> the program access to the audit records it has generated.
+> The first thought was wanting to add it by default to perror/strerror in
+> libc, but libc guys didn't think it reasonable since it couldn't be
+> save/restored across calls, like errno.  Instead I hope for a libc
+> function, something like char *get_extended_error_info(void), which
+> outputs a localized string based on the information in the /proc
+> interface.
+>
+> Programs like httpd would need to be changed to use this function when
+> logging denials.  Programs like python would use this interface to
+> populate additional information in the exception they pass up the stack.
+>
+> I agree that something access to the audit record is appropriate.  It's
+> sorta like what I'm proposing.  But audit is not really useful here.  It
+> doesn't collect information about any denial other than LSM.  And the
+> number of DAC or capabilities denials on a normally operating box is, I
+> expect, quite large.  Thus we can't pump them all into audit just on the
+> unlikely chance something cares.  Setting a couple of ints is cheap.
+> Audit is really nice for people will well defined security goals and
+> information retention and analysis purposes, but it kinda completely
+> sucks butt for a normal sysadmin or developer...
 
-------------------
+Let me try again, I think I didn't quite get the idea across.
 
-From: Huang Ying <ying.huang@intel.com>
+I'm suggesting that the string returned by get_extended_error_info()
+ought to be the audit record the system call would generate, regardless
+of whether the audit system would emit it or not.
+If the audit record doesn't have the information you need we should
+fix the audit system to provide it. Any bit of the information in
+the audit record might be relevant, and your admin or developer might
+need to see it.
 
-commit 967577b062417b4e4b8e27b711220f4124f5153a upstream.
+I'm suggesting using the audit record because there are tools to
+examine them and it's a pity to use a different format instead of
+fixing the one that's already there.
 
-For unbound PCI devices, what we need is:
-
- - Always in D0 state, because some devices do not work again after
-   being put into D3 by the PCI bus.
-
- - In SUSPENDED state if allowed, so that the parent devices can still
-   be put into low power state.
-
-To satisfy these requirements, the runtime PM for the unbound PCI
-devices are disabled and set to SUSPENDED state.  One issue of this
-solution is that the PCI devices will be put into SUSPENDED state even
-if the SUSPENDED state is forbidden via the sysfs interface
-(.../power/control) of the device.  This is not an issue for most
-devices, because most PCI devices are not used at all if unbound.
-But there are exceptions.  For example, unbound VGA card can be used
-for display, but suspending its parents makes it stop working.
-
-To fix the issue, we keep the runtime PM enabled when the PCI devices
-are unbound.  But the runtime PM callbacks will do nothing if the PCI
-devices are unbound.  This way, we can put the PCI devices into
-SUSPENDED state without putting the PCI devices into D3 state.
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=48201
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/pci/pci-driver.c |   69 +++++++++++++++++++++++++++--------------------
- drivers/pci/pci.c        |    2 +
- 2 files changed, 43 insertions(+), 28 deletions(-)
-
---- a/drivers/pci/pci-driver.c
-+++ b/drivers/pci/pci-driver.c
-@@ -256,31 +256,26 @@ struct drv_dev_and_id {
- static long local_pci_probe(void *_ddi)
- {
- 	struct drv_dev_and_id *ddi = _ddi;
--	struct device *dev = &ddi->dev->dev;
--	struct device *parent = dev->parent;
-+	struct pci_dev *pci_dev = ddi->dev;
-+	struct pci_driver *pci_drv = ddi->drv;
-+	struct device *dev = &pci_dev->dev;
- 	int rc;
- 
--	/* The parent bridge must be in active state when probing */
--	if (parent)
--		pm_runtime_get_sync(parent);
--	/* Unbound PCI devices are always set to disabled and suspended.
--	 * During probe, the device is set to enabled and active and the
--	 * usage count is incremented.  If the driver supports runtime PM,
--	 * it should call pm_runtime_put_noidle() in its probe routine and
--	 * pm_runtime_get_noresume() in its remove routine.
--	 */
--	pm_runtime_get_noresume(dev);
--	pm_runtime_set_active(dev);
--	pm_runtime_enable(dev);
--
--	rc = ddi->drv->probe(ddi->dev, ddi->id);
-+	/*
-+	 * Unbound PCI devices are always put in D0, regardless of
-+	 * runtime PM status.  During probe, the device is set to
-+	 * active and the usage count is incremented.  If the driver
-+	 * supports runtime PM, it should call pm_runtime_put_noidle()
-+	 * in its probe routine and pm_runtime_get_noresume() in its
-+	 * remove routine.
-+	 */
-+	pm_runtime_get_sync(dev);
-+	pci_dev->driver = pci_drv;
-+	rc = pci_drv->probe(pci_dev, ddi->id);
- 	if (rc) {
--		pm_runtime_disable(dev);
--		pm_runtime_set_suspended(dev);
--		pm_runtime_put_noidle(dev);
-+		pci_dev->driver = NULL;
-+		pm_runtime_put_sync(dev);
- 	}
--	if (parent)
--		pm_runtime_put(parent);
- 	return rc;
- }
- 
-@@ -330,10 +325,8 @@ __pci_device_probe(struct pci_driver *dr
- 		id = pci_match_device(drv, pci_dev);
- 		if (id)
- 			error = pci_call_probe(drv, pci_dev, id);
--		if (error >= 0) {
--			pci_dev->driver = drv;
-+		if (error >= 0)
- 			error = 0;
--		}
- 	}
- 	return error;
- }
-@@ -369,9 +362,7 @@ static int pci_device_remove(struct devi
- 	}
- 
- 	/* Undo the runtime PM settings in local_pci_probe() */
--	pm_runtime_disable(dev);
--	pm_runtime_set_suspended(dev);
--	pm_runtime_put_noidle(dev);
-+	pm_runtime_put_sync(dev);
- 
- 	/*
- 	 * If the device is still on, set the power state as "unknown",
-@@ -994,6 +985,13 @@ static int pci_pm_runtime_suspend(struct
- 	pci_power_t prev = pci_dev->current_state;
- 	int error;
- 
-+	/*
-+	 * If pci_dev->driver is not set (unbound), the device should
-+	 * always remain in D0 regardless of the runtime PM status
-+	 */
-+	if (!pci_dev->driver)
-+		return 0;
-+
- 	if (!pm || !pm->runtime_suspend)
- 		return -ENOSYS;
- 
-@@ -1029,6 +1027,13 @@ static int pci_pm_runtime_resume(struct
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
- 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
- 
-+	/*
-+	 * If pci_dev->driver is not set (unbound), the device should
-+	 * always remain in D0 regardless of the runtime PM status
-+	 */
-+	if (!pci_dev->driver)
-+		return 0;
-+
- 	if (!pm || !pm->runtime_resume)
- 		return -ENOSYS;
- 
-@@ -1046,8 +1051,16 @@ static int pci_pm_runtime_resume(struct
- 
- static int pci_pm_runtime_idle(struct device *dev)
- {
-+	struct pci_dev *pci_dev = to_pci_dev(dev);
- 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
- 
-+	/*
-+	 * If pci_dev->driver is not set (unbound), the device should
-+	 * always remain in D0 regardless of the runtime PM status
-+	 */
-+	if (!pci_dev->driver)
-+		goto out;
-+
- 	if (!pm)
- 		return -ENOSYS;
- 
-@@ -1057,8 +1070,8 @@ static int pci_pm_runtime_idle(struct de
- 			return ret;
- 	}
- 
-+out:
- 	pm_runtime_suspend(dev);
--
- 	return 0;
- }
- 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1900,6 +1900,8 @@ void pci_pm_init(struct pci_dev *dev)
- 	u16 pmc;
- 
- 	pm_runtime_forbid(&dev->dev);
-+	pm_runtime_set_active(&dev->dev);
-+	pm_runtime_enable(&dev->dev);
- 	device_enable_async_suspend(&dev->dev);
- 	dev->wakeup_prepared = false;
- 
-
+> -Eric
+>
+>
 
