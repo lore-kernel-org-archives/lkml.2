@@ -1,61 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408Ab3AIIVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 03:21:30 -0500
-Received: from mga03.intel.com ([143.182.124.21]:54870 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757261Ab3AIIRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 03:17:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,436,1355126400"; 
-   d="scan'208";a="189184434"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Subject: [resend][PATCH 00/16] dw_dmac related patchset
-Date: Wed,  9 Jan 2013 10:16:59 +0200
-Message-Id: <1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130108155423.GJ19691@intel.com>
-References: <20130108155423.GJ19691@intel.com>
+	id S1757449Ab3AIIVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 03:21:48 -0500
+Received: from fallback8.mail.ru ([94.100.176.136]:37371 "EHLO
+	fallback8.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757315Ab3AIIVo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 03:21:44 -0500
+From: =?UTF-8?B?S2lyaWxsIEthcHJhbm92?= <kapranoff@inbox.ru>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: =?UTF-8?B?W1BBVENIXSBFbGltaW5hdGUgdGhlIGZvcmNlZCBzcGVlZCByZWR1Y3Rpb24g?=
+ =?UTF-8?B?YWxnb3JpdGht?=
+Mime-Version: 1.0
+X-Mailer: mPOP Web-Mail 2.19
+X-Originating-IP: [195.131.77.126]
+Date: Wed, 09 Jan 2013 12:21:12 +0400
+Reply-To: =?UTF-8?B?S2lyaWxsIEthcHJhbm92?= <kapranoff@inbox.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1357719672.688670642@f210.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r098M0tc005143
 
-There is a patchset against dw_dmac driver. It has been resent for Vinod to
-review after he returned back from vacation and holidays. That's why there is
-no Cc list.
+NET/PHY: Eliminate the forced speed reduction algorithm.
+In case of the fixed speed set up for NIC 
+(e.g. ethtool -s eth0 autoneg off speed 100 duplex full)
+with ethernet cable plugged off, mentioned algorithm
+slows down NIC speed, so the further "hooking up" gives
+no result. AFAIK, this behaviour is not RFCs' recommended.
+Tested at 2.6.38.7, applicable up to for 3.0.4. 
+Signed-off-by: Kirill Kapranov <kkk@nita.ru>,<kapranoff@inbox.ru>
+--- linux/drivers/net/phy/phy.c.orig 2011-05-22 02:13:59.000000000 +0400
++++ linux/drivers/net/phy/phy.c 2012-04-28 12:49:37.000000000 +0400
+@@ -457,34 +457,6 @@ void phy_stop_machine(struct phy_device
+}
 
-Andy Shevchenko (15):
-  dw_dmac: call .probe after we have a device in place
-  dw_dmac: absence of pdata isn't critical when autocfg is set
-  dmaengine: introduce is_slave_xfer function
-  dma: at_hdmac: check direction properly for cyclic transfers
-  dma: dw_dmac: check direction properly in dw_dma_cyclic_prep
-  dma: ep93xx_dma: reuse is_slave_xfer helper
-  dma: ipu_idmac: reuse is_slave_xfer helper
-  dma: ste_dma40: reuse is_slave_xfer helper
-  dw_dmac: store direction in the custom channel structure
-  dw_dmac: make usage of dw_dma_slave optional
-  dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
-  dw_dmac: check for mapping errors
-  dw_dmac: remove redundant check
-  dw_dmac: update tx_node_active in dwc_do_single_block
-  dma: dw_dmac: add dwc_chan_pause and dwc_chan_resume
+/**
+- * phy_force_reduction - reduce PHY speed/duplex settings by one step
+- * @phydev: target phy_device struct
+- *
+- * Description: Reduces the speed/duplex settings by one notch,
+- * in this order--
+- * 1000/FULL, 1000/HALF, 100/FULL, 100/HALF, 10/FULL, 10/HALF.
+- * The function bottoms out at 10/HALF.
+- */
+-static void phy_force_reduction(struct phy_device *phydev)
+-{
+- int idx;
+-
+- idx = phy_find_setting(phydev->speed, phydev->duplex);
+- 
+- idx++;
+-
+- idx = phy_find_valid(idx, phydev->supported);
+-
+- phydev->speed = settings[idx].speed;
+- phydev->duplex = settings[idx].duplex;
+-
+- pr_info("Trying %d/%s\n", phydev->speed,
+- DUPLEX_FULL == phydev->duplex ?
+- "FULL" : "HALF");
+-}
+-
+-
+-/**
+* phy_error - enter HALTED state for this PHY device
+* @phydev: target phy_device struct
+*
+@@ -814,30 +786,12 @@ void phy_state_machine(struct work_struc
+phydev->adjust_link(phydev->attached_dev);
 
-Heikki Krogerus (1):
-  dma: dw_dmac: clear suspend bit during termination
+} else if (0 == phydev->link_timeout--) {
+- int idx;
 
- drivers/dma/at_hdmac.c      |   10 +--
- drivers/dma/dw_dmac.c       |  152 +++++++++++++++++++++++++++++--------------
- drivers/dma/dw_dmac_regs.h  |   17 +++--
- drivers/dma/ep93xx_dma.c    |    3 +-
- drivers/dma/ipu/ipu_idmac.c |    2 +-
- drivers/dma/ste_dma40.c     |    2 +-
- include/linux/dmaengine.h   |    5 ++
- 7 files changed, 123 insertions(+), 68 deletions(-)
-
--- 
-1.7.10.4
-
+needs_aneg = 1;
+/* If we have the magic_aneg bit,
+* we try again */
+if (phydev->drv->flags & PHY_HAS_MAGICANEG)
+break;
+-
+- /* The timer expired, and we still
+- * don't have a setting, so we try
+- * forcing it until we find one that
+- * works, starting from the fastest speed,
+- * and working our way down */
+- idx = phy_find_valid(0, phydev->supported);
+-
+- phydev->speed = settings[idx].speed;
+- phydev->duplex = settings[idx].duplex;
+-
+- phydev->autoneg = AUTONEG_DISABLE;
+-
+- pr_info("Trying %d/%s\n", phydev->speed,
+- DUPLEX_FULL ==
+- phydev->duplex ?
+- "FULL" : "HALF");
+}
+break;
+case PHY_NOLINK:
+@@ -863,7 +817,6 @@ void phy_state_machine(struct work_struc
+netif_carrier_on(phydev->attached_dev);
+} else {
+if (0 == phydev->link_timeout--) {
+- phy_force_reduction(phydev);
+needs_aneg = 1;
+}
+}
+ ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
