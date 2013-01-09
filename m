@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758168Ab3AIWuf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:50:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35622 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758145Ab3AIWud (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 17:50:33 -0500
-Date: Wed, 9 Jan 2013 14:50:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, glommer@parallels.com, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH v6 05/15] memory-hotplug: introduce new function
- arch_remove_memory() for removing page table depends on architecture
-Message-Id: <20130109145031.210505d0.akpm@linux-foundation.org>
-In-Reply-To: <1357723959-5416-6-git-send-email-tangchen@cn.fujitsu.com>
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1357723959-5416-6-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932177Ab3AIWww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:52:52 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:41822 "EHLO mxout2.iskon.hr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758156Ab3AIWwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 17:52:51 -0500
+X-Remote-IP: 213.191.128.133
+Date: Wed, 09 Jan 2013 23:52:47 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <50EDE41C.7090107@iskon.hr> <20130109134816.db51a820.akpm@linux-foundation.org>
+In-Reply-To: <20130109134816.db51a820.akpm@linux-foundation.org>
+Message-ID: <50EDF4BF.7000108@iskon.hr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] mm: wait for congestion to clear on all zones
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20130110 #9042073, check: 20130109 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 41238 [Jan 10 2013]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jan 2013 17:32:29 +0800
-Tang Chen <tangchen@cn.fujitsu.com> wrote:
+On 09.01.2013 22:48, Andrew Morton wrote:
+> On Wed, 09 Jan 2013 22:41:48 +0100
+> Zlatko Calusic <zlatko.calusic@iskon.hr> wrote:
+>
+>> Currently we take a short nap (HZ/10) and wait for congestion to clear
+>> before taking another pass with lower priority in balance_pgdat(). But
+>> we do that only for the highest zone that we encounter is unbalanced
+>> and congested.
+>>
+>> This patch changes that to wait on all congested zones in a single
+>> pass in the hope that it will save us some scanning that way. Also we
+>> take a nap as soon as congested zone is encountered and sc.priority <
+>> DEF_PRIORITY - 2 (aka kswapd in trouble).
+>>
+>> ...
+>>
+>> The patch is against the mm tree. Make sure that
+>> mm-avoid-calling-pgdat_balanced-needlessly.patch is applied first (not
+>> yet in the mmotm tree). Tested on half a dozen systems with different
+>> workloads for the last few days, working really well!
+>
+> But what are the user-observable effcets of this change?  Less kernel
+> CPU consumption, presumably?  Did you quantify it?
+>
 
-> For removing memory, we need to remove page table. But it depends
-> on architecture. So the patch introduce arch_remove_memory() for
-> removing page table. Now it only calls __remove_pages().
-> 
-> Note: __remove_pages() for some archtecuture is not implemented
->       (I don't know how to implement it for s390).
+And I forgot to answer all the questions... :(
 
-Can this break the build for s390?
+Actually, I did record kswapd CPU usage after 5 days of uptime and I 
+intend to compare it with the new data (after few more days pass). I 
+expect maybe slightly better results.
 
+But, I think it's obvious from my first reply that my primary goal with 
+this patch is correctness, not optimization. So, I won't be dissapointed 
+a little bit if kswapd CPU usage stays the same, so long as the memory 
+utilization remains this smooth. ;)
 
+-- 
+Zlatko
