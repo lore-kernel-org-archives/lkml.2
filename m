@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab3AISZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 13:25:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19680 "EHLO mx1.redhat.com"
+	id S932422Ab3AIS3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 13:29:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8720 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932286Ab3AISZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 13:25:51 -0500
-Message-ID: <50EDB628.4030508@redhat.com>
-Date: Wed, 09 Jan 2013 13:25:44 -0500
+	id S932329Ab3AIS3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 13:29:51 -0500
+Message-ID: <50EDB71B.4090201@redhat.com>
+Date: Wed, 09 Jan 2013 13:29:47 -0500
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
@@ -20,9 +20,9 @@ CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
         linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org
-Subject: Re: [PATCH 3/8] mm: use vm_unmapped_area() on frv architecture
-References: <1357694895-520-1-git-send-email-walken@google.com> <1357694895-520-4-git-send-email-walken@google.com>
-In-Reply-To: <1357694895-520-4-git-send-email-walken@google.com>
+Subject: Re: [PATCH 4/8] mm: use vm_unmapped_area() on ia64 architecture
+References: <1357694895-520-1-git-send-email-walken@google.com> <1357694895-520-5-git-send-email-walken@google.com>
+In-Reply-To: <1357694895-520-5-git-send-email-walken@google.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,7 +30,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 01/08/2013 08:28 PM, Michel Lespinasse wrote:
-> Update the frv arch_get_unmapped_area function to make use of
+> Update the ia64 arch_get_unmapped_area function to make use of
 > vm_unmapped_area() instead of implementing a brute force search.
 >
 > Signed-off-by: Michel Lespinasse <walken@google.com>
