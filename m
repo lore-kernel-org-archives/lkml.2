@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab3AIWDZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:03:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40960 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932106Ab3AIUgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:33 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 10/47] x86, 8042: Enable A20 using KBC to fix S3 resume on some MSI laptops
-Date: Wed,  9 Jan 2013 12:35:05 -0800
-Message-Id: <20130109201730.695833130@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1758102Ab3AIWDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:03:39 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:56417 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757982Ab3AIWDh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 17:03:37 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
+Date: Wed, 9 Jan 2013 22:03:18 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <201301092122.08011.arnd@arndb.de> <20130109215815.GC13648@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20130109215815.GC13648@avionic-0098.adnet.avionic-design.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301092203.18860.arnd@arndb.de>
+X-Provags-ID: V02:K0:6GJdbZLj8ZqhvV4M69F5qCjaOO+iZlyNzA63NtUQDj3
+ R665Wg6IkSIzFybBHtahDaqUic3nJ4DYOwJcsmi1t9IblHjPp/
+ ilAw8+RZGLXXjNfP2x9/a+QY0cA/b0zOLkzmaGSIVKo7OQPKDi
+ ripRSptdjEVdET8u6lwjT51mrZa/eaC5pr3BooQMz9McexJim0
+ 89EWqasF/BLgbOXOddNpD0S0QP5jI+zFlIl+tLHjY5tiB8xpFB
+ njKc6wnO7CzNwVllXNo9Ug7/hE4YjaWBNNnbxuihCqV86XABCI
+ L3/we5DPCSS6/xF//sE0TXR629qWrQ+f+6noUTnQa9tNloSzS0
+ tGUuBs5wVB1huS4ATe40=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Wednesday 09 January 2013, Thierry Reding wrote:
+> Stephen suggested I post this as removal/addition because pretty much
+> everything changed. Reviewing the individual changes would be more
+> confusing than actually reviewing a new driver.
+> 
 
-------------------
+Ok, fair enough.
 
-From: Ondrej Zary <linux@rainbow-software.org>
-
-commit ad68652412276f68ad4fe3e1ecf5ee6880876783 upstream.
-
-Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
-line but resume code assumes that KBC was used.
-The laptop will not resume from S3 otherwise but powers off after a while
-and then powers on again stuck with a blank screen.
-
-Fix it by enabling A20 using KBC in i8042_platform_init for x86.
-
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Link: http://lkml.kernel.org/r/201212112218.06551.linux@rainbow-software.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/input/serio/i8042-x86ia64io.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -900,6 +900,7 @@ static int __init i8042_platform_init(vo
- 	int retval;
- 
- #ifdef CONFIG_X86
-+	u8 a20_on = 0xdf;
- 	/* Just return if pre-detection shows no i8042 controller exist */
- 	if (!x86_platform.i8042_detect())
- 		return -ENODEV;
-@@ -939,6 +940,14 @@ static int __init i8042_platform_init(vo
- 
- 	if (dmi_check_system(i8042_dmi_dritek_table))
- 		i8042_dritek = true;
-+
-+	/*
-+	 * A20 was already enabled during early kernel init. But some buggy
-+	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
-+	 * resume from S3. So we do it here and hope that nothing breaks.
-+	 */
-+	i8042_command(&a20_on, 0x10d1);
-+	i8042_command(NULL, 0x00ff);	/* Null command for SMM firmware */
- #endif /* CONFIG_X86 */
- 
- 	return retval;
-
-
+	Arnd
