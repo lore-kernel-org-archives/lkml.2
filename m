@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934174Ab3AIUyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:54:55 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38042 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933994Ab3AIUyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:54:51 -0500
-Message-ID: <50EDD96A.5080900@metafoo.de>
-Date: Wed, 09 Jan 2013 21:56:10 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
-MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 1/3] spi: Add helper functions for setting up transfers
-References: <1357752671-30222-1-git-send-email-lars@metafoo.de> <50EDC309.5010104@kernel.org>
-In-Reply-To: <50EDC309.5010104@kernel.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933981Ab3AIUlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:41:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43738 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933376Ab3AIUk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:57 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 089/123] sctp: jsctp_sf_eat_sack: fix jprobes function signature mismatch
+Date: Wed,  9 Jan 2013 12:35:28 -0800
+Message-Id: <20130109201510.038418844@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2013 08:20 PM, Jonathan Cameron wrote:
-> On 01/09/2013 05:31 PM, Lars-Peter Clausen wrote:
->> Quite often the pattern used for setting up and transferring a synchronous SPI
->> transaction looks very much like the following:
->>
->> 	struct spi_message msg;
->> 	struct spi_transfer xfers[] = {
->> 		...
->> 	};
->>
->> 	spi_message_init(&msg);
->> 	spi_message_add_tail(&xfers[0], &msg);
->> 	...
->> 	spi_message_add_tail(&xfers[ARRAY_SIZE(xfers) - 1], &msg);
->>
->> 	ret = spi_sync(&msg);
->>
->> This patch adds two new helper functions for handling this case. The first
->> helper function spi_message_init_with_transfers() takes a spi_message and an
->> array of spi_transfers. It will initialize the message and then call
->> spi_message_add_tail() for each transfer in the array. E.g. the following
->>
->> 	spi_message_init(&msg);
->> 	spi_message_add_tail(&xfers[0], &msg);
->> 	...
->> 	spi_message_add_tail(&xfers[ARRAY_SIZE(xfers) - 1], &msg);
->>
->> can be rewritten as
->>
->> 	spi_message_init_with_transfers(&msg, xfers, ARRAY_SIZE(xfers));
->>
->> The second function spi_sync_transfer() takes a SPI device and an array of
->> spi_transfers. It will allocate a new spi_message (on the stack) and add all
->> transfers in the array to the message. Finally it will call spi_sync() on the
->> message.
->>
->> E.g. the follwing
->>
->> 	struct spi_message msg;
->> 	struct spi_transfer xfers[] = {
->> 		...
->> 	};
->>
->> 	spi_message_init(&msg);
->> 	spi_message_add_tail(&xfers[0], &msg);
->> 	...
->> 	spi_message_add_tail(&xfers[ARRAY_SIZE(xfers) - 1], &msg);
->>
->> 	ret = spi_sync(spi, &msg);
->>
->> can be rewritten as
->>
->> 	struct spi_transfer xfers[] = {
->> 		...
->> 	};
->>
->> 	ret = spi_sync_transfer(spi, xfers, ARRAY_SIZE(xfers));
->>
->> The patch also adds a new cocci script which can detect such sequences as
->> described above and transform them automatically to use the new helper
->> functions.
->>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->>
-> Principle looks good to me and some nice little duplication removal
-> savings.
-> 
-> My coccinelle isn't really up to checking that, but for the functions
-> Acked-by: Jonathan Cameron <jic23@kernel.org>
-> 
-> When all comments are in on the code we'll have to think about how to
-> merge this.  If you have much else planned that will hit those iio drivers
-> then things will get uggly unless it goes through that tree.
-> 
-> Guess it all depends on whether others like the patch though ;)
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-The IIO patches can easily wait another release until the spi has made it's way
-up into mainline. I just didn't want to send out the helper functions without
-any realworld examples on how they can be used.
+------------------
 
-- Lars
+
+From: Daniel Borkmann <dborkman@redhat.com>
+
+[ Upstream commit 4cb9d6eaf85ecdd266a9a5c6d825c56ca9eefc14 ]
+
+Commit 24cb81a6a (sctp: Push struct net down into all of the
+state machine functions) introduced the net structure into all
+state machine functions, but jsctp_sf_eat_sack was not updated,
+hence when SCTP association probing is enabled in the kernel,
+any simple SCTP client/server program from userspace will panic
+the kernel.
+
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/sctp/probe.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/net/sctp/probe.c
++++ b/net/sctp/probe.c
+@@ -122,7 +122,8 @@ static const struct file_operations sctp
+ 	.llseek = noop_llseek,
+ };
+ 
+-sctp_disposition_t jsctp_sf_eat_sack(const struct sctp_endpoint *ep,
++sctp_disposition_t jsctp_sf_eat_sack(struct net *net,
++				     const struct sctp_endpoint *ep,
+ 				     const struct sctp_association *asoc,
+ 				     const sctp_subtype_t type,
+ 				     void *arg,
+
 
