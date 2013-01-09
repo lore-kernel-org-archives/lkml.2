@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758114Ab3AIWEP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:04:15 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:60954 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757582Ab3AIWEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 17:04:12 -0500
-Date: Wed, 9 Jan 2013 14:04:06 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Glauber Costa <glommer@parallels.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Li Zefan <lizefan@huawei.com>,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-Message-ID: <20130109220406.GE20454@htj.dyndns.org>
-References: <20130104082751.GA22227@lizard.gateway.2wire.net>
- <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
- <20130109203731.GA20454@htj.dyndns.org>
- <50EDDF1E.6010705@parallels.com>
- <20130109213604.GA9475@lizard.fhda.edu>
- <20130109215514.GD20454@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130109215514.GD20454@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932683Ab3AIUg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:36:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40863 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932395Ab3AIUgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:36:23 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Jay Vosburgh <fubar@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 02/47] bonding: fix race condition in bonding_store_slaves_active
+Date: Wed,  9 Jan 2013 12:34:57 -0800
+Message-Id: <20130109201729.739090097@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 01:55:14PM -0800, Tejun Heo wrote:
-> Please talk with memcg people and fold it into memcg.  It can (and
-> should) be done in a way to not incur overhead when only root memcg is
-> in use and how this is done defines userland-visible interface, so
-> let's please not repeat past mistakes.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-CC'ing KAMEZAWA, Johannes, Li and cgroup mailing list.  Please keep
-them cc'd for further discussion.
+------------------
 
-Thanks.
 
--- 
-tejun
+From: "nikolay@redhat.com" <nikolay@redhat.com>
+
+[ Upstream commit e196c0e579902f42cf72414461fb034e5a1ffbf7 ]
+
+Race between bonding_store_slaves_active() and slave manipulation
+ functions. The bond_for_each_slave use in bonding_store_slaves_active()
+ is not protected by any synchronization mechanism.
+ NULL pointer dereference is easy to reach.
+ Fixed by acquiring the bond->lock for the slave walk.
+
+ v2: Make description text < 75 columns
+
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/bonding/bond_sysfs.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -1524,6 +1524,7 @@ static ssize_t bonding_store_slaves_acti
+ 		goto out;
+ 	}
+ 
++	read_lock(&bond->lock);
+ 	bond_for_each_slave(bond, slave, i) {
+ 		if (!bond_is_active_slave(slave)) {
+ 			if (new_value)
+@@ -1532,6 +1533,7 @@ static ssize_t bonding_store_slaves_acti
+ 				slave->inactive = 1;
+ 		}
+ 	}
++	read_unlock(&bond->lock);
+ out:
+ 	return ret;
+ }
+
+
