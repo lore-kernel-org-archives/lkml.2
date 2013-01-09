@@ -1,177 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306Ab3AIG1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 01:27:46 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:41777 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757284Ab3AIG1m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 01:27:42 -0500
-From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Gleb Natapov <gleb@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] QEMU-AER: Qemu changes to support AER for VFIO-PCI
- devices
-Thread-Topic: [PATCH 2/2] QEMU-AER: Qemu changes to support AER for VFIO-PCI
- devices
-Thread-Index: AQHN7jI/NxaDlJRulEClJd4cCU38Mg==
-Date: Wed, 9 Jan 2013 06:26:24 +0000
-Message-ID: <F9E001219150CB45BEDC82A650F360C901496034@G9W0717.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.201.58.14]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757319Ab3AIG2M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 01:28:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43098 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752071Ab3AIG2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 01:28:10 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1357712591.6113.389.camel@linux-s257.site>
+References: <1356712001-12198-1-git-send-email-jlee@suse.com> <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com> <1356742803.6113.245.camel@linux-s257.site> <50DE4259.7090409@zytor.com> <1357712591.6113.389.camel@linux-s257.site>
 MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 08 Jan 2013 22:27:36 -0800
+To: joeyli <jlee@suse.com>
+CC: Matthew Garrett <matthew.garrett@nebula.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Jan Beulich <JBeulich@suse.com>
+Message-ID: <ea4b2055-980b-4f2c-8810-65de479f45ce@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	- Create eventfd per vfio device assigned to a guest and register an
-          event handler
+That makes it even less compelling...
 
-	- This fd is passed to the vfio_pci driver through a new ioctl
+joeyli <jlee@suse.com> wrote:
 
-	- When the device encounters an error, the eventfd is signaled
-          and the qemu eventfd handler gets invoked.
+>於 五，2012-12-28 於 17:07 -0800，H. Peter Anvin 提到：
+>> On 12/28/2012 05:00 PM, joeyli wrote:
+>> > 於 五，2012-12-28 於 17:43 +0000，Matthew Garrett 提到：
+>> >> On Sat, 2012-12-29 at 00:26 +0800, Lee, Chun-Yi wrote:
+>> >>> UEFI time services, GetTime(), SetTime(), GetWakeupTime(),
+>SetWakeupTime() are also
+>> >>> supported by other non-IA64 architecutre with UEFI BIOS, e.g.
+>x86.
+>> >>>
+>> >>> This patch changed RTC_DRV_EFI configuration to depend on EFI but
+>not just IA64. It
+>> >>> checks efi_enabled flag and efi-rtc driver should enabled.
+>> >>
+>> >> In theory, certainly - but do we still have machines that explode
+>if the
+>> >> get_time call is made? We may also want to think about disabling
+>the
+>> >> legacy access to the RTC if the EFI calls are present.
+>> > 
+>> > The legacy get_time access on my test machine is work fine, not
+>thing
+>> > explode. :-)
+>> > Just we have a function want to expose the timezone information to
+>> > userspace and also store it.
+>> > 
+>> 
+>> We should indeed save the timezone information if it is available --
+>> either from the ACPI TAD or from the EFI RTC, or even via some
+>> platform-dependent mechanism.  It is important, though, that that is
+>> separate from the order of priority.
+>> 
+>> 	-hpa
+>> 
+>
+>I found Windows 8 doesn't aware/maintain the Timezone and Daylight
+>fields in EFI_TIME struct.
+>
+>I got a Acer UEFI notebook and I keep the Windows 8 hard drive
+>(/dev/sda) but install Linux to another hard drive (/dev/sdb). 
+>
+>On Linux, I applied my rtc-efi patches for allow user space feed
+>Timezone and store it to BIOS through SetTime(). I wrote a simple user
+>space program to set Timezone and Daylight fields, after set those
+>fields I reboot to Windows 8 and use DateTime setting GUI to look at
+>the
+>change. Looks Windows doesn't aware the change, it just assume the time
+>in DateTime filed is local time, but didn't show the Timezone that was
+>set by me on Linux to GUI.
+>
+>Then, I select another Timezone(country) through Windows 8 GUI, and
+>reboot to Linux. I read the Timezone and Daylight by program but didn't
+>see the Timezone and Daylight changed by Windows 8, the value is still
+>the same with my latest time setting by Linux program. Windows 8
+>changed
+>DayTime fields but didn't maintain Timezone and Daylight.
+>
+>I only have this machine with preloaded Windows 8 for verify the
+>behavior, not sure it's normally or not. If Windows 8 ignores Timezone
+>and Daylight fields in UEFI BIOS, then I think it's lower down the
+>necessary for we maintain Timezone and Daylight in UEFI BIOS. 
+>
+>We still can store Timezone and Daylight value to UEFI, but will have
+>no
+>any interactive with Windows 8.
+>
+>Appreciate for any suggestions.
+>
+>
+>Thanks a lot!
+>Joey Lee
 
-	- In the handler decide what action to take. Current action taken
-          is to terminate the guest.
-
-Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
----
- hw/vfio_pci.c              | 56 ++++++++++++++++++++++++++++++++++++++++++++++
- linux-headers/linux/vfio.h |  9 ++++++++
- 2 files changed, 65 insertions(+)
-
-diff --git a/hw/vfio_pci.c b/hw/vfio_pci.c
-index 28c8303..9c3c28b 100644
---- a/hw/vfio_pci.c
-+++ b/hw/vfio_pci.c
-@@ -38,6 +38,7 @@
- #include "qemu/error-report.h"
- #include "qemu/queue.h"
- #include "qemu/range.h"
-+#include "sysemu/sysemu.h"
- 
- /* #define DEBUG_VFIO */
- #ifdef DEBUG_VFIO
-@@ -130,6 +131,8 @@ typedef struct VFIODevice {
-     QLIST_ENTRY(VFIODevice) next;
-     struct VFIOGroup *group;
-     bool reset_works;
-+    EventNotifier errfd;
-+    __u32 dev_info_flags;
- } VFIODevice;
- 
- typedef struct VFIOGroup {
-@@ -1805,6 +1808,8 @@ static int vfio_get_device(VFIOGroup *group, const char *name, VFIODevice *vdev)
-     DPRINTF("Device %s flags: %u, regions: %u, irgs: %u\n", name,
-             dev_info.flags, dev_info.num_regions, dev_info.num_irqs);
- 
-+    vdev->dev_info_flags = dev_info.flags;
-+
-     if (!(dev_info.flags & VFIO_DEVICE_FLAGS_PCI)) {
-         error_report("vfio: Um, this isn't a PCI device\n");
-         goto error;
-@@ -1900,6 +1905,55 @@ static void vfio_put_device(VFIODevice *vdev)
-     }
- }
- 
-+static void vfio_errfd_handler(void *opaque)
-+{
-+    VFIODevice *vdev = opaque;
-+
-+    if (!event_notifier_test_and_clear(&vdev->errfd)) {
-+        return;
-+    }
-+
-+    /*
-+     * TBD. Retrieve the error details and decide what action
-+     * needs to be taken. One of the actions could be to pass
-+     * the error to the guest and have the guest driver recover
-+     * the error. This requires that PCIe capabilities be
-+     * exposed to the guest. At present, we just terminate the
-+     * guest to contain the error.
-+     */
-+    error_report("%s(%04x:%02x:%02x.%x) "
-+        "Unrecoverable error detected... Terminating guest\n",
-+        __func__, vdev->host.domain, vdev->host.bus, vdev->host.slot,
-+        vdev->host.function);
-+
-+    qemu_system_shutdown_request();
-+    return;
-+}
-+
-+static void vfio_register_errfd(VFIODevice *vdev)
-+{
-+    int32_t pfd;
-+    int ret;
-+
-+    if (!(vdev->dev_info_flags & VFIO_DEVICE_FLAGS_AER_NOTIFY)) {
-+        error_report("vfio: Warning: Error notification not supported for the device\n");
-+        return;
-+    }
-+    if (event_notifier_init(&vdev->errfd, 0)) {
-+        error_report("vfio: Warning: Unable to init event notifier for error detection\n");
-+        return;
-+    }
-+    pfd = event_notifier_get_fd(&vdev->errfd);
-+    qemu_set_fd_handler(pfd, vfio_errfd_handler, NULL, vdev);
-+
-+    ret = ioctl(vdev->fd, VFIO_DEVICE_SET_ERRFD, pfd);
-+    if (ret) {
-+        error_report("vfio: Warning: Failed to setup error fd: %d\n", ret);
-+        qemu_set_fd_handler(pfd, NULL, NULL, vdev);
-+        event_notifier_cleanup(&vdev->errfd);
-+    }
-+    return;
-+}
- static int vfio_initfn(PCIDevice *pdev)
- {
-     VFIODevice *pvdev, *vdev = DO_UPCAST(VFIODevice, pdev, pdev);
-@@ -2010,6 +2064,8 @@ static int vfio_initfn(PCIDevice *pdev)
-         }
-     }
- 
-+    vfio_register_errfd(vdev);
-+
-     return 0;
- 
- out_teardown:
-diff --git a/linux-headers/linux/vfio.h b/linux-headers/linux/vfio.h
-index 4758d1b..0ca4eeb 100644
---- a/linux-headers/linux/vfio.h
-+++ b/linux-headers/linux/vfio.h
-@@ -147,6 +147,7 @@ struct vfio_device_info {
- 	__u32	flags;
- #define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
- #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
-+#define VFIO_DEVICE_FLAGS_AER_NOTIFY (1 << 2)   /* Supports aer notification */
- 	__u32	num_regions;	/* Max region index + 1 */
- 	__u32	num_irqs;	/* Max IRQ index + 1 */
- };
-@@ -288,6 +289,14 @@ struct vfio_irq_set {
-  */
- #define VFIO_DEVICE_RESET		_IO(VFIO_TYPE, VFIO_BASE + 11)
- 
-+/**
-+ * VFIO_DEVICE_SET_ERRFD - _IO(VFIO_TYPE, VFIO_BASE + 12)
-+ *
-+ * Pass the eventfd to the vfio-pci driver for signalling any device
-+ * error notifications
-+ */
-+#define VFIO_DEVICE_SET_ERRFD           _IO(VFIO_TYPE, VFIO_BASE + 12)
-+
- /*
-  * The VFIO-PCI bus driver makes use of the following fixed region and
-  * IRQ index mapping.  Unimplemented regions return a size of zero.
 -- 
-1.7.11.3
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
