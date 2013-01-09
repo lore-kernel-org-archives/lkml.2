@@ -1,112 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933420Ab3AIUiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:38:54 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42387 "EHLO mail.kernel.org"
+	id S933471Ab3AIUjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:39:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42458 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933384Ab3AIUiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:52 -0500
+	id S933418Ab3AIUi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bryan Schumaker <bjschuma@netapp.com>,
+        Sven Wegener <sven.wegener@stealer.net>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 36/80] NFS: Add sequence_priviliged_ops for nfs4_proc_sequence()
-Date: Wed,  9 Jan 2013 12:35:28 -0800
-Message-Id: <20130109201505.026990887@linuxfoundation.org>
+Subject: [ 041/123] NFSv4: Check for buffer length in __nfs4_get_acl_uncached
+Date: Wed,  9 Jan 2013 12:34:40 -0800
+Message-Id: <20130109201503.819033406@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bryan Schumaker <bjschuma@netapp.com>
+From: Sven Wegener <sven.wegener@stealer.net>
 
-commit 6bdb5f213c4344324f600dde885f25768fbd14db upstream.
+commit 7d3e91a89b7adbc2831334def9e494dd9892f9af upstream.
 
-If I mount an NFS v4.1 server to a single client multiple times and then
-run xfstests over each mountpoint I usually get the client into a state
-where recovery deadlocks.  The server informs the client of a
-cb_path_down sequence error, the client then does a
-bind_connection_to_session and checks the status of the lease.
+Commit 1f1ea6c "NFSv4: Fix buffer overflow checking in
+__nfs4_get_acl_uncached" accidently dropped the checking for too small
+result buffer length.
 
-I found that bind_connection_to_session sets the NFS4_SESSION_DRAINING
-flag on the client, but this flag is never unset before
-nfs4_check_lease() reaches nfs4_proc_sequence().  This causes the client
-to deadlock, halting all NFS activity to the server.  nfs4_proc_sequence()
-is only called by the state manager, so I can change it to run in privileged
-mode to bypass the NFS4_SESSION_DRAINING check and avoid the deadlock.
+If someone uses getxattr on "system.nfs4_acl" on an NFSv4 mount
+supporting ACLs, the ACL has not been cached and the buffer suplied is
+too short, we still copy the complete ACL, resulting in kernel and user
+space memory corruption.
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+ fs/nfs/nfs4proc.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
 --- a/fs/nfs/nfs4proc.c
 +++ b/fs/nfs/nfs4proc.c
-@@ -5739,13 +5739,26 @@ static void nfs41_sequence_prepare(struc
- 	rpc_call_start(task);
- }
- 
-+static void nfs41_sequence_prepare_privileged(struct rpc_task *task, void *data)
-+{
-+	rpc_task_set_priority(task, RPC_PRIORITY_PRIVILEGED);
-+	nfs41_sequence_prepare(task, data);
-+}
-+
- static const struct rpc_call_ops nfs41_sequence_ops = {
- 	.rpc_call_done = nfs41_sequence_call_done,
- 	.rpc_call_prepare = nfs41_sequence_prepare,
- 	.rpc_release = nfs41_sequence_release,
- };
- 
--static struct rpc_task *_nfs41_proc_sequence(struct nfs_client *clp, struct rpc_cred *cred)
-+static const struct rpc_call_ops nfs41_sequence_privileged_ops = {
-+	.rpc_call_done = nfs41_sequence_call_done,
-+	.rpc_call_prepare = nfs41_sequence_prepare_privileged,
-+	.rpc_release = nfs41_sequence_release,
-+};
-+
-+static struct rpc_task *_nfs41_proc_sequence(struct nfs_client *clp, struct rpc_cred *cred,
-+					     const struct rpc_call_ops *seq_ops)
- {
- 	struct nfs4_sequence_data *calldata;
- 	struct rpc_message msg = {
-@@ -5755,7 +5768,7 @@ static struct rpc_task *_nfs41_proc_sequ
- 	struct rpc_task_setup task_setup_data = {
- 		.rpc_client = clp->cl_rpcclient,
- 		.rpc_message = &msg,
--		.callback_ops = &nfs41_sequence_ops,
-+		.callback_ops = seq_ops,
- 		.flags = RPC_TASK_ASYNC | RPC_TASK_SOFT,
- 	};
- 
-@@ -5782,7 +5795,7 @@ static int nfs41_proc_async_sequence(str
- 
- 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
- 		return 0;
--	task = _nfs41_proc_sequence(clp, cred);
-+	task = _nfs41_proc_sequence(clp, cred, &nfs41_sequence_ops);
- 	if (IS_ERR(task))
- 		ret = PTR_ERR(task);
- 	else
-@@ -5796,7 +5809,7 @@ static int nfs4_proc_sequence(struct nfs
- 	struct rpc_task *task;
- 	int ret;
- 
--	task = _nfs41_proc_sequence(clp, cred);
-+	task = _nfs41_proc_sequence(clp, cred, &nfs41_sequence_privileged_ops);
- 	if (IS_ERR(task)) {
- 		ret = PTR_ERR(task);
- 		goto out;
+@@ -3937,8 +3937,13 @@ static ssize_t __nfs4_get_acl_uncached(s
+ 		goto out_free;
+ 	}
+ 	nfs4_write_cached_acl(inode, pages, res.acl_data_offset, res.acl_len);
+-	if (buf)
++	if (buf) {
++		if (res.acl_len > buflen) {
++			ret = -ERANGE;
++			goto out_free;
++		}
+ 		_copy_from_pages(buf, pages, res.acl_data_offset, res.acl_len);
++	}
+ out_ok:
+ 	ret = res.acl_len;
+ out_free:
 
 
