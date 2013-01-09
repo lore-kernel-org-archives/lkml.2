@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933834Ab3AIUlD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:41:03 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43728 "EHLO mail.kernel.org"
+	id S934052Ab3AIUyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:54:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43777 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933968Ab3AIUk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:56 -0500
+	id S933994Ab3AIUlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicolas Pitre <nico@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [ 096/123] ARM: mm: use pteval_t to represent page protection values
-Date: Wed,  9 Jan 2013 12:35:35 -0800
-Message-Id: <20130109201510.925282646@linuxfoundation.org>
+        Zdenek Kabelac <zkabelac@redhat.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 100/123] fs: Fix imbalance in freeze protection in mark_files_ro()
+Date: Wed,  9 Jan 2013 12:35:39 -0800
+Message-Id: <20130109201511.401004489@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -27,38 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 864aa04cd02979c2c755cb28b5f4fe56039171c0 upstream.
+commit 72651cac884b1e285fa8e8314b10e9f1b8458802 upstream.
 
-When updating the page protection map after calculating the user_pgprot
-value, the base protection map is temporarily stored in an unsigned long
-type, causing truncation of the protection bits when LPAE is enabled.
-This effectively means that calls to mprotect() will corrupt the upper
-page attributes, clearing the XN bit unconditionally.
+File descriptors (even those for writing) do not hold freeze protection.
+Thus mark_files_ro() must call __mnt_drop_write() to only drop protection
+against remount read-only. Calling mnt_drop_write_file() as we do now
+results in:
 
-This patch uses pteval_t to store the intermediate protection values,
-preserving the upper bits for 64-bit descriptors.
+[ BUG: bad unlock balance detected! ]
+3.7.0-rc6-00028-g88e75b6 #101 Not tainted
+-------------------------------------
+kworker/1:2/79 is trying to release lock (sb_writers) at:
+[<ffffffff811b33b4>] mnt_drop_write+0x24/0x30
+but there are no more locks to release!
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/mmu.c |    2 +-
+ fs/file_table.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -488,7 +488,7 @@ static void __init build_mem_type_table(
- #endif
- 
- 	for (i = 0; i < 16; i++) {
--		unsigned long v = pgprot_val(protection_map[i]);
-+		pteval_t v = pgprot_val(protection_map[i]);
- 		protection_map[i] = __pgprot(v | user_pgprot);
- 	}
- 
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -458,8 +458,8 @@ void mark_files_ro(struct super_block *s
+ 		spin_unlock(&f->f_lock);
+ 		if (file_check_writeable(f) != 0)
+ 			continue;
++		__mnt_drop_write(f->f_path.mnt);
+ 		file_release_write(f);
+-		mnt_drop_write_file(f);
+ 	} while_file_list_for_each_entry;
+ 	lg_global_unlock(&files_lglock);
+ }
 
 
