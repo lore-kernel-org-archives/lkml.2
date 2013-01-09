@@ -1,125 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933190Ab3AIUiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:38:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41897 "EHLO mail.kernel.org"
+	id S933206Ab3AIUiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:38:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41943 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933173Ab3AIUiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:04 -0500
+	id S933057Ab3AIUiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 14/80] b43: fix tx path skb leaks
-Date: Wed,  9 Jan 2013 12:35:06 -0800
-Message-Id: <20130109201502.212799346@linuxfoundation.org>
+        Dan Williams <dcbw@redhat.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 026/123] qmi_wwan/cdc_ether: add Dell Wireless 5800 (Novatel E362) USB IDs
+Date: Wed,  9 Jan 2013 12:34:25 -0800
+Message-Id: <20130109201501.877415123@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 78f18df4b323d2ac14d6c82e2fc3c8dc4556bccc upstream.
+commit 0370acd4d4d2595a11b0b0a793acb506e19b9d4c upstream.
 
-ieee80211_free_txskb() needs to be used instead of dev_kfree_skb_any for
-tx packets passed to the driver from mac80211
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Acked-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/dma.c  |    7 +++++--
- drivers/net/wireless/b43/main.c |   12 ++++++++----
- drivers/net/wireless/b43/pio.c  |    4 ++--
- 3 files changed, 15 insertions(+), 8 deletions(-)
+ drivers/net/usb/cdc_ether.c |   15 +++++++++++++++
+ drivers/net/usb/qmi_wwan.c  |   14 ++++++++++++++
+ 2 files changed, 29 insertions(+)
 
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -409,7 +409,10 @@ static inline
- 				struct b43_dmadesc_meta *meta)
- {
- 	if (meta->skb) {
--		dev_kfree_skb_any(meta->skb);
-+		if (ring->tx)
-+			ieee80211_free_txskb(ring->dev->wl->hw, meta->skb);
-+		else
-+			dev_kfree_skb_any(meta->skb);
- 		meta->skb = NULL;
- 	}
- }
-@@ -1454,7 +1457,7 @@ int b43_dma_tx(struct b43_wldev *dev, st
- 	if (unlikely(err == -ENOKEY)) {
- 		/* Drop this packet, as we don't have the encryption key
- 		 * anymore and must not transmit it unencrypted. */
--		dev_kfree_skb_any(skb);
-+		ieee80211_free_txskb(dev->wl->hw, skb);
- 		err = 0;
- 		goto out;
- 	}
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -3393,7 +3393,7 @@ static void b43_tx_work(struct work_stru
- 				break;
- 			}
- 			if (unlikely(err))
--				dev_kfree_skb(skb); /* Drop it */
-+				ieee80211_free_txskb(wl->hw, skb);
- 			err = 0;
- 		}
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -487,6 +487,7 @@ static const struct driver_info wwan_inf
+ #define HUAWEI_VENDOR_ID	0x12D1
+ #define NOVATEL_VENDOR_ID	0x1410
+ #define ZTE_VENDOR_ID		0x19D2
++#define DELL_VENDOR_ID		0x413C
  
-@@ -3414,7 +3414,7 @@ static void b43_op_tx(struct ieee80211_h
+ static const struct usb_device_id	products [] = {
+ /*
+@@ -618,6 +619,20 @@ static const struct usb_device_id	produc
+ 	.driver_info = 0,
+ },
  
- 	if (unlikely(skb->len < 2 + 2 + 6)) {
- 		/* Too short, this can't be a valid frame. */
--		dev_kfree_skb_any(skb);
-+		ieee80211_free_txskb(hw, skb);
- 		return;
- 	}
- 	B43_WARN_ON(skb_shinfo(skb)->nr_frags);
-@@ -4210,8 +4210,12 @@ redo:
- 
- 	/* Drain all TX queues. */
- 	for (queue_num = 0; queue_num < B43_QOS_QUEUE_NUM; queue_num++) {
--		while (skb_queue_len(&wl->tx_queue[queue_num]))
--			dev_kfree_skb(skb_dequeue(&wl->tx_queue[queue_num]));
-+		while (skb_queue_len(&wl->tx_queue[queue_num])) {
-+			struct sk_buff *skb;
++/* Dell Wireless 5800 (Novatel E362) - handled by qmi_wwan */
++{
++	USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, 0x8195, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
++	.driver_info = 0,
++},
 +
-+			skb = skb_dequeue(&wl->tx_queue[queue_num]);
-+			ieee80211_free_txskb(wl->hw, skb);
-+		}
- 	}
++/* Dell Wireless 5800 (Novatel E362) - handled by qmi_wwan */
++{
++	USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, 0x8196, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
++	.driver_info = 0,
++},
++
+ /*
+  * WHITELIST!!!
+  *
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -383,6 +383,20 @@ static const struct usb_device_id produc
+ 		                              USB_CDC_PROTO_NONE),
+ 		.driver_info        = (unsigned long)&qmi_wwan_info,
+ 	},
++	{	/* Dell Wireless 5800 (Novatel E362) */
++		USB_DEVICE_AND_INTERFACE_INFO(0x413C, 0x8195,
++					      USB_CLASS_COMM,
++					      USB_CDC_SUBCLASS_ETHERNET,
++					      USB_CDC_PROTO_NONE),
++		.driver_info        = (unsigned long)&qmi_wwan_info,
++	},
++	{	/* Dell Wireless 5800 V2 (Novatel E362) */
++		USB_DEVICE_AND_INTERFACE_INFO(0x413C, 0x8196,
++					      USB_CLASS_COMM,
++					      USB_CDC_SUBCLASS_ETHERNET,
++					      USB_CDC_PROTO_NONE),
++		.driver_info        = (unsigned long)&qmi_wwan_info,
++	},
  
- 	b43_mac_suspend(dev);
---- a/drivers/net/wireless/b43/pio.c
-+++ b/drivers/net/wireless/b43/pio.c
-@@ -196,7 +196,7 @@ static void b43_pio_cancel_tx_packets(st
- 	for (i = 0; i < ARRAY_SIZE(q->packets); i++) {
- 		pack = &(q->packets[i]);
- 		if (pack->skb) {
--			dev_kfree_skb_any(pack->skb);
-+			ieee80211_free_txskb(q->dev->wl->hw, pack->skb);
- 			pack->skb = NULL;
- 		}
- 	}
-@@ -552,7 +552,7 @@ int b43_pio_tx(struct b43_wldev *dev, st
- 	if (unlikely(err == -ENOKEY)) {
- 		/* Drop this packet, as we don't have the encryption key
- 		 * anymore and must not transmit it unencrypted. */
--		dev_kfree_skb_any(skb);
-+		ieee80211_free_txskb(dev->wl->hw, skb);
- 		err = 0;
- 		goto out;
- 	}
+ 	/* 3. Combined interface devices matching on interface number */
+ 	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
 
 
