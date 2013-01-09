@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab3AILwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 06:52:45 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:62070 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756635Ab3AILwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 06:52:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 1/4] gpiolib: introduce descriptor-based GPIO interface
-Date: Wed, 9 Jan 2013 11:52:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <20130109104414.GF3931@n2100.arm.linux.org.uk> <20130109111055.GG3931@n2100.arm.linux.org.uk>
-In-Reply-To: <20130109111055.GG3931@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301091152.30047.arnd@arndb.de>
-X-Provags-ID: V02:K0:HFvceo0na2soxdJzeKL0G6faZlH2a/WPHZSyuYObpUM
- Lz9iz+ohWnqwSYukC/B42iPhE0cBnUMzW98zSKHSe41A2prav4
- wT6613jGnxJt9MCKyQaJbqVbRsyWrj/Vk0HdC/pgQbrKVB7g6j
- YHnNUrZ3ueo5gn+rt2M0mQ1P1U7xsrQBEl1HfHr1iaHnHk0FbX
- ZBYEbSnhIXf5Rr/FmrvIpQNeIHA82UkJRuwu9WHjgOh5Bnf4+0
- FC9kEqARspR9aottGRlrHw8BWsVNOXUJf4J0WVGWllBBQYaimk
- ODi5fVmikrBh2zDb5jM2m5Nj8B4RO6uRRbWUPKmQ4YWNpoicMM
- jbkmcQrTzPjFC8MhQWUs=
+	id S1757638Ab3AIL4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 06:56:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48193 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757453Ab3AIL4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 06:56:35 -0500
+From: Anton Arapov <anton@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>
+Subject: [RFC PATCH v2 1/4] uretprobes/x86: hijack return address
+Date: Wed,  9 Jan 2013 12:24:49 +0100
+Message-Id: <1357730692-3928-2-git-send-email-anton@redhat.com>
+In-Reply-To: <1357730692-3928-1-git-send-email-anton@redhat.com>
+References: <1357730692-3928-1-git-send-email-anton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 January 2013, Russell King - ARM Linux wrote:
->         d = debugfs_create_dir("pm_debug", NULL);
->         if (IS_ERR_OR_NULL(d))
->                 return PTR_ERR(d);
-> 
-> Well, covered above.  NULL is success here.
+Function to hijack the return address, replace it with a "trampoline"
+and function to predict the stack pointer address value at return.
 
-This one is actually worse, because in case of debugfs_create_dir,
-a negative error code is documented to mean "success": The debugfs
-functions intentionally return ERR_PTR(-ENODEV) when debugfs is
-disabled so that any code checking for NULL pretends it is a valid
-pointer, but that code is only allowed to pass this pointer into
-other debugfs functions that are also stubbed out and never
-dereference it.
+v2:
+  remove ->doomed flag, kill task immediately
 
-	Arnd
+Signed-off-by: Anton Arapov <anton@redhat.com>
+---
+ arch/x86/include/asm/uprobes.h |  1 +
+ arch/x86/kernel/uprobes.c      | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+)
+
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index 8ff8be7..c353555 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -55,4 +55,5 @@ extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+ extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
+ extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
++extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long rp_trampoline_vaddr, struct pt_regs *regs);
+ #endif	/* _ASM_UPROBES_H */
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 0ba4cfb..85e2153 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -697,3 +697,32 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 		send_sig(SIGTRAP, current, 0);
+ 	return ret;
+ }
++
++extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long
++		rp_trampoline_vaddr, struct pt_regs *regs)
++{
++	int rasize, ncopied;
++	unsigned long orig_ret_vaddr = 0; /* clear high bits for 32-bit apps */
++
++	rasize = is_ia32_task() ? 4 : 8;
++	ncopied = copy_from_user(&orig_ret_vaddr, (void __user *)regs->sp, rasize);
++	if (unlikely(ncopied))
++		return 0;
++
++	/* check whether address has been already hijacked */
++	if (orig_ret_vaddr == rp_trampoline_vaddr)
++		return orig_ret_vaddr;
++
++	ncopied = copy_to_user((void __user *)regs->sp, &rp_trampoline_vaddr, rasize);
++	if (unlikely(ncopied)) {
++		if (ncopied != rasize) {
++			printk(KERN_ERR "uretprobe: return address clobbered: "
++					"pid=%d, %%sp=%#lx, %%ip=%#lx\n",
++					current->pid, regs->sp, regs->ip);
++			/* kill task immediately */
++			send_sig(SIGSEGV, current, 0);
++		}
++	}
++
++	return orig_ret_vaddr;
++}
+-- 
+1.8.0.2
+
