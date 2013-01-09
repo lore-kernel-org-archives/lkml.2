@@ -1,126 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933722Ab3AIVVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:21:37 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4973 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933252Ab3AIVVc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:21:32 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZDDkTe9yP_wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=cf0L7CG27rcA:10 a=mDV3o1hIAAAA:8 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=IxmHE6Ef7kAXMPTQnUUA:9 a=PUjeQqilurYA:10 a=lM8EmwarS4gA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=JOcsZI7cM4vYDdRw:21 a=64x7Dli1aHD0K5_R:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357766490.5141.3.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/2] Update FSF postal address to be URL's.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jon Stanley <jonstanley@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Wed, 09 Jan 2013 16:21:30 -0500
-In-Reply-To: <1347049967-3143-1-git-send-email-jonstanley@gmail.com>
-References: <1347049967-3143-1-git-send-email-jonstanley@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933649Ab3AIVWQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:22:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42645 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933371Ab3AIUjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:18 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        NeilBrown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 049/123] nfsd: avoid permission checks on EXCLUSIVE_CREATE replay
+Date: Wed,  9 Jan 2013 12:34:48 -0800
+Message-Id: <20130109201504.858155277@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo,
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-These seemed to have been missed. You can add them with my Acked-by.
+------------------
 
--- Steve
+From: Neil Brown <neilb@suse.de>
 
+commit 7007c90fb9fef593b4aeaeee57e6a6754276c97c upstream.
 
+With NFSv4, if we create a file then open it we explicit avoid checking
+the permissions on the file during the open because the fact that we
+created it ensures we should be allow to open it (the create and the
+open should appear to be a single operation).
 
-On Fri, 2012-09-07 at 16:32 -0400, Jon Stanley wrote:
-> The FSF now prefers to use URL's in copyright headers rather than
-> their postal address. This change updates the address to be
-> <http://www.gnu.org/licenses> per http://www.gnu.org/licenses/gpl-howto.html
-> 
-> Signed-off-by: Jon Stanley <jonstanley@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  tools/lib/traceevent/event-parse.c  |    3 +--
->  tools/lib/traceevent/event-parse.h  |    3 +--
->  tools/lib/traceevent/event-utils.h  |    3 +--
->  tools/lib/traceevent/parse-filter.c |    3 +--
->  tools/lib/traceevent/trace-seq.c    |    3 +--
->  5 files changed, 5 insertions(+), 10 deletions(-)
-> 
-> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-> index 5f34aa3..7b946f9 100644
-> --- a/tools/lib/traceevent/event-parse.c
-> +++ b/tools/lib/traceevent/event-parse.c
-> @@ -13,8 +13,7 @@
->   * GNU Lesser General Public License for more details.
->   *
->   * You should have received a copy of the GNU Lesser General Public
-> - * License along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
->   *
->   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->   *
-> diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-> index 5772ad8..ea93a1a 100644
-> --- a/tools/lib/traceevent/event-parse.h
-> +++ b/tools/lib/traceevent/event-parse.h
-> @@ -13,8 +13,7 @@
->   * GNU Lesser General Public License for more details.
->   *
->   * You should have received a copy of the GNU Lesser General Public
-> - * License along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
->   *
->   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->   */
-> diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
-> index 0829638..ebd970c 100644
-> --- a/tools/lib/traceevent/event-utils.h
-> +++ b/tools/lib/traceevent/event-utils.h
-> @@ -13,8 +13,7 @@
->   * GNU Lesser General Public License for more details.
->   *
->   * You should have received a copy of the GNU Lesser General Public
-> - * License along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
->   *
->   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->   */
-> diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-> index ad17855..5527c32 100644
-> --- a/tools/lib/traceevent/parse-filter.c
-> +++ b/tools/lib/traceevent/parse-filter.c
-> @@ -13,8 +13,7 @@
->   * GNU Lesser General Public License for more details.
->   *
->   * You should have received a copy of the GNU Lesser General Public
-> - * License along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
->   *
->   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->   */
-> diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
-> index b1ccc92..a57db80 100644
-> --- a/tools/lib/traceevent/trace-seq.c
-> +++ b/tools/lib/traceevent/trace-seq.c
-> @@ -13,8 +13,7 @@
->   * GNU Lesser General Public License for more details.
->   *
->   * You should have received a copy of the GNU Lesser General Public
-> - * License along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
->   *
->   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->   */
+However if the reply to an EXCLUSIVE create gets lots and the client
+resends the create, the current code will perform the permission check -
+because it doesn't realise that it did the open already..
+
+This patch should fix this.
+
+Note that I haven't actually seen this cause a problem.  I was just
+looking at the code trying to figure out a different EXCLUSIVE open
+related issue, and this looked wrong.
+
+(Fix confirmed with pynfs 4.0 test OPEN4--bfields)
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+[bfields: use OWNER_OVERRIDE and update for 4.1]
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/nfsd/nfs4proc.c |    8 +++++---
+ fs/nfsd/vfs.c      |   10 ++++++++--
+ 2 files changed, 13 insertions(+), 5 deletions(-)
+
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -194,6 +194,7 @@ static __be32
+ do_open_lookup(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_open *open)
+ {
+ 	struct svc_fh *resfh;
++	int accmode;
+ 	__be32 status;
+ 
+ 	resfh = kmalloc(sizeof(struct svc_fh), GFP_KERNEL);
+@@ -253,9 +254,10 @@ do_open_lookup(struct svc_rqst *rqstp, s
+ 	/* set reply cache */
+ 	fh_copy_shallow(&open->op_openowner->oo_owner.so_replay.rp_openfh,
+ 			&resfh->fh_handle);
+-	if (!open->op_created)
+-		status = do_open_permission(rqstp, resfh, open,
+-					    NFSD_MAY_NOP);
++	accmode = NFSD_MAY_NOP;
++	if (open->op_created)
++		accmode |= NFSD_MAY_OWNER_OVERRIDE;
++	status = do_open_permission(rqstp, resfh, open, accmode);
+ 	set_change_info(&open->op_cinfo, current_fh);
+ 	fh_dup2(current_fh, resfh);
+ out:
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -1485,13 +1485,19 @@ do_nfsd_create(struct svc_rqst *rqstp, s
+ 		case NFS3_CREATE_EXCLUSIVE:
+ 			if (   dchild->d_inode->i_mtime.tv_sec == v_mtime
+ 			    && dchild->d_inode->i_atime.tv_sec == v_atime
+-			    && dchild->d_inode->i_size  == 0 )
++			    && dchild->d_inode->i_size  == 0 ) {
++				if (created)
++					*created = 1;
+ 				break;
++			}
+ 		case NFS4_CREATE_EXCLUSIVE4_1:
+ 			if (   dchild->d_inode->i_mtime.tv_sec == v_mtime
+ 			    && dchild->d_inode->i_atime.tv_sec == v_atime
+-			    && dchild->d_inode->i_size  == 0 )
++			    && dchild->d_inode->i_size  == 0 ) {
++				if (created)
++					*created = 1;
+ 				goto set_attr;
++			}
+ 			 /* fallthru */
+ 		case NFS3_CREATE_GUARDED:
+ 			err = nfserr_exist;
 
 
