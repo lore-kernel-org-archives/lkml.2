@@ -1,106 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055Ab3AIUhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41554 "EHLO mail.kernel.org"
+	id S933138Ab3AIUhx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:37:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41743 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933021Ab3AIUhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:32 -0500
+	id S932793Ab3AIUhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Eric Dumazet <edumazet@google.com>,
         Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Nandita Dukkipati <nanditad@google.com>,
+        "H.K. Jerry Chu" <hkchu@google.com>,
+        Romain Francoise <romain@orebokech.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 11/80] inet_diag: avoid unsafe and nonsensical prefix matches in inet_diag_bc_run()
-Date: Wed,  9 Jan 2013 12:35:03 -0800
-Message-Id: <20130109201501.836947791@linuxfoundation.org>
+Subject: [ 35/47] tcp: tcp_replace_ts_recent() should not be called from tcp_validate_incoming()
+Date: Wed,  9 Jan 2013 12:35:30 -0800
+Message-Id: <20130109201733.518145691@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit f67caec9068cee426ec23cf9005a1dee2ecad187 ]
+[ Upstream commit bd090dfc634ddd711a5fbd0cadc6e0ab4977bcaf ]
 
-Add logic to check the address family of the user-supplied conditional
-and the address family of the connection entry. We now do not do
-prefix matching of addresses from different address families (AF_INET
-vs AF_INET6), except for the previously existing support for having an
-IPv4 prefix match an IPv4-mapped IPv6 address (which this commit
-maintains as-is).
+We added support for RFC 5961 in latest kernels but TCP fails
+to perform exhaustive check of ACK sequence.
 
-This change is needed for two reasons:
+We can update our view of peer tsval from a frame that is
+later discarded by tcp_ack()
 
-(1) The addresses are different lengths, so comparing a 128-bit IPv6
-prefix match condition to a 32-bit IPv4 connection address can cause
-us to unwittingly walk off the end of the IPv4 address and read
-garbage or oops.
+This makes timestamps enabled sessions vulnerable to injection of
+a high tsval : peers start an ACK storm, since the victim
+sends a dupack each time it receives an ACK from the other peer.
 
-(2) The IPv4 and IPv6 address spaces are semantically distinct, so a
-simple bit-wise comparison of the prefixes is not meaningful, and
-would lead to bogus results (except for the IPv4-mapped IPv6 case,
-which this commit maintains).
+As tcp_validate_incoming() is called before tcp_ack(), we should
+not peform tcp_replace_ts_recent() from it, and let callers do it
+at the right time.
 
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Cc: Nandita Dukkipati <nanditad@google.com>
+Cc: H.K. Jerry Chu <hkchu@google.com>
+Cc: Romain Francoise <romain@orebokech.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/inet_diag.c |   28 +++++++++++++++++-----------
- 1 file changed, 17 insertions(+), 11 deletions(-)
+ net/ipv4/tcp_input.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -423,25 +423,31 @@ static int inet_diag_bc_run(const struct
- 				break;
- 			}
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -5237,11 +5237,6 @@ static bool tcp_validate_incoming(struct
+ 		goto discard;
+ 	}
  
--			if (cond->prefix_len == 0)
--				break;
+-	/* ts_recent update must be made after we are sure that the packet
+-	 * is in window.
+-	 */
+-	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
 -
- 			if (op->code == INET_DIAG_BC_S_COND)
- 				addr = entry->saddr;
- 			else
- 				addr = entry->daddr;
+ 	/* step 3: check security and precedence [ignored] */
  
-+			if (cond->family != AF_UNSPEC &&
-+			    cond->family != entry->family) {
-+				if (entry->family == AF_INET6 &&
-+				    cond->family == AF_INET) {
-+					if (addr[0] == 0 && addr[1] == 0 &&
-+					    addr[2] == htonl(0xffff) &&
-+					    bitstring_match(addr + 3,
-+							    cond->addr,
-+							    cond->prefix_len))
-+						break;
-+				}
-+				yes = 0;
-+				break;
-+			}
+ 	/* step 4: Check for a SYN
+@@ -5476,6 +5471,11 @@ step5:
+ 	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
+ 		goto discard;
+ 
++	/* ts_recent update must be made after we are sure that the packet
++	 * is in window.
++	 */
++	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
 +
-+			if (cond->prefix_len == 0)
-+				break;
- 			if (bitstring_match(addr, cond->addr,
- 					    cond->prefix_len))
- 				break;
--			if (entry->family == AF_INET6 &&
--			    cond->family == AF_INET) {
--				if (addr[0] == 0 && addr[1] == 0 &&
--				    addr[2] == htonl(0xffff) &&
--				    bitstring_match(addr + 3, cond->addr,
--						    cond->prefix_len))
--					break;
--			}
- 			yes = 0;
- 			break;
- 		}
+ 	tcp_rcv_rtt_measure_ts(sk, skb);
+ 
+ 	/* Process urgent data. */
+@@ -5952,6 +5952,11 @@ int tcp_rcv_state_process(struct sock *s
+ 	} else
+ 		goto discard;
+ 
++	/* ts_recent update must be made after we are sure that the packet
++	 * is in window.
++	 */
++	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
++
+ 	/* step 6: check the URG bit */
+ 	tcp_urg(sk, skb, th);
+ 
 
 
