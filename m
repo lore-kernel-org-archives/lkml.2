@@ -1,82 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957Ab3AIUhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41279 "EHLO mail.kernel.org"
+	id S932990Ab3AIVxn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:53:43 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41363 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932861Ab3AIUhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:06 -0500
+	id S932954Ab3AIUhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 29/47] ftrace: Do not function trace inlined functions
-Date: Wed,  9 Jan 2013 12:35:24 -0800
-Message-Id: <20130109201732.848206759@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [ 010/123] arm64: signal: push the unwinding prologue on the signal stack
+Date: Wed,  9 Jan 2013 12:34:09 -0800
+Message-Id: <20130109201459.824389320@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 45959ee7aa645815a5ce303a0ea1e48a21e67c6a upstream.
+commit 304ef4e8367244b547734143c792a2ab764831e8 upstream.
 
-When gcc inlines a function, it does not mark it with the mcount
-prologue, which in turn means that inlined functions are not traced
-by the function tracer. But if CONFIG_OPTIMIZE_INLINING is set, then
-gcc is allowed not to inline a function that is marked inline.
+To allow debuggers to unwind through signal frames, we create a fake
+stack unwinding prologue containing the link register and frame pointer
+of the interrupted context. The signal frame is then offset by 16 bytes
+to make room for the two saved registers which are pushed onto the frame
+of the *interrupted* context, rather than placed directly above the
+signal stack.
 
-Depending on the options and the compiler, a function may or may
-not be traced by the function tracer, depending on whether gcc
-decides to inline a function or not. This has caused several
-problems in the pass becaues gcc is not always consistent with
-what it decides to inline between different gcc versions.
+This doesn't work when an alternative signal stack is set up for a SEGV
+handler, which is raised in response to RLIMIT_STACK being reached. In
+this case, we try to push the unwinding prologue onto the full stack and
+subsequently take a fault which we fail to resolve, causing setup_return
+to return -EFAULT and handle_signal to force_sigsegv on the current task.
 
-Some places should not be traced (like paravirt native_* functions)
-and these are mostly marked as inline. When gcc decides not to
-inline the function, and if that function should not be traced, then
-the ftrace function tracer will suddenly break when it use to work
-fine. This becomes even harder to debug when different versions of
-gcc will not inline that function, making the same kernel and config
-work for some gcc versions and not work for others.
+This patch fixes the problem by including the unwinding prologue as part
+of the rt_sigframe definition, which is populated during setup_sigframe,
+ensuring that it always ends up on the signal stack.
 
-By making all functions marked inline to not be traced will remove
-the ambiguity that gcc adds when it comes to tracing functions marked
-inline. All gcc versions will be consistent with what functions are
-traced and having volatile working code will be removed.
-
-Note, only the inline macro when CONFIG_OPTIMIZE_INLINING is set needs
-to have notrace added, as the attribute __always_inline will force
-the function to be inlined and then not traced.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/compiler-gcc.h |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm64/kernel/signal.c |   37 ++++++++++++++++---------------------
+ 1 file changed, 16 insertions(+), 21 deletions(-)
 
---- a/include/linux/compiler-gcc.h
-+++ b/include/linux/compiler-gcc.h
-@@ -50,6 +50,11 @@
- # define inline		inline		__attribute__((always_inline))
- # define __inline__	__inline__	__attribute__((always_inline))
- # define __inline	__inline	__attribute__((always_inline))
-+#else
-+/* A lot of inline functions can cause havoc with function tracing */
-+# define inline		inline		notrace
-+# define __inline__	__inline__	notrace
-+# define __inline	__inline	notrace
- #endif
+--- a/arch/arm64/kernel/signal.c
++++ b/arch/arm64/kernel/signal.c
+@@ -41,6 +41,8 @@
+ struct rt_sigframe {
+ 	struct siginfo info;
+ 	struct ucontext uc;
++	u64 fp;
++	u64 lr;
+ };
  
- #define __deprecated			__attribute__((deprecated))
+ static int preserve_fpsimd_context(struct fpsimd_context __user *ctx)
+@@ -175,6 +177,10 @@ static int setup_sigframe(struct rt_sigf
+ 	struct aux_context __user *aux =
+ 		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
+ 
++	/* set up the stack frame for unwinding */
++	__put_user_error(regs->regs[29], &sf->fp, err);
++	__put_user_error(regs->regs[30], &sf->lr, err);
++
+ 	for (i = 0; i < 31; i++)
+ 		__put_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
+ 				 err);
+@@ -210,9 +216,6 @@ static void __user *get_sigframe(struct
+ 	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
+ 		sp = sp_top = current->sas_ss_sp + current->sas_ss_size;
+ 
+-	/* room for stack frame (FP, LR) */
+-	sp -= 16;
+-
+ 	sp = (sp - framesize) & ~15;
+ 	frame = (void __user *)sp;
+ 
+@@ -225,20 +228,14 @@ static void __user *get_sigframe(struct
+ 	return frame;
+ }
+ 
+-static int setup_return(struct pt_regs *regs, struct k_sigaction *ka,
+-			void __user *frame, int usig)
++static void setup_return(struct pt_regs *regs, struct k_sigaction *ka,
++			 void __user *frame, int usig)
+ {
+-	int err = 0;
+ 	__sigrestore_t sigtramp;
+-	unsigned long __user *sp = (unsigned long __user *)regs->sp;
+-
+-	/* set up the stack frame */
+-	__put_user_error(regs->regs[29], sp - 2, err);
+-	__put_user_error(regs->regs[30], sp - 1, err);
+ 
+ 	regs->regs[0] = usig;
+-	regs->regs[29] = regs->sp - 16;
+ 	regs->sp = (unsigned long)frame;
++	regs->regs[29] = regs->sp + offsetof(struct rt_sigframe, fp);
+ 	regs->pc = (unsigned long)ka->sa.sa_handler;
+ 
+ 	if (ka->sa.sa_flags & SA_RESTORER)
+@@ -247,8 +244,6 @@ static int setup_return(struct pt_regs *
+ 		sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp);
+ 
+ 	regs->regs[30] = (unsigned long)sigtramp;
+-
+-	return err;
+ }
+ 
+ static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
+@@ -272,13 +267,13 @@ static int setup_rt_frame(int usig, stru
+ 	err |= __copy_to_user(&frame->uc.uc_stack, &stack, sizeof(stack));
+ 
+ 	err |= setup_sigframe(frame, regs, set);
+-	if (err == 0)
+-		err = setup_return(regs, ka, frame, usig);
+-
+-	if (err == 0 && ka->sa.sa_flags & SA_SIGINFO) {
+-		err |= copy_siginfo_to_user(&frame->info, info);
+-		regs->regs[1] = (unsigned long)&frame->info;
+-		regs->regs[2] = (unsigned long)&frame->uc;
++	if (err == 0) {
++		setup_return(regs, ka, frame, usig);
++		if (ka->sa.sa_flags & SA_SIGINFO) {
++			err |= copy_siginfo_to_user(&frame->info, info);
++			regs->regs[1] = (unsigned long)&frame->info;
++			regs->regs[2] = (unsigned long)&frame->uc;
++		}
+ 	}
+ 
+ 	return err;
 
 
