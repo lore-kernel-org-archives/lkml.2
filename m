@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758151Ab3AIWmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:42:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758136Ab3AIWmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 17:42:51 -0500
-Message-ID: <1357771504.12030.59.camel@dcbw.foobar.com>
-Subject: Re: sd8688 firmware location
-From: Dan Williams <dcbw@redhat.com>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: David Woodhouse <dwmw2@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
-        libertas-dev@lists.infradead.org, linux-bluetooth@vger.kernel.org,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 09 Jan 2013 16:45:04 -0600
-In-Reply-To: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
-References: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
-Content-Type: text/plain; charset="UTF-8"
+	id S932169Ab3AIWtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:49:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35602 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758143Ab3AIWtH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 17:49:07 -0500
+Date: Wed, 9 Jan 2013 14:49:05 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
+        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
+        yinghai@kernel.org, glommer@parallels.com, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH v6 04/15] memory-hotplug: remove /sys/firmware/memmap/X
+ sysfs
+Message-Id: <20130109144905.8993886a.akpm@linux-foundation.org>
+In-Reply-To: <1357723959-5416-5-git-send-email-tangchen@cn.fujitsu.com>
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1357723959-5416-5-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-09 at 00:56 +0100, Lubomir Rintel wrote:
-> Hi!
-> 
-> btmrvl_sdio and libertas_sdio both use firmware files sd8688.bin and
-> sd8688_helper.bin. In linux-firmware, they're present in libertas/ tree and
-> (since 3d32a58b) libertas_sdio perfers loading it from there, while it is able
-> to fallback to load it from linux-firmware root. btmrvl_sdio, on the other hand
-> only looks in the root and ends up not being successful.
-> 
-> Obviously, there are two solutions to the problem -- either teach btmrvl_sdio
-> to look into libertas/, or move the files in linux-firmware tree. I don't
-> really have a strong preference, though it probably makes less sense to keep in
-> in libertas/, since the bluetooth hardware is not really marketed as "Libertas."
-> 
-> I'm following up with patches to linux and linux-firmware and I'd be very
-> thankful if you could pick one (not both of them).
+On Wed, 9 Jan 2013 17:32:28 +0800
+Tang Chen <tangchen@cn.fujitsu.com> wrote:
 
-So the BT part and the wifi part have different SDIO IDs; are they
-actually connected separately to the SDIO bus?  Or is the chip only in
-one mode at one time or something like that?  Is there a problem with
-having both libertas and btmrvl loaded at the same time since they're
-essentially the same chip?
+> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
+> sysfs files are created. But there is no code to remove these files. The patch
+> implements the function to remove them.
+> 
+> Note: The code does not free firmware_map_entry which is allocated by bootmem.
+>       So the patch makes memory leak. But I think the memory leak size is
+>       very samll. And it does not affect the system.
 
-I don't really mind moving stuff to mrvl/ out of libertas/ for these
-devices, but I do want some backwards compat code in libertas for that.
-Unless, of course, Marcel was talking about symlinks in the
-linux-firmware git tree, which would be fine with me.  The important
-point is that simply updating your linux-firmware package or install or
-whatever *should not* result in a failed firmware load.
-
-Dan
+Well that's bad.  Can we remember the address of that memory and then
+reuse the storage if/when the memory is re-added?  That at least puts an upper
+bound on the leak.
 
