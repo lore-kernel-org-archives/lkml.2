@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934223Ab3AIV0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:26:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42566 "EHLO mail.kernel.org"
+	id S934263Ab3AIV1A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:27:00 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:49260 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933299Ab3AIUjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:09 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 055/123] vfs: d_obtain_alias() needs to use "/" as default name.
-Date: Wed,  9 Jan 2013 12:34:54 -0800
-Message-Id: <20130109201505.612963793@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933299Ab3AIV06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:26:58 -0500
+Message-ID: <50EDE0AB.1030509@parallels.com>
+Date: Thu, 10 Jan 2013 01:27:07 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH v5 11/11] sched: introduce cgroup file stat_percpu
+References: <1357731938-8417-1-git-send-email-glommer@parallels.com> <1357731938-8417-12-git-send-email-glommer@parallels.com> <20130109124220.ad9f1a54.akpm@linux-foundation.org> <50EDDCAA.6070004@parallels.com> <20130109131705.4156ba5c.akpm@linux-foundation.org>
+In-Reply-To: <20130109131705.4156ba5c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.39.244.6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On 01/10/2013 01:17 AM, Andrew Morton wrote:
+> On Thu, 10 Jan 2013 01:10:02 +0400
+> Glauber Costa <glommer@parallels.com> wrote:
+> 
+>> The main advantage I see in this approach, is that there is way less
+>> data to be written using a header. Although your way works, it means we
+>> will write the strings "nice", "system", etc. #cpu times. Quite a waste.
+> 
+> Yes, overhead can be a significant issue with this type of interface. 
+> But we already incurred a massive overhead by using a human-readable
+> ascii interface.  If performance is an issue, perhaps the whole thing
+> should be grafted onto taskstats instead.  Or create a new
+> taskstats-like thing.
 
-------------------
+I think this would be a little alienish in the already alien world of
+cgroups.
 
-From: NeilBrown <neilb@suse.de>
+However, I was not so much talking about plain performance overhead as
+measurable in miliseconds-to-parse, but rather just alluding to the fact
+that we would be writing the same set of strings multiple times when a
+header would do just fine.
 
-commit b911a6bdeef5848c468597d040e3407e0aee04ce upstream.
+This is the same method used for instance by slabinfo.
 
-NFS appears to use d_obtain_alias() to create the root dentry rather than
-d_make_root.  This can cause 'prepend_path()' to complain that the root
-has a weird name if an NFS filesystem is lazily unmounted.  e.g.  if
-"/mnt" is an NFS mount then
+> 
+> btw, a more typical interface would be
+> 
+> cat /.../cpu0
+> nice:nn
+> system:nn
+> irq:nn
+> 
 
- { cd /mnt; umount -l /mnt ; ls -l /proc/self/cwd; }
+Well, yes. But welcome to cgroups: directories have a meaning, so the
+only way to organize stuff is with plain files in the current hierarchy
+is by filling it with files. As many files as we have cpus.
 
-will cause a WARN message like
-   WARNING: at /home/git/linux/fs/dcache.c:2624 prepend_path+0x1d7/0x1e0()
-   ...
-   Root dentry has weird name <>
+At this point you are certain to miss all the other files present in the
+directory.
 
-to appear in kernel logs.
 
-So change d_obtain_alias() to use "/" rather than "" as the anonymous
-name.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/dcache.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1583,7 +1583,7 @@ EXPORT_SYMBOL(d_find_any_alias);
-  */
- struct dentry *d_obtain_alias(struct inode *inode)
- {
--	static const struct qstr anonstring = { .name = "" };
-+	static const struct qstr anonstring = QSTR_INIT("/", 1);
- 	struct dentry *tmp;
- 	struct dentry *res;
- 
-
+> - the traditional one-per-line name:value tuples.  But I'd assumed that
+> having a file per CPU would be aawkward.
+> 
+Indeed.
 
