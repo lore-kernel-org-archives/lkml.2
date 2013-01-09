@@ -1,115 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab3AIIVs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 03:21:48 -0500
-Received: from fallback8.mail.ru ([94.100.176.136]:37371 "EHLO
-	fallback8.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757315Ab3AIIVo (ORCPT
+	id S1757420Ab3AIIWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 03:22:19 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:58142 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757315Ab3AIIWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 03:21:44 -0500
-From: =?UTF-8?B?S2lyaWxsIEthcHJhbm92?= <kapranoff@inbox.ru>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: =?UTF-8?B?W1BBVENIXSBFbGltaW5hdGUgdGhlIGZvcmNlZCBzcGVlZCByZWR1Y3Rpb24g?=
- =?UTF-8?B?YWxnb3JpdGht?=
-Mime-Version: 1.0
-X-Mailer: mPOP Web-Mail 2.19
-X-Originating-IP: [195.131.77.126]
-Date: Wed, 09 Jan 2013 12:21:12 +0400
-Reply-To: =?UTF-8?B?S2lyaWxsIEthcHJhbm92?= <kapranoff@inbox.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1357719672.688670642@f210.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Spam: Not detected
-X-Mras: Ok
+	Wed, 9 Jan 2013 03:22:15 -0500
+Message-ID: <50ED286C.6070601@linux.vnet.ibm.com>
+Date: Wed, 09 Jan 2013 13:51:00 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Alex Shi <alex.shi@intel.com>
+Subject: Re: [PATCH] sched: Get rid of unnecessary checks from select_idle_sibling
+References: <1357714256-24373-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1357714256-24373-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010908-2674-0000-0000-00000764896E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r098M0tc005143
 
-NET/PHY: Eliminate the forced speed reduction algorithm.
-In case of the fixed speed set up for NIC 
-(e.g. ethtool -s eth0 autoneg off speed 100 duplex full)
-with ethernet cable plugged off, mentioned algorithm
-slows down NIC speed, so the further "hooking up" gives
-no result. AFAIK, this behaviour is not RFCs' recommended.
-Tested at 2.6.38.7, applicable up to for 3.0.4. 
-Signed-off-by: Kirill Kapranov <kkk@nita.ru>,<kapranoff@inbox.ru>
---- linux/drivers/net/phy/phy.c.orig 2011-05-22 02:13:59.000000000 +0400
-+++ linux/drivers/net/phy/phy.c 2012-04-28 12:49:37.000000000 +0400
-@@ -457,34 +457,6 @@ void phy_stop_machine(struct phy_device
-}
+On 01/09/2013 12:20 PM, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> AFAICS @target cpu of select_idle_sibling() is always either prev_cpu
+> or this_cpu.  So no need to check it again and the conditionals can be
+> consolidated.
+> 
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> Cc: Vincent Guittot <vincent.guittot@linaro.org>
+> Cc: Alex Shi <alex.shi@intel.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/sched/fair.c | 17 ++++-------------
+>  1 file changed, 4 insertions(+), 13 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 5eea8707234a..af665814c216 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3254,25 +3254,16 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+>   */
+>  static int select_idle_sibling(struct task_struct *p, int target)
+>  {
+> -	int cpu = smp_processor_id();
+> -	int prev_cpu = task_cpu(p);
+>  	struct sched_domain *sd;
+>  	struct sched_group *sg;
+>  	int i;
+> 
+>  	/*
+> -	 * If the task is going to be woken-up on this cpu and if it is
+> -	 * already idle, then it is the right target.
+> -	 */
+> -	if (target == cpu && idle_cpu(cpu))
+> -		return cpu;
+> -
+> -	/*
+> -	 * If the task is going to be woken-up on the cpu where it previously
+> -	 * ran and if it is currently idle, then it the right target.
+> +	 * If the task is going to be woken-up on this cpu or the cpu where it
+> +	 * previously ran and it is already idle, then it is the right target.
+>  	 */
+> -	if (target == prev_cpu && idle_cpu(prev_cpu))
+> -		return prev_cpu;
+> +	if (idle_cpu(target))
+> +		return target;
+> 
+>  	/*
+>  	 * Otherwise, iterate the domains and find an elegible idle cpu.
+> 
+If NUMA_TTWU_BIAS or NUMA_TTWU_TO is true(it is false by
+default),cpu/prev_cpu can be changed to be a random node_cpu(the node
+that 'this_cpu' is on). In which case even if the node cpu is idle,it
+would not be a viable target,looks like.Maybe that is why
+select_idle_sibling() makes the check if the target is prev_cpu/this cpu.
 
-/**
-- * phy_force_reduction - reduce PHY speed/duplex settings by one step
-- * @phydev: target phy_device struct
-- *
-- * Description: Reduces the speed/duplex settings by one notch,
-- * in this order--
-- * 1000/FULL, 1000/HALF, 100/FULL, 100/HALF, 10/FULL, 10/HALF.
-- * The function bottoms out at 10/HALF.
-- */
--static void phy_force_reduction(struct phy_device *phydev)
--{
-- int idx;
--
-- idx = phy_find_setting(phydev->speed, phydev->duplex);
-- 
-- idx++;
--
-- idx = phy_find_valid(idx, phydev->supported);
--
-- phydev->speed = settings[idx].speed;
-- phydev->duplex = settings[idx].duplex;
--
-- pr_info("Trying %d/%s\n", phydev->speed,
-- DUPLEX_FULL == phydev->duplex ?
-- "FULL" : "HALF");
--}
--
--
--/**
-* phy_error - enter HALTED state for this PHY device
-* @phydev: target phy_device struct
-*
-@@ -814,30 +786,12 @@ void phy_state_machine(struct work_struc
-phydev->adjust_link(phydev->attached_dev);
+Regards
+Preeti U Murthy
 
-} else if (0 == phydev->link_timeout--) {
-- int idx;
-
-needs_aneg = 1;
-/* If we have the magic_aneg bit,
-* we try again */
-if (phydev->drv->flags & PHY_HAS_MAGICANEG)
-break;
--
-- /* The timer expired, and we still
-- * don't have a setting, so we try
-- * forcing it until we find one that
-- * works, starting from the fastest speed,
-- * and working our way down */
-- idx = phy_find_valid(0, phydev->supported);
--
-- phydev->speed = settings[idx].speed;
-- phydev->duplex = settings[idx].duplex;
--
-- phydev->autoneg = AUTONEG_DISABLE;
--
-- pr_info("Trying %d/%s\n", phydev->speed,
-- DUPLEX_FULL ==
-- phydev->duplex ?
-- "FULL" : "HALF");
-}
-break;
-case PHY_NOLINK:
-@@ -863,7 +817,6 @@ void phy_state_machine(struct work_struc
-netif_carrier_on(phydev->attached_dev);
-} else {
-if (0 == phydev->link_timeout--) {
-- phy_force_reduction(phydev);
-needs_aneg = 1;
-}
-}
- ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
