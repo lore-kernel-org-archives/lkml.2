@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab3AIVkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:40:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41930 "EHLO mail.kernel.org"
+	id S933262Ab3AIVlB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:41:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41919 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933184Ab3AIUiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:07 -0500
+	id S933179Ab3AIUiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 15/80] pnpacpi: fix incorrect TEST_ALPHA() test
-Date: Wed,  9 Jan 2013 12:35:07 -0800
-Message-Id: <20130109201502.330252819@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Chris Ball <cjb@laptop.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>
+Subject: [ 40/47] PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz
+Date: Wed,  9 Jan 2013 12:35:35 -0800
+Message-Id: <20130109201734.094759086@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit cdc87c5a30f407ed1ce43d8a22261116873d5ef1 upstream.
+commit 812089e01b9f65f90fc8fc670d8cce72a0e01fbb upstream.
 
-TEST_ALPHA() is broken and always returns 0.
+Otherwise it fails like this on cards like the Transcend 16GB SDHC card:
 
-[akpm@linux-foundation.org: return false for '@' as well, per Bjorn]
-Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+    mmc0: new SDHC card at address b368
+    mmcblk0: mmc0:b368 SDC   15.0 GiB
+    mmcblk0: error -110 sending status command, retrying
+    mmcblk0: error -84 transferring data, sector 0, nr 8, cmd response 0x900, card status 0xb0
+
+Tested on my Lenovo x200 laptop.
+
+[bhelgaas: changelog]
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Chris Ball <cjb@laptop.org>
+CC: Manoj Iyer <manoj.iyer@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pnp/pnpacpi/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/quirks.c    |    7 +++++--
+ include/linux/pci_ids.h |    1 +
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -58,7 +58,7 @@ static inline int __init is_exclusive_de
- 	if (!(('0' <= (c) && (c) <= '9') || ('A' <= (c) && (c) <= 'F'))) \
- 		return 0
- #define TEST_ALPHA(c) \
--	if (!('@' <= (c) || (c) <= 'Z')) \
-+	if (!('A' <= (c) && (c) <= 'Z')) \
- 		return 0
- static int __init ispnpidacpi(const char *id)
- {
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2746,7 +2746,7 @@ static void ricoh_mmc_fixup_r5c832(struc
+ 	if (PCI_FUNC(dev->devfn))
+ 		return;
+ 	/*
+-	 * RICOH 0xe823 SD/MMC card reader fails to recognize
++	 * RICOH 0xe822 and 0xe823 SD/MMC card readers fail to recognize
+ 	 * certain types of SD/MMC cards. Lowering the SD base
+ 	 * clock frequency from 200Mhz to 50Mhz fixes this issue.
+ 	 *
+@@ -2757,7 +2757,8 @@ static void ricoh_mmc_fixup_r5c832(struc
+ 	 * 0xf9  - Key register for 0x150
+ 	 * 0xfc  - key register for 0xe1
+ 	 */
+-	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
++	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE822 ||
++	    dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
+ 		pci_write_config_byte(dev, 0xf9, 0xfc);
+ 		pci_write_config_byte(dev, 0x150, 0x10);
+ 		pci_write_config_byte(dev, 0xf9, 0x00);
+@@ -2784,6 +2785,8 @@ static void ricoh_mmc_fixup_r5c832(struc
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
++DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
+ #endif /*CONFIG_MMC_RICOH_MMC*/
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1537,6 +1537,7 @@
+ #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
+ #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
+ #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
++#define PCI_DEVICE_ID_RICOH_R5CE822	0xe822
+ #define PCI_DEVICE_ID_RICOH_R5CE823	0xe823
+ #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
+ #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
 
 
