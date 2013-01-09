@@ -1,279 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab3AIOFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:05:37 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33637 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757863Ab3AIOFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:05:31 -0500
-Date: Wed, 9 Jan 2013 15:05:28 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Luck <tony.luck@intel.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] RAS UAPI fix for 3.8
-Message-ID: <20130109140527.GC5980@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Tony Luck <tony.luck@intel.com>,
-	lkml <linux-kernel@vger.kernel.org>
+	id S1757942Ab3AIOFs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:05:48 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43346 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757581Ab3AIOFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 09:05:46 -0500
+Subject: [PATCH 08/10] goldfish: real time clock
+To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        mikechan@google.com
+From: Alan Cox <alan@linux.intel.com>
+Date: Wed, 09 Jan 2013 14:25:46 +0000
+Message-ID: <20130109142527.9239.19804.stgit@bob.linux.org.uk>
+In-Reply-To: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
+References: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+From: Arve Hjønnevåg <arve@google.com>
 
-the patch below retracts a bunch of defines and structs which went into
-the uapi/mce.h header needlessly. See commit message below for more
-details.
+Gets the current time from the host. Alarms are not supported yet.
 
-The thing is, this patch needs to go in 3.8 so that the changes the UAPI
-merge added to mce.h can be reverted and thus 3.8 can be released with
-proper header exports.
+Signed-off-by: Mike A. Chan <mikechan@google.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+[Ported to 3.4]
+Signed-off-by: Tom Keel <thomas.keel@intel.com>
+[Cleaned up to use ioremap, types, unload etc]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-So please pull,
-thanks.
+ arch/x86/include/asm/goldfish.h |    7 ++
+ drivers/rtc/Kconfig             |    9 ++
+ drivers/rtc/Makefile            |    1 
+ drivers/rtc/rtc-goldfish.c      |  144 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 161 insertions(+)
+ create mode 100644 drivers/rtc/rtc-goldfish.c
 
---
-The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
 
-  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/ras_for_3.8
-
-for you to fetch changes up to f51bde6f0d66ab6a80eb1a05b6fe8d90c4960486:
-
-  x86, MCE: Retract most UAPI exports (2013-01-09 14:49:02 +0100)
-
-----------------------------------------------------------------
-Retract MCE-specific UAPI exports which are unused and shouldn't be
-used.
-
-----------------------------------------------------------------
-Borislav Petkov (1):
-      x86, MCE: Retract most UAPI exports
-
- arch/x86/include/asm/mce.h      | 84 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/include/uapi/asm/mce.h | 87 ---------------------------------------------------------------------------------------
- 2 files changed, 84 insertions(+), 87 deletions(-)
-
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index ecdfee60ee4a..f4076af1f4ed 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -3,6 +3,90 @@
+diff --git a/arch/x86/include/asm/goldfish.h b/arch/x86/include/asm/goldfish.h
+index 8d2c559..63fd315 100644
+--- a/arch/x86/include/asm/goldfish.h
++++ b/arch/x86/include/asm/goldfish.h
+@@ -30,4 +30,11 @@
  
- #include <uapi/asm/mce.h>
+ #define GOLDFISH_TTY_BASE	(0x2000)
  
++#define GOLDFISH_TIME_LOW		0x00
++#define GOLDFISH_TIME_HIGH		0x04
++#define GOLDFISH_ALARM_LOW		0x08
++#define GOLDFISH_ALARM_HIGH		0x0C
++#define GOLDFISH_CLEAR_TIMER_INT	0x10
++#define GOLDFISH_CLEAR_ALARM		0x14
++
+ #endif
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index e4dfa5e..4f7f835 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -982,6 +982,15 @@ config RTC_DRV_BFIN
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-bfin.
+ 
++config RTC_DRV_GOLDFISH
++	tristate "GOLDFISH"
++	depends on GOLDFISH
++	help
++	  RTC driver for Goldfish Virtual Platform
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-goldfish.
++
+ config RTC_DRV_RS5C313
+ 	tristate "Ricoh RS5C313"
+ 	depends on SH_LANDISK
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index b1715e9..03401e4 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -52,6 +52,7 @@ obj-$(CONFIG_RTC_DRV_EM3027)	+= rtc-em3027.o
+ obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
+ obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
+ obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
++obj-$(CONFIG_RTC_DRV_GOLDFISH)	+= rtc-goldfish.o
+ obj-$(CONFIG_RTC_DRV_HID_SENSOR_TIME) += rtc-hid-sensor-time.o
+ obj-$(CONFIG_RTC_DRV_IMXDI)	+= rtc-imxdi.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
+diff --git a/drivers/rtc/rtc-goldfish.c b/drivers/rtc/rtc-goldfish.c
+new file mode 100644
+index 0000000..52fef9c
+--- /dev/null
++++ b/drivers/rtc/rtc-goldfish.c
+@@ -0,0 +1,144 @@
 +/*
-+ * Machine Check support for x86
++ * Copyright (C) 2007 Google, Inc.
++ * Copyright (C) 2012 Intel, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
 + */
 +
-+/* MCG_CAP register defines */
-+#define MCG_BANKCNT_MASK	0xff         /* Number of Banks */
-+#define MCG_CTL_P		(1ULL<<8)    /* MCG_CTL register available */
-+#define MCG_EXT_P		(1ULL<<9)    /* Extended registers available */
-+#define MCG_CMCI_P		(1ULL<<10)   /* CMCI supported */
-+#define MCG_EXT_CNT_MASK	0xff0000     /* Number of Extended registers */
-+#define MCG_EXT_CNT_SHIFT	16
-+#define MCG_EXT_CNT(c)		(((c) & MCG_EXT_CNT_MASK) >> MCG_EXT_CNT_SHIFT)
-+#define MCG_SER_P		(1ULL<<24)   /* MCA recovery/new status bits */
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/platform_device.h>
++#include <linux/rtc.h>
++#include <linux/export.h>
++#include <linux/slab.h>
 +
-+/* MCG_STATUS register defines */
-+#define MCG_STATUS_RIPV  (1ULL<<0)   /* restart ip valid */
-+#define MCG_STATUS_EIPV  (1ULL<<1)   /* ip points to correct instruction */
-+#define MCG_STATUS_MCIP  (1ULL<<2)   /* machine check in progress */
++#include <asm/goldfish.h>
 +
-+/* MCi_STATUS register defines */
-+#define MCI_STATUS_VAL   (1ULL<<63)  /* valid error */
-+#define MCI_STATUS_OVER  (1ULL<<62)  /* previous errors lost */
-+#define MCI_STATUS_UC    (1ULL<<61)  /* uncorrected error */
-+#define MCI_STATUS_EN    (1ULL<<60)  /* error enabled */
-+#define MCI_STATUS_MISCV (1ULL<<59)  /* misc error reg. valid */
-+#define MCI_STATUS_ADDRV (1ULL<<58)  /* addr reg. valid */
-+#define MCI_STATUS_PCC   (1ULL<<57)  /* processor context corrupt */
-+#define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
-+#define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
-+#define MCACOD		  0xffff     /* MCA Error Code */
-+
-+/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
-+#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
-+#define MCACOD_SCRUBMSK	0xfff0
-+#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
-+#define MCACOD_DATA	0x0134	/* Data Load */
-+#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
-+
-+/* MCi_MISC register defines */
-+#define MCI_MISC_ADDR_LSB(m)	((m) & 0x3f)
-+#define MCI_MISC_ADDR_MODE(m)	(((m) >> 6) & 7)
-+#define  MCI_MISC_ADDR_SEGOFF	0	/* segment offset */
-+#define  MCI_MISC_ADDR_LINEAR	1	/* linear address */
-+#define  MCI_MISC_ADDR_PHYS	2	/* physical address */
-+#define  MCI_MISC_ADDR_MEM	3	/* memory address */
-+#define  MCI_MISC_ADDR_GENERIC	7	/* generic */
-+
-+/* CTL2 register defines */
-+#define MCI_CTL2_CMCI_EN		(1ULL << 30)
-+#define MCI_CTL2_CMCI_THRESHOLD_MASK	0x7fffULL
-+
-+#define MCJ_CTX_MASK		3
-+#define MCJ_CTX(flags)		((flags) & MCJ_CTX_MASK)
-+#define MCJ_CTX_RANDOM		0    /* inject context: random */
-+#define MCJ_CTX_PROCESS		0x1  /* inject context: process */
-+#define MCJ_CTX_IRQ		0x2  /* inject context: IRQ */
-+#define MCJ_NMI_BROADCAST	0x4  /* do NMI broadcasting */
-+#define MCJ_EXCEPTION		0x8  /* raise as exception */
-+#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
-+
-+#define MCE_OVERFLOW 0		/* bit 0 in flags means overflow */
-+
-+/* Software defined banks */
-+#define MCE_EXTENDED_BANK	128
-+#define MCE_THERMAL_BANK	(MCE_EXTENDED_BANK + 0)
-+#define K8_MCE_THRESHOLD_BASE   (MCE_EXTENDED_BANK + 1)
-+
-+#define MCE_LOG_LEN 32
-+#define MCE_LOG_SIGNATURE	"MACHINECHECK"
-+
-+/*
-+ * This structure contains all data related to the MCE log.  Also
-+ * carries a signature to make it easier to find from external
-+ * debugging tools.  Each entry is only valid when its finished flag
-+ * is set.
-+ */
-+struct mce_log {
-+	char signature[12]; /* "MACHINECHECK" */
-+	unsigned len;	    /* = MCE_LOG_LEN */
-+	unsigned next;
-+	unsigned flags;
-+	unsigned recordlen;	/* length of struct mce */
-+	struct mce entry[MCE_LOG_LEN];
++struct goldfish_rtc {
++	void __iomem *base;
++	u32 irq;
++	struct rtc_device *rtc;
 +};
- 
- struct mca_config {
- 	bool dont_log_ce;
-diff --git a/arch/x86/include/uapi/asm/mce.h b/arch/x86/include/uapi/asm/mce.h
-index 58c829871c31..a0eab85ce7b8 100644
---- a/arch/x86/include/uapi/asm/mce.h
-+++ b/arch/x86/include/uapi/asm/mce.h
-@@ -4,66 +4,6 @@
- #include <linux/types.h>
- #include <asm/ioctls.h>
- 
--/*
-- * Machine Check support for x86
-- */
--
--/* MCG_CAP register defines */
--#define MCG_BANKCNT_MASK	0xff         /* Number of Banks */
--#define MCG_CTL_P		(1ULL<<8)    /* MCG_CTL register available */
--#define MCG_EXT_P		(1ULL<<9)    /* Extended registers available */
--#define MCG_CMCI_P		(1ULL<<10)   /* CMCI supported */
--#define MCG_EXT_CNT_MASK	0xff0000     /* Number of Extended registers */
--#define MCG_EXT_CNT_SHIFT	16
--#define MCG_EXT_CNT(c)		(((c) & MCG_EXT_CNT_MASK) >> MCG_EXT_CNT_SHIFT)
--#define MCG_SER_P	 	(1ULL<<24)   /* MCA recovery/new status bits */
--
--/* MCG_STATUS register defines */
--#define MCG_STATUS_RIPV  (1ULL<<0)   /* restart ip valid */
--#define MCG_STATUS_EIPV  (1ULL<<1)   /* ip points to correct instruction */
--#define MCG_STATUS_MCIP  (1ULL<<2)   /* machine check in progress */
--
--/* MCi_STATUS register defines */
--#define MCI_STATUS_VAL   (1ULL<<63)  /* valid error */
--#define MCI_STATUS_OVER  (1ULL<<62)  /* previous errors lost */
--#define MCI_STATUS_UC    (1ULL<<61)  /* uncorrected error */
--#define MCI_STATUS_EN    (1ULL<<60)  /* error enabled */
--#define MCI_STATUS_MISCV (1ULL<<59)  /* misc error reg. valid */
--#define MCI_STATUS_ADDRV (1ULL<<58)  /* addr reg. valid */
--#define MCI_STATUS_PCC   (1ULL<<57)  /* processor context corrupt */
--#define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
--#define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
--#define MCACOD		  0xffff     /* MCA Error Code */
--
--/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
--#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
--#define MCACOD_SCRUBMSK	0xfff0
--#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
--#define MCACOD_DATA	0x0134	/* Data Load */
--#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
--
--/* MCi_MISC register defines */
--#define MCI_MISC_ADDR_LSB(m)	((m) & 0x3f)
--#define MCI_MISC_ADDR_MODE(m)	(((m) >> 6) & 7)
--#define  MCI_MISC_ADDR_SEGOFF	0	/* segment offset */
--#define  MCI_MISC_ADDR_LINEAR	1	/* linear address */
--#define  MCI_MISC_ADDR_PHYS	2	/* physical address */
--#define  MCI_MISC_ADDR_MEM	3	/* memory address */
--#define  MCI_MISC_ADDR_GENERIC	7	/* generic */
--
--/* CTL2 register defines */
--#define MCI_CTL2_CMCI_EN		(1ULL << 30)
--#define MCI_CTL2_CMCI_THRESHOLD_MASK	0x7fffULL
--
--#define MCJ_CTX_MASK		3
--#define MCJ_CTX(flags)		((flags) & MCJ_CTX_MASK)
--#define MCJ_CTX_RANDOM		0    /* inject context: random */
--#define MCJ_CTX_PROCESS		0x1  /* inject context: process */
--#define MCJ_CTX_IRQ		0x2  /* inject context: IRQ */
--#define MCJ_NMI_BROADCAST	0x4  /* do NMI broadcasting */
--#define MCJ_EXCEPTION		0x8  /* raise as exception */
--#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
--
- /* Fields are zero when not available */
- struct mce {
- 	__u64 status;
-@@ -87,35 +27,8 @@ struct mce {
- 	__u64 mcgcap;	/* MCGCAP MSR: machine check capabilities of CPU */
- };
- 
--/*
-- * This structure contains all data related to the MCE log.  Also
-- * carries a signature to make it easier to find from external
-- * debugging tools.  Each entry is only valid when its finished flag
-- * is set.
-- */
--
--#define MCE_LOG_LEN 32
--
--struct mce_log {
--	char signature[12]; /* "MACHINECHECK" */
--	unsigned len;	    /* = MCE_LOG_LEN */
--	unsigned next;
--	unsigned flags;
--	unsigned recordlen;	/* length of struct mce */
--	struct mce entry[MCE_LOG_LEN];
--};
--
--#define MCE_OVERFLOW 0		/* bit 0 in flags means overflow */
--
--#define MCE_LOG_SIGNATURE	"MACHINECHECK"
--
- #define MCE_GET_RECORD_LEN   _IOR('M', 1, int)
- #define MCE_GET_LOG_LEN      _IOR('M', 2, int)
- #define MCE_GETCLEAR_FLAGS   _IOR('M', 3, int)
- 
--/* Software defined banks */
--#define MCE_EXTENDED_BANK	128
--#define MCE_THERMAL_BANK	MCE_EXTENDED_BANK + 0
--#define K8_MCE_THRESHOLD_BASE      (MCE_EXTENDED_BANK + 1)
--
- #endif /* _UAPI_ASM_X86_MCE_H */
--- 
-1.8.1.rc3
++
++static irqreturn_t goldfish_rtc_interrupt(int irq, void *dev_id)
++{
++	struct goldfish_rtc	*qrtc = dev_id;
++	unsigned long		events = 0;
++
++	writel(1, qrtc->base + GOLDFISH_CLEAR_TIMER_INT);
++	events = RTC_IRQF | RTC_AF;
++
++	rtc_update_irq(qrtc->rtc, 1, events);
++
++	return IRQ_HANDLED;
++}
++
++static int goldfish_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	int64_t time;
++	struct goldfish_rtc *qrtc = platform_get_drvdata(
++						to_platform_device(dev));
++
++	time = readl(qrtc->base + GOLDFISH_TIME_LOW);
++	time |= (int64_t)readl(qrtc->base + GOLDFISH_TIME_HIGH) << 32;
++	do_div(time, NSEC_PER_SEC);
++
++	rtc_time_to_tm(time, tm);
++	return 0;
++}
++
++static const struct rtc_class_ops goldfish_rtc_ops = {
++	.read_time	= goldfish_rtc_read_time,
++};
++
++static int goldfish_rtc_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct resource *r;
++	struct goldfish_rtc *qrtc;
++
++	qrtc = kzalloc(sizeof(*qrtc), GFP_KERNEL);
++	if (qrtc == NULL) {
++		ret = -ENOMEM;
++		goto err_qrtc_alloc_failed;
++	}
++	platform_set_drvdata(pdev, qrtc);
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (r == NULL) {
++		ret = -ENODEV;
++		goto err_no_io_base;
++	}
++	qrtc->base = ioremap(r->start, 0x18);
++	if (qrtc->base == NULL) {
++		ret = -ENOMEM;
++		goto err_no_io_base;
++	}
++	qrtc->irq = platform_get_irq(pdev, 0);
++	if (qrtc->irq < 0) {
++		ret = -ENODEV;
++		goto err_no_irq;
++	}
++	qrtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
++					&goldfish_rtc_ops, THIS_MODULE);
++	if (IS_ERR(qrtc->rtc)) {
++		ret = PTR_ERR(qrtc->rtc);
++		goto err_rtc_device_register_failed;
++	}
++
++	ret = request_irq(qrtc->irq, goldfish_rtc_interrupt, 0, pdev->name, qrtc);
++	if (ret)
++		goto request_irq;
++
++	return 0;
++
++	free_irq(qrtc->irq, qrtc);
++request_irq:
++	rtc_device_unregister(qrtc->rtc);
++err_rtc_device_register_failed:
++err_no_irq:
++	iounmap(qrtc->base);
++err_no_io_base:
++	kfree(qrtc);
++err_qrtc_alloc_failed:
++	return ret;
++}
++
++static int goldfish_rtc_remove(struct platform_device *pdev)
++{
++	struct goldfish_rtc	*qrtc = platform_get_drvdata(pdev);
++	free_irq(qrtc->irq, qrtc);
++	rtc_device_unregister(qrtc->rtc);
++	iounmap(qrtc->base);
++	kfree(qrtc);
++	return 0;
++}
++
++static struct platform_driver goldfish_timer = {
++	.probe = goldfish_rtc_probe,
++	.remove = goldfish_rtc_remove,
++	.driver = {
++		.name = "goldfish_rtc"
++	}
++};
++
++static int __devinit goldfish_rtc_init(void)
++{
++	return platform_driver_register(&goldfish_timer);
++}
++
++static void goldfish_rtc_exit(void)
++{
++	return platform_driver_unregister(&goldfish_timer);
++}
++
++module_init(goldfish_rtc_init);
++module_exit(goldfish_rtc_exit);
 
-
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
