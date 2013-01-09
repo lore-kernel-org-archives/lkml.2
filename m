@@ -1,127 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757959Ab3AIOFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:05:23 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:45774 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757887Ab3AIOFQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:05:16 -0500
-From: Abhijit Pawar <abhi.c.pawar@gmail.com>
-To: Ben Myers <bpm@sgi.com>, jeff.liu@oracle.com
-Cc: Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
-        linux-kernel@vger.kernel.org, david@fromorbit.com,
-        Abhijit Pawar <abhi.c.pawar@gmail.com>
-Subject: [PATCH 1/1] fs/xfs remove obsolete simple_strto<foo>
-Date: Wed,  9 Jan 2013 19:34:42 +0530
-Message-Id: <1357740282-2377-1-git-send-email-abhi.c.pawar@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S932068Ab3AIOFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:05:37 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33637 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757863Ab3AIOFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 09:05:31 -0500
+Date: Wed, 9 Jan 2013 15:05:28 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Luck <tony.luck@intel.com>, lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] RAS UAPI fix for 3.8
+Message-ID: <20130109140527.GC5980@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Tony Luck <tony.luck@intel.com>,
+	lkml <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces usages of obsolete simple_strtoul with kstrtoint in xfs_args and suffix_strtoul.
+Hi guys,
 
-Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
----
- fs/xfs/xfs_super.c |   29 +++++++++++++++++++----------
- 1 files changed, 19 insertions(+), 10 deletions(-)
+the patch below retracts a bunch of defines and structs which went into
+the uapi/mce.h header needlessly. See commit message below for more
+details.
 
-diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
-index ab8839b..c407121 100644
---- a/fs/xfs/xfs_super.c
-+++ b/fs/xfs/xfs_super.c
-@@ -139,9 +139,9 @@ static const match_table_t tokens = {
+The thing is, this patch needs to go in 3.8 so that the changes the UAPI
+merge added to mce.h can be reverted and thus 3.8 can be released with
+proper header exports.
+
+So please pull,
+thanks.
+
+--
+The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
+
+  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/ras_for_3.8
+
+for you to fetch changes up to f51bde6f0d66ab6a80eb1a05b6fe8d90c4960486:
+
+  x86, MCE: Retract most UAPI exports (2013-01-09 14:49:02 +0100)
+
+----------------------------------------------------------------
+Retract MCE-specific UAPI exports which are unused and shouldn't be
+used.
+
+----------------------------------------------------------------
+Borislav Petkov (1):
+      x86, MCE: Retract most UAPI exports
+
+ arch/x86/include/asm/mce.h      | 84 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/include/uapi/asm/mce.h | 87 ---------------------------------------------------------------------------------------
+ 2 files changed, 84 insertions(+), 87 deletions(-)
+
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index ecdfee60ee4a..f4076af1f4ed 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -3,6 +3,90 @@
  
+ #include <uapi/asm/mce.h>
  
- STATIC unsigned long
--suffix_strtoul(char *s, char **endp, unsigned int base)
-+suffix_kstrtoint(char *s, unsigned int base, int *res)
- {
--	int	last, shift_left_factor = 0;
-+	int	last, shift_left_factor = 0, _res;
- 	char	*value = s;
++/*
++ * Machine Check support for x86
++ */
++
++/* MCG_CAP register defines */
++#define MCG_BANKCNT_MASK	0xff         /* Number of Banks */
++#define MCG_CTL_P		(1ULL<<8)    /* MCG_CTL register available */
++#define MCG_EXT_P		(1ULL<<9)    /* Extended registers available */
++#define MCG_CMCI_P		(1ULL<<10)   /* CMCI supported */
++#define MCG_EXT_CNT_MASK	0xff0000     /* Number of Extended registers */
++#define MCG_EXT_CNT_SHIFT	16
++#define MCG_EXT_CNT(c)		(((c) & MCG_EXT_CNT_MASK) >> MCG_EXT_CNT_SHIFT)
++#define MCG_SER_P		(1ULL<<24)   /* MCA recovery/new status bits */
++
++/* MCG_STATUS register defines */
++#define MCG_STATUS_RIPV  (1ULL<<0)   /* restart ip valid */
++#define MCG_STATUS_EIPV  (1ULL<<1)   /* ip points to correct instruction */
++#define MCG_STATUS_MCIP  (1ULL<<2)   /* machine check in progress */
++
++/* MCi_STATUS register defines */
++#define MCI_STATUS_VAL   (1ULL<<63)  /* valid error */
++#define MCI_STATUS_OVER  (1ULL<<62)  /* previous errors lost */
++#define MCI_STATUS_UC    (1ULL<<61)  /* uncorrected error */
++#define MCI_STATUS_EN    (1ULL<<60)  /* error enabled */
++#define MCI_STATUS_MISCV (1ULL<<59)  /* misc error reg. valid */
++#define MCI_STATUS_ADDRV (1ULL<<58)  /* addr reg. valid */
++#define MCI_STATUS_PCC   (1ULL<<57)  /* processor context corrupt */
++#define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
++#define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
++#define MCACOD		  0xffff     /* MCA Error Code */
++
++/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
++#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
++#define MCACOD_SCRUBMSK	0xfff0
++#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
++#define MCACOD_DATA	0x0134	/* Data Load */
++#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
++
++/* MCi_MISC register defines */
++#define MCI_MISC_ADDR_LSB(m)	((m) & 0x3f)
++#define MCI_MISC_ADDR_MODE(m)	(((m) >> 6) & 7)
++#define  MCI_MISC_ADDR_SEGOFF	0	/* segment offset */
++#define  MCI_MISC_ADDR_LINEAR	1	/* linear address */
++#define  MCI_MISC_ADDR_PHYS	2	/* physical address */
++#define  MCI_MISC_ADDR_MEM	3	/* memory address */
++#define  MCI_MISC_ADDR_GENERIC	7	/* generic */
++
++/* CTL2 register defines */
++#define MCI_CTL2_CMCI_EN		(1ULL << 30)
++#define MCI_CTL2_CMCI_THRESHOLD_MASK	0x7fffULL
++
++#define MCJ_CTX_MASK		3
++#define MCJ_CTX(flags)		((flags) & MCJ_CTX_MASK)
++#define MCJ_CTX_RANDOM		0    /* inject context: random */
++#define MCJ_CTX_PROCESS		0x1  /* inject context: process */
++#define MCJ_CTX_IRQ		0x2  /* inject context: IRQ */
++#define MCJ_NMI_BROADCAST	0x4  /* do NMI broadcasting */
++#define MCJ_EXCEPTION		0x8  /* raise as exception */
++#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
++
++#define MCE_OVERFLOW 0		/* bit 0 in flags means overflow */
++
++/* Software defined banks */
++#define MCE_EXTENDED_BANK	128
++#define MCE_THERMAL_BANK	(MCE_EXTENDED_BANK + 0)
++#define K8_MCE_THRESHOLD_BASE   (MCE_EXTENDED_BANK + 1)
++
++#define MCE_LOG_LEN 32
++#define MCE_LOG_SIGNATURE	"MACHINECHECK"
++
++/*
++ * This structure contains all data related to the MCE log.  Also
++ * carries a signature to make it easier to find from external
++ * debugging tools.  Each entry is only valid when its finished flag
++ * is set.
++ */
++struct mce_log {
++	char signature[12]; /* "MACHINECHECK" */
++	unsigned len;	    /* = MCE_LOG_LEN */
++	unsigned next;
++	unsigned flags;
++	unsigned recordlen;	/* length of struct mce */
++	struct mce entry[MCE_LOG_LEN];
++};
  
- 	last = strlen(value) - 1;
-@@ -158,7 +158,10 @@ suffix_strtoul(char *s, char **endp, unsigned int base)
- 		value[last] = '\0';
- 	}
+ struct mca_config {
+ 	bool dont_log_ce;
+diff --git a/arch/x86/include/uapi/asm/mce.h b/arch/x86/include/uapi/asm/mce.h
+index 58c829871c31..a0eab85ce7b8 100644
+--- a/arch/x86/include/uapi/asm/mce.h
++++ b/arch/x86/include/uapi/asm/mce.h
+@@ -4,66 +4,6 @@
+ #include <linux/types.h>
+ #include <asm/ioctls.h>
  
--	return simple_strtoul((const char *)s, endp, base) << shift_left_factor;
-+	if (kstrtoint(s, base, &_res))
-+		return -EINVAL;
-+	*res = _res << shift_left_factor;
-+	return 0;
- }
+-/*
+- * Machine Check support for x86
+- */
+-
+-/* MCG_CAP register defines */
+-#define MCG_BANKCNT_MASK	0xff         /* Number of Banks */
+-#define MCG_CTL_P		(1ULL<<8)    /* MCG_CTL register available */
+-#define MCG_EXT_P		(1ULL<<9)    /* Extended registers available */
+-#define MCG_CMCI_P		(1ULL<<10)   /* CMCI supported */
+-#define MCG_EXT_CNT_MASK	0xff0000     /* Number of Extended registers */
+-#define MCG_EXT_CNT_SHIFT	16
+-#define MCG_EXT_CNT(c)		(((c) & MCG_EXT_CNT_MASK) >> MCG_EXT_CNT_SHIFT)
+-#define MCG_SER_P	 	(1ULL<<24)   /* MCA recovery/new status bits */
+-
+-/* MCG_STATUS register defines */
+-#define MCG_STATUS_RIPV  (1ULL<<0)   /* restart ip valid */
+-#define MCG_STATUS_EIPV  (1ULL<<1)   /* ip points to correct instruction */
+-#define MCG_STATUS_MCIP  (1ULL<<2)   /* machine check in progress */
+-
+-/* MCi_STATUS register defines */
+-#define MCI_STATUS_VAL   (1ULL<<63)  /* valid error */
+-#define MCI_STATUS_OVER  (1ULL<<62)  /* previous errors lost */
+-#define MCI_STATUS_UC    (1ULL<<61)  /* uncorrected error */
+-#define MCI_STATUS_EN    (1ULL<<60)  /* error enabled */
+-#define MCI_STATUS_MISCV (1ULL<<59)  /* misc error reg. valid */
+-#define MCI_STATUS_ADDRV (1ULL<<58)  /* addr reg. valid */
+-#define MCI_STATUS_PCC   (1ULL<<57)  /* processor context corrupt */
+-#define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
+-#define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
+-#define MCACOD		  0xffff     /* MCA Error Code */
+-
+-/* Architecturally defined codes from SDM Vol. 3B Chapter 15 */
+-#define MCACOD_SCRUB	0x00C0	/* 0xC0-0xCF Memory Scrubbing */
+-#define MCACOD_SCRUBMSK	0xfff0
+-#define MCACOD_L3WB	0x017A	/* L3 Explicit Writeback */
+-#define MCACOD_DATA	0x0134	/* Data Load */
+-#define MCACOD_INSTR	0x0150	/* Instruction Fetch */
+-
+-/* MCi_MISC register defines */
+-#define MCI_MISC_ADDR_LSB(m)	((m) & 0x3f)
+-#define MCI_MISC_ADDR_MODE(m)	(((m) >> 6) & 7)
+-#define  MCI_MISC_ADDR_SEGOFF	0	/* segment offset */
+-#define  MCI_MISC_ADDR_LINEAR	1	/* linear address */
+-#define  MCI_MISC_ADDR_PHYS	2	/* physical address */
+-#define  MCI_MISC_ADDR_MEM	3	/* memory address */
+-#define  MCI_MISC_ADDR_GENERIC	7	/* generic */
+-
+-/* CTL2 register defines */
+-#define MCI_CTL2_CMCI_EN		(1ULL << 30)
+-#define MCI_CTL2_CMCI_THRESHOLD_MASK	0x7fffULL
+-
+-#define MCJ_CTX_MASK		3
+-#define MCJ_CTX(flags)		((flags) & MCJ_CTX_MASK)
+-#define MCJ_CTX_RANDOM		0    /* inject context: random */
+-#define MCJ_CTX_PROCESS		0x1  /* inject context: process */
+-#define MCJ_CTX_IRQ		0x2  /* inject context: IRQ */
+-#define MCJ_NMI_BROADCAST	0x4  /* do NMI broadcasting */
+-#define MCJ_EXCEPTION		0x8  /* raise as exception */
+-#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
+-
+ /* Fields are zero when not available */
+ struct mce {
+ 	__u64 status;
+@@ -87,35 +27,8 @@ struct mce {
+ 	__u64 mcgcap;	/* MCGCAP MSR: machine check capabilities of CPU */
+ };
  
- /*
-@@ -174,7 +177,7 @@ xfs_parseargs(
- 	char			*options)
- {
- 	struct super_block	*sb = mp->m_super;
--	char			*this_char, *value, *eov;
-+	char			*this_char, *value;
- 	int			dsunit = 0;
- 	int			dswidth = 0;
- 	int			iosize = 0;
-@@ -230,14 +233,16 @@ xfs_parseargs(
- 					this_char);
- 				return EINVAL;
- 			}
--			mp->m_logbufs = simple_strtoul(value, &eov, 10);
-+			if (kstrtoint(value, 10, &mp->m_logbufs))
-+				return EINVAL;
- 		} else if (!strcmp(this_char, MNTOPT_LOGBSIZE)) {
- 			if (!value || !*value) {
- 				xfs_warn(mp, "%s option requires an argument",
- 					this_char);
- 				return EINVAL;
- 			}
--			mp->m_logbsize = suffix_strtoul(value, &eov, 10);
-+			if (suffix_kstrtoint(value, 10, &mp->m_logbsize))
-+				return EINVAL;
- 		} else if (!strcmp(this_char, MNTOPT_LOGDEV)) {
- 			if (!value || !*value) {
- 				xfs_warn(mp, "%s option requires an argument",
-@@ -266,7 +271,8 @@ xfs_parseargs(
- 					this_char);
- 				return EINVAL;
- 			}
--			iosize = simple_strtoul(value, &eov, 10);
-+			if (kstrtoint(value, 10, &iosize))
-+				return EINVAL;
- 			iosizelog = ffs(iosize) - 1;
- 		} else if (!strcmp(this_char, MNTOPT_ALLOCSIZE)) {
- 			if (!value || !*value) {
-@@ -274,7 +280,8 @@ xfs_parseargs(
- 					this_char);
- 				return EINVAL;
- 			}
--			iosize = suffix_strtoul(value, &eov, 10);
-+			if (suffix_kstrtoint(value, 10, &iosize))
-+				return EINVAL;
- 			iosizelog = ffs(iosize) - 1;
- 		} else if (!strcmp(this_char, MNTOPT_GRPID) ||
- 			   !strcmp(this_char, MNTOPT_BSDGROUPS)) {
-@@ -296,14 +303,16 @@ xfs_parseargs(
- 					this_char);
- 				return EINVAL;
- 			}
--			dsunit = simple_strtoul(value, &eov, 10);
-+			if (kstrtoint(value, 10, &dsunit))
-+				return EINVAL;
- 		} else if (!strcmp(this_char, MNTOPT_SWIDTH)) {
- 			if (!value || !*value) {
- 				xfs_warn(mp, "%s option requires an argument",
- 					this_char);
- 				return EINVAL;
- 			}
--			dswidth = simple_strtoul(value, &eov, 10);
-+			if (kstrtoint(value, 10, &dswidth))
-+				return EINVAL;
- 		} else if (!strcmp(this_char, MNTOPT_32BITINODE)) {
- 			mp->m_flags |= XFS_MOUNT_SMALL_INUMS;
- 		} else if (!strcmp(this_char, MNTOPT_64BITINODE)) {
+-/*
+- * This structure contains all data related to the MCE log.  Also
+- * carries a signature to make it easier to find from external
+- * debugging tools.  Each entry is only valid when its finished flag
+- * is set.
+- */
+-
+-#define MCE_LOG_LEN 32
+-
+-struct mce_log {
+-	char signature[12]; /* "MACHINECHECK" */
+-	unsigned len;	    /* = MCE_LOG_LEN */
+-	unsigned next;
+-	unsigned flags;
+-	unsigned recordlen;	/* length of struct mce */
+-	struct mce entry[MCE_LOG_LEN];
+-};
+-
+-#define MCE_OVERFLOW 0		/* bit 0 in flags means overflow */
+-
+-#define MCE_LOG_SIGNATURE	"MACHINECHECK"
+-
+ #define MCE_GET_RECORD_LEN   _IOR('M', 1, int)
+ #define MCE_GET_LOG_LEN      _IOR('M', 2, int)
+ #define MCE_GETCLEAR_FLAGS   _IOR('M', 3, int)
+ 
+-/* Software defined banks */
+-#define MCE_EXTENDED_BANK	128
+-#define MCE_THERMAL_BANK	MCE_EXTENDED_BANK + 0
+-#define K8_MCE_THRESHOLD_BASE      (MCE_EXTENDED_BANK + 1)
+-
+ #endif /* _UAPI_ASM_X86_MCE_H */
 -- 
-1.7.7.6
+1.8.1.rc3
 
+
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
