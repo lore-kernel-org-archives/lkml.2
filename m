@@ -1,163 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab3AIQ6a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 11:58:30 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:60963 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263Ab3AIQ63 (ORCPT
+	id S932325Ab3AIRA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 12:00:29 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:41342 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab3AIRA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 11:58:29 -0500
-Message-ID: <50EDA1B1.3050501@gmail.com>
-Date: Thu, 10 Jan 2013 00:58:25 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 9 Jan 2013 12:00:27 -0500
+Date: Wed, 9 Jan 2013 09:00:23 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+Cc: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: Re: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
+Message-ID: <20130109170023.GA7068@kroah.com>
+References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
+ <1357542806-20449-8-git-send-email-durgadoss.r@intel.com>
+ <20130107192414.GC4465@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB59257F01@BGSMSX101.gar.corp.intel.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when
- PCI hotplug event happens
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <1357663945-16054-4-git-send-email-jiang.liu@huawei.com> <9523101.J0n0M0VJmQ@vostro.rjw.lan>
-In-Reply-To: <9523101.J0n0M0VJmQ@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB59257F01@BGSMSX101.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
-	Thanks for your great efforts to review the patch.	
+On Wed, Jan 09, 2013 at 09:12:29AM +0000, R, Durgadoss wrote:
+> Hi Greg,
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Tuesday, January 08, 2013 12:54 AM
+> > To: R, Durgadoss
+> > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > eduardo.valentin@ti.com; hongbo.zhang@linaro.org; wni@nvidia.com
+> > Subject: Re: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
+> > 
+> > On Mon, Jan 07, 2013 at 12:43:24PM +0530, Durgadoss R wrote:
+> > > This patch makes MAX_SENSORS_PER_ZONE and
+> > > MAX_CDEVS_PER_ZONE values configurable. The
+> > > default value is 1, and range is 1-12.
+> > 
+> > Why would we ever want to change this?  Why make this configurable at
+> > all, how is a distro supposed to set this value?
+> > 
+> > Shouldn't it be specified from the driver itself?
+> 
+> These are platform level parameters, that can differ for various platforms.
+> (Mostly due to board design and thermistor layouts). Stand-alone thermal
+> sensor drivers are not (need not be) aware of these values.
 
-On 01/09/2013 08:01 AM, Rafael J. Wysocki wrote:
-> Hi,
-> 
-> On Wednesday, January 09, 2013 12:52:22 AM Jiang Liu wrote:
-snip
->>  
->> +static void acpi_pci_slot_notify_add(struct pci_dev *dev)
->> +{
->> +	acpi_handle handle;
->> +	struct callback_args context;
->> +
->> +	if (!dev->subordinate)
->> +		return;
->> +
->> +	mutex_lock(&slot_list_lock);
->> +	handle = DEVICE_ACPI_HANDLE(&dev->dev);
->> +	context.root_handle = acpi_find_root_bridge_handle(dev);
-> 
-> There's a patch under discussion that removes this function.
-> 
-> Isn't there any other way to do this?
-	I will try to find a way to get rid of calling acpi_find_root_bridge_handle,
-and it seems doable.
+Ok, and how does anyone know how to set them properly?
 
-> 
->> +	if (handle && context.root_handle) {
->> +		context.pci_bus = dev->subordinate;
->> +		context.user_function = register_slot;
->> +		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
-> 
-> You can just pass 1 here I think.  Does the compiler complain?
-Thanks for reminder, the (u32) is unnecessary.
+> That's why these values are made configurable.
 
-> 
->> +				    register_slot, NULL, &context, NULL);
->> +	}
->> +	mutex_unlock(&slot_list_lock);
->> +}
->> +
->> +static void acpi_pci_slot_notify_del(struct pci_dev *dev)
->> +{
->> +	struct acpi_pci_slot *slot, *tmp;
->> +	struct pci_bus *bus = dev->subordinate;
->> +
->> +	if (!bus)
->> +		return;
->> +
->> +	mutex_lock(&slot_list_lock);
->> +	list_for_each_entry_safe(slot, tmp, &slot_list, list)
->> +		if (slot->pci_slot && slot->pci_slot->bus == bus) {
->> +			list_del(&slot->list);
->> +			pci_destroy_slot(slot->pci_slot);
->> +			put_device(&bus->dev);
->> +			kfree(slot);
->> +		}
->> +	mutex_unlock(&slot_list_lock);
->> +}
->> +
->> +static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
->> +				   unsigned long event, void *data)
->> +{
->> +	struct device *dev = data;
->> +
->> +	switch (event) {
->> +	case BUS_NOTIFY_ADD_DEVICE:
->> +		acpi_pci_slot_notify_add(to_pci_dev(dev));
->> +		break;
-> 
-> Do I think correctly that this is going to be called for every PCI device
-> added to the system, even if it's not a bridge?
-You are right. Function acpi_pci_slot_notify_add() and acpi_pci_slot_notify_del()
-will check whether it's a bridge. If preferred, I will move the check up into
-acpi_pci_slot_notify_fn().
+Pushing work onto other people, without telling them what they need to
+do, isn't nice.  Please, either make it auto-configurable, or don't make
+it configurable at all.  As it is, this is useless for a distro, or any
+"normal" user, right?
 
-> 
->> +	case BUS_NOTIFY_DEL_DEVICE:
->> +		acpi_pci_slot_notify_del(to_pci_dev(dev));
->> +		break;
->> +	default:
->> +		return NOTIFY_DONE;
->> +	}
->> +
->> +	return NOTIFY_OK;
->> +}
->> +
->> +static struct notifier_block acpi_pci_slot_notifier = {
->> +	.notifier_call = &acpi_pci_slot_notify_fn,
->> +};
->> +
->>  static int __init
->>  acpi_pci_slot_init(void)
->>  {
->>  	dmi_check_system(acpi_pci_slot_dmi_table);
->>  	acpi_pci_register_driver(&acpi_pci_slot_driver);
->> +	bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
-> 
-> I wonder if/why this has to be so convoluted?
-> 
-> We have found a PCI bridge in the ACPI namespace, so we've created a struct
-> acpi_device for it and we've walked the namespace below it already.
-> 
-> Now we're creating a struct pci_dev for it and while registering it we're
-> going to walk the namespace below the bridge again to find and register its
-> slots and that is done indirectly from a bus type notifier.
-> 
-> Why can't we enumerate the slots directly upfront?
-Do you mean to create the PCI slot devices when creating the ACPI devices?
-I think there are two factors prevent us from doing that.
-The first is that the ACPI pci_slot driver could be built as a module, so
-we can't call into it from the ACPI core.
-The second reason is that the PCI slot is associated with a PCI bus, and the
-bus is only available until the PCI device has been created.
+If these are platform specific things, shouldn't they be defined in the
+platform data for the hardware?
 
-Thanks!
-Gerry
-> 
->> +
->>  	return 0;
->>  }
->>  
->>  static void __exit
->>  acpi_pci_slot_exit(void)
->>  {
->> +	bus_unregister_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
->>  	acpi_pci_unregister_driver(&acpi_pci_slot_driver);
->>  }
-> 
-> Thanks,
-> Rafael
-> 
-> 
+thanks,
 
+greg k-h
