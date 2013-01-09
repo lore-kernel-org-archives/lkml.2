@@ -1,234 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933798Ab3AIUkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:40:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43131 "EHLO mail.kernel.org"
+	id S933863Ab3AIVEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:04:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43235 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933569Ab3AIUkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:08 -0500
+	id S933800Ab3AIUkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 070/123] cgroup: cgroup_subsys->fork() should be called after the task is added to css_set
-Date: Wed,  9 Jan 2013 12:35:09 -0800
-Message-Id: <20130109201507.595125395@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Kiran Kumar Kella <kkiran@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 62/80] tcp: implement RFC 5961 4.2
+Date: Wed,  9 Jan 2013 12:35:54 -0800
+Message-Id: <20130109201508.373451195@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
 
-commit 5edee61edeaaebafe584f8fb7074c1ef4658596b upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-cgroup core has a bug which violates a basic rule about event
-notifications - when a new entity needs to be added, you add that to
-the notification list first and then make the new entity conform to
-the current state.  If done in the reverse order, an event happening
-inbetween will be lost.
+[ Upstream commit 0c24604b68fc7810d429d6c3657b6f148270e528 ]
 
-cgroup_subsys->fork() is invoked way before the new task is added to
-the css_set.  Currently, cgroup_freezer is the only user of ->fork()
-and uses it to make new tasks conform to the current state of the
-freezer.  If FROZEN state is requested while fork is in progress
-between cgroup_fork_callbacks() and cgroup_post_fork(), the child
-could escape freezing - the cgroup isn't frozen when ->fork() is
-called and the freezer couldn't see the new task on the css_set.
+Implement the RFC 5691 mitigation against Blind
+Reset attack using SYN bit.
 
-This patch moves cgroup_subsys->fork() invocation to
-cgroup_post_fork() after the new task is added to the css_set.
-cgroup_fork_callbacks() is removed.
+Section 4.2 of RFC 5961 advises to send a Challenge ACK and drop
+incoming packet, instead of resetting the session.
 
-Because now a task may be migrated during cgroup_subsys->fork(),
-freezer_fork() is updated so that it adheres to the usual RCU locking
-and the rather pointless comment on why locking can be different there
-is removed (if it doesn't make anything simpler, why even bother?).
+Add a new SNMP counter to count number of challenge acks sent
+in response to SYN packets.
+(netstat -s | grep TCPSYNChallenge)
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Remove obsolete TCPAbortOnSyn, since we no longer abort a TCP session
+because of a SYN flag.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Kiran Kumar Kella <kkiran@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/cgroup.h  |    1 
- kernel/cgroup.c         |   62 +++++++++++++++++++++++-------------------------
- kernel/cgroup_freezer.c |   13 +++-------
- kernel/fork.c           |    9 ------
- 4 files changed, 35 insertions(+), 50 deletions(-)
+ include/linux/snmp.h |    2 +-
+ net/ipv4/proc.c      |    2 +-
+ net/ipv4/tcp_input.c |   32 +++++++++++++++-----------------
+ 3 files changed, 17 insertions(+), 19 deletions(-)
 
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -34,7 +34,6 @@ extern int cgroup_lock_is_held(void);
- extern bool cgroup_lock_live_group(struct cgroup *cgrp);
- extern void cgroup_unlock(void);
- extern void cgroup_fork(struct task_struct *p);
--extern void cgroup_fork_callbacks(struct task_struct *p);
- extern void cgroup_post_fork(struct task_struct *p);
- extern void cgroup_exit(struct task_struct *p, int run_callbacks);
- extern int cgroupstats_build(struct cgroupstats *stats,
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4832,44 +4832,19 @@ void cgroup_fork(struct task_struct *chi
- }
+--- a/include/linux/snmp.h
++++ b/include/linux/snmp.h
+@@ -208,7 +208,6 @@ enum
+ 	LINUX_MIB_TCPDSACKOFOSENT,		/* TCPDSACKOfoSent */
+ 	LINUX_MIB_TCPDSACKRECV,			/* TCPDSACKRecv */
+ 	LINUX_MIB_TCPDSACKOFORECV,		/* TCPDSACKOfoRecv */
+-	LINUX_MIB_TCPABORTONSYN,		/* TCPAbortOnSyn */
+ 	LINUX_MIB_TCPABORTONDATA,		/* TCPAbortOnData */
+ 	LINUX_MIB_TCPABORTONCLOSE,		/* TCPAbortOnClose */
+ 	LINUX_MIB_TCPABORTONMEMORY,		/* TCPAbortOnMemory */
+@@ -235,6 +234,7 @@ enum
+ 	LINUX_MIB_TCPRETRANSFAIL,		/* TCPRetransFail */
+ 	LINUX_MIB_TCPRCVCOALESCE,			/* TCPRcvCoalesce */
+ 	LINUX_MIB_TCPCHALLENGEACK,		/* TCPChallengeACK */
++	LINUX_MIB_TCPSYNCHALLENGE,		/* TCPSYNChallenge */
+ 	__LINUX_MIB_MAX
+ };
  
- /**
-- * cgroup_fork_callbacks - run fork callbacks
-- * @child: the new task
-- *
-- * Called on a new task very soon before adding it to the
-- * tasklist. No need to take any locks since no-one can
-- * be operating on this task.
-- */
--void cgroup_fork_callbacks(struct task_struct *child)
--{
--	if (need_forkexit_callback) {
--		int i;
--		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
--			struct cgroup_subsys *ss = subsys[i];
--
--			/*
--			 * forkexit callbacks are only supported for
--			 * builtin subsystems.
--			 */
--			if (!ss || ss->module)
--				continue;
--
--			if (ss->fork)
--				ss->fork(child);
--		}
--	}
--}
--
--/**
-  * cgroup_post_fork - called on a new task after adding it to the task list
-  * @child: the task in question
-  *
-- * Adds the task to the list running through its css_set if necessary.
-- * Has to be after the task is visible on the task list in case we race
-- * with the first call to cgroup_iter_start() - to guarantee that the
-- * new task ends up on its list.
-+ * Adds the task to the list running through its css_set if necessary and
-+ * call the subsystem fork() callbacks.  Has to be after the task is
-+ * visible on the task list in case we race with the first call to
-+ * cgroup_iter_start() - to guarantee that the new task ends up on its
-+ * list.
+--- a/net/ipv4/proc.c
++++ b/net/ipv4/proc.c
+@@ -232,7 +232,6 @@ static const struct snmp_mib snmp4_net_l
+ 	SNMP_MIB_ITEM("TCPDSACKOfoSent", LINUX_MIB_TCPDSACKOFOSENT),
+ 	SNMP_MIB_ITEM("TCPDSACKRecv", LINUX_MIB_TCPDSACKRECV),
+ 	SNMP_MIB_ITEM("TCPDSACKOfoRecv", LINUX_MIB_TCPDSACKOFORECV),
+-	SNMP_MIB_ITEM("TCPAbortOnSyn", LINUX_MIB_TCPABORTONSYN),
+ 	SNMP_MIB_ITEM("TCPAbortOnData", LINUX_MIB_TCPABORTONDATA),
+ 	SNMP_MIB_ITEM("TCPAbortOnClose", LINUX_MIB_TCPABORTONCLOSE),
+ 	SNMP_MIB_ITEM("TCPAbortOnMemory", LINUX_MIB_TCPABORTONMEMORY),
+@@ -259,6 +258,7 @@ static const struct snmp_mib snmp4_net_l
+ 	SNMP_MIB_ITEM("TCPRetransFail", LINUX_MIB_TCPRETRANSFAIL),
+ 	SNMP_MIB_ITEM("TCPRcvCoalesce", LINUX_MIB_TCPRCVCOALESCE),
+ 	SNMP_MIB_ITEM("TCPChallengeACK", LINUX_MIB_TCPCHALLENGEACK),
++	SNMP_MIB_ITEM("TCPSYNChallenge", LINUX_MIB_TCPSYNCHALLENGE),
+ 	SNMP_MIB_SENTINEL
+ };
+ 
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -5288,8 +5288,8 @@ static void tcp_send_challenge_ack(struc
+ /* Does PAWS and seqno based validation of an incoming segment, flags will
+  * play significant role here.
   */
- void cgroup_post_fork(struct task_struct *child)
+-static int tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
+-			      const struct tcphdr *th, int syn_inerr)
++static bool tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
++				  const struct tcphdr *th, int syn_inerr)
  {
-+	int i;
-+
- 	/*
- 	 * use_task_css_set_links is set to 1 before we walk the tasklist
- 	 * under the tasklist_lock and we read it here after we added the child
-@@ -4889,7 +4864,30 @@ void cgroup_post_fork(struct task_struct
- 		task_unlock(child);
- 		write_unlock(&css_set_lock);
- 	}
-+
-+	/*
-+	 * Call ss->fork().  This must happen after @child is linked on
-+	 * css_set; otherwise, @child might change state between ->fork()
-+	 * and addition to css_set.
+ 	const u8 *hash_location;
+ 	struct tcp_sock *tp = tcp_sk(sk);
+@@ -5341,20 +5341,22 @@ static int tcp_validate_incoming(struct
+ 
+ 	/* step 3: check security and precedence [ignored] */
+ 
+-	/* step 4: Check for a SYN in window. */
+-	if (th->syn && !before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt)) {
++	/* step 4: Check for a SYN
++	 * RFC 5691 4.2 : Send a challenge ack
 +	 */
-+	if (need_forkexit_callback) {
-+		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
-+			struct cgroup_subsys *ss = subsys[i];
-+
-+			/*
-+			 * fork/exit callbacks are supported only for
-+			 * builtin subsystems and we don't need further
-+			 * synchronization as they never go away.
-+			 */
-+			if (!ss || ss->module)
-+				continue;
-+
-+			if (ss->fork)
-+				ss->fork(child);
-+		}
-+	}
- }
-+
- /**
-  * cgroup_exit - detach cgroup from exiting task
-  * @tsk: pointer to task_struct of exiting process
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -186,23 +186,15 @@ static void freezer_fork(struct task_str
- {
- 	struct freezer *freezer;
++	if (th->syn) {
+ 		if (syn_inerr)
+ 			TCP_INC_STATS_BH(sock_net(sk), TCP_MIB_INERRS);
+-		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPABORTONSYN);
+-		tcp_reset(sk);
+-		return -1;
++		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPSYNCHALLENGE);
++		tcp_send_challenge_ack(sk);
++		goto discard;
+ 	}
  
--	/*
--	 * No lock is needed, since the task isn't on tasklist yet,
--	 * so it can't be moved to another cgroup, which means the
--	 * freezer won't be removed and will be valid during this
--	 * function call.  Nevertheless, apply RCU read-side critical
--	 * section to suppress RCU lockdep false positives.
--	 */
- 	rcu_read_lock();
- 	freezer = task_freezer(task);
--	rcu_read_unlock();
+-	return 1;
++	return true;
  
- 	/*
- 	 * The root cgroup is non-freezable, so we can skip the
- 	 * following check.
- 	 */
- 	if (!freezer->css.cgroup->parent)
--		return;
-+		goto out;
- 
- 	spin_lock_irq(&freezer->lock);
- 	BUG_ON(freezer->state == CGROUP_FROZEN);
-@@ -210,7 +202,10 @@ static void freezer_fork(struct task_str
- 	/* Locking avoids race with FREEZING -> THAWED transitions. */
- 	if (freezer->state == CGROUP_FREEZING)
- 		freeze_task(task);
-+
- 	spin_unlock_irq(&freezer->lock);
-+out:
-+	rcu_read_unlock();
+ discard:
+ 	__kfree_skb(skb);
+-	return 0;
++	return false;
  }
  
  /*
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1135,7 +1135,6 @@ static struct task_struct *copy_process(
+@@ -5384,7 +5386,6 @@ int tcp_rcv_established(struct sock *sk,
+ 			const struct tcphdr *th, unsigned int len)
  {
- 	int retval;
- 	struct task_struct *p;
--	int cgroup_callbacks_done = 0;
+ 	struct tcp_sock *tp = tcp_sk(sk);
+-	int res;
  
- 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
- 		return ERR_PTR(-EINVAL);
-@@ -1393,12 +1392,6 @@ static struct task_struct *copy_process(
- 	INIT_LIST_HEAD(&p->thread_group);
- 	p->task_works = NULL;
+ 	/*
+ 	 *	Header prediction.
+@@ -5564,9 +5565,8 @@ slow_path:
+ 	 *	Standard slow path.
+ 	 */
  
--	/* Now that the task is set up, run cgroup callbacks if
--	 * necessary. We need to run them before the task is visible
--	 * on the tasklist. */
--	cgroup_fork_callbacks(p);
--	cgroup_callbacks_done = 1;
--
- 	/* Need tasklist lock for parent etc handling! */
- 	write_lock_irq(&tasklist_lock);
+-	res = tcp_validate_incoming(sk, skb, th, 1);
+-	if (res <= 0)
+-		return -res;
++	if (!tcp_validate_incoming(sk, skb, th, 1))
++		return 0;
  
-@@ -1503,7 +1496,7 @@ bad_fork_cleanup_cgroup:
- #endif
- 	if (clone_flags & CLONE_THREAD)
- 		threadgroup_change_end(current);
--	cgroup_exit(p, cgroup_callbacks_done);
-+	cgroup_exit(p, 0);
- 	delayacct_tsk_free(p);
- 	module_put(task_thread_info(p)->exec_domain->module);
- bad_fork_cleanup_count:
+ step5:
+ 	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
+@@ -5876,7 +5876,6 @@ int tcp_rcv_state_process(struct sock *s
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	struct inet_connection_sock *icsk = inet_csk(sk);
+ 	int queued = 0;
+-	int res;
+ 
+ 	tp->rx_opt.saw_tstamp = 0;
+ 
+@@ -5931,9 +5930,8 @@ int tcp_rcv_state_process(struct sock *s
+ 		return 0;
+ 	}
+ 
+-	res = tcp_validate_incoming(sk, skb, th, 0);
+-	if (res <= 0)
+-		return -res;
++	if (!tcp_validate_incoming(sk, skb, th, 0))
++		return 0;
+ 
+ 	/* step 5: check the ACK field */
+ 	if (th->ack) {
 
 
