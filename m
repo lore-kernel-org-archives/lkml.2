@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab3AIRfw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 12:35:52 -0500
-Received: from mail.digium.com ([216.207.245.2]:42552 "EHLO mail.digium.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758026Ab3AIRfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 12:35:50 -0500
-Date: Wed, 9 Jan 2013 11:22:56 -0600
-From: Shaun Ruffell <sruffell@digium.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Ingo Molnar <mingo@kernel.org>, Jan Beulich <JBeulich@suse.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] x86/perf_events: Fix "section type conflict" build error.
-Message-ID: <20130109172255.GA17631@digium.com>
+	id S1758097Ab3AIRgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 12:36:14 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:50047 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758069Ab3AIRgK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 12:36:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121227192337.GB14257@digium.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQV5x1S1BNHrXq0wMRDx7PD5BoCh3fOnq2vS_AOAGL8Rrw@mail.gmail.com>
+References: <20121030040237.GA10472@google.com> <1352003971-22278-1-git-send-email-yinghai@kernel.org>
+ <CAE9FiQUn=bcgOLFzBwsBT1-O1poRNy9qYTb0w9EAya3_inKqAw@mail.gmail.com>
+ <CAErSpo5Z57asEXbfesOjXMEPj4WM3YMbzQH3s-v_NBrnPNmuVQ@mail.gmail.com>
+ <CAErSpo4LS7ShCbeOm1s9ob1MjPfUSWn9J96UHRBP6van54swQA@mail.gmail.com> <CAE9FiQV5x1S1BNHrXq0wMRDx7PD5BoCh3fOnq2vS_AOAGL8Rrw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 9 Jan 2013 10:35:48 -0700
+Message-ID: <CAErSpo5vEb=63jGsqfau1G=f54oqq17pc3ZzcpzhL7hQrtYhng@mail.gmail.com>
+Subject: Re: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for
+ hot-add root bus
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Beulich <JBeulich@suse.com>
+On Tue, Jan 8, 2013 at 11:27 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Jan 8, 2013 at 9:57 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> I'm really sorry that it's taken me so long to get to these.
+>>>
+>>> I applied these to my pci/yinghai-survey-resources branch.  I
+>>> re-ordered the last two and reworked some of the changelogs.
+>>
+>> To be clear about this, the pci/yinghai-survey-resources branch I
+>> mentioned is a staging branch that just gets build test coverage.  I
+>> don't plan to actually merge this or put it into -next until the
+>> questions below are resolved.
+>>
+>> My inclination, until I'm persuaded otherwise, is to wait for patches
+>> that preserve the similarities among these architectures.
+>
+> I don't know, that could be separated patcheset after we conclude
+> pci root bus hotplug support.
 
-This patch fixes a build regression first introduced in 3.7 with
-(e09df47 "perf/x86: Update/fix generic events on P6 PMU").
+The main reason I review patches before merging them is to identify
+issues that we can fix before they affect everybody.  It makes my life
+a lot easier if I don't have to keep track of pending unaddressed
+review comments.  Is there an advantage to waiting and doing this work
+later?
 
-At least some older versions of gcc, like (GCC) 4.1.2 20080704 (Red Hat
-4.1.2-51), dislike mixing constant and non-const data in the same
-section. Without this patch a build will fail with the following error:
-
-    CC      arch/x86/kernel/cpu/perf_event_p6.o
-  arch/x86/kernel/cpu/perf_event_p6.c:22: error: p6_hw_cache_event_ids causes a section type conflict
-  make[3]: *** [arch/x86/kernel/cpu/perf_event_p6.o] Error 1
-
-Newer versions of gcc simply emits the section as writable (which isn't what
-we want, but also is not a big problem as it gets discarded post-init anyway).
-
-Also get the Knight's Corner definitions in sync.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: stable@kernel.org # 3.7.x only
-[sruffell@digium.com: Added details to the commit message.]
-Signed-off-by: Shaun Ruffell <sruffell@digium.com>
-
----
-
-Hans, Thomas,
-
-Any chance of picking this up for 3.8? This doesn't seem too
-controversial since it only makes sure that data in the __initconst
-section is const.
-
-Rob Landley also reported this to the list here:
-https://lkml.org/lkml/2012/12/14/511. 
-
-Thanks,
-Shaun
-
- arch/x86/kernel/cpu/perf_event_knc.c | 4 ++--
- arch/x86/kernel/cpu/perf_event_p6.c  | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_knc.c b/arch/x86/kernel/cpu/perf_event_knc.c
-index 4b7731b..838fa87 100644
---- a/arch/x86/kernel/cpu/perf_event_knc.c
-+++ b/arch/x86/kernel/cpu/perf_event_knc.c
-@@ -17,7 +17,7 @@ static const u64 knc_perfmon_event_map[] =
-   [PERF_COUNT_HW_BRANCH_MISSES]		= 0x002b,
- };
- 
--static __initconst u64 knc_hw_cache_event_ids
-+static const u64 __initconst knc_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
- 				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-@@ -284,7 +284,7 @@ static struct attribute *intel_knc_formats_attr[] = {
- 	NULL,
- };
- 
--static __initconst struct x86_pmu knc_pmu = {
-+static const struct x86_pmu knc_pmu __initconst = {
- 	.name			= "knc",
- 	.handle_irq		= knc_pmu_handle_irq,
- 	.disable_all		= knc_pmu_disable_all,
-diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-index f2af39f..b1e2fe1 100644
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -19,7 +19,7 @@ static const u64 p6_perfmon_event_map[] =
- 
- };
- 
--static __initconst u64 p6_hw_cache_event_ids
-+static const u64 __initconst p6_hw_cache_event_ids
- 				[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
- 				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
--- 
-1.8.1
+>>> In general these look good.  My main concern is that they only touch
+>>> x86, without touching the similar code in frv, microblaze, mn10300,
+>>> and powerpc.
+>>>
+>>> This code (pcibios_resource_survey(), pcibios_assign_resources(),
+>>> pcibios_allocate_resources(), pcibios_allocate_bus_resources()) was
+>>> obviously copied from x86 originally, and I'd like to preserve the
+>>> similarity between them.  It would be even better to refactor it so
+>>> it's actually *shared*, but I don't think that's a requirement right
+>>> now.
+>
+> yes, should be moved to drivers/pci
+>
+>>>
+>>> If we allow it to diverge now, it will make it harder to refactor and
+>>> harder to notice when bug fixes should be applied to all of them.  For
+>>> example, looking at pcibios_allocate_resources(), commit 575939cf5
+>>> added some SR-IOV support to x86.  Should similar code be added for
+>>> frv, microblaze, mn10300, and powerpc?
+>
+> should be treated the same.
+>
+>>>
+>>> Anybody else have thoughts on this?
+>>>
+>>> Bjorn
