@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416Ab3AIVdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:33:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42324 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933360Ab3AIUio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:44 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Edgar Toernig <froese@gmx.de>, Tony Prisk <linux@prisktech.co.nz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 45/47] drivers/rtc/rtc-vt8500.c: fix handling of data passed in struct rtc_time
-Date: Wed,  9 Jan 2013 12:35:40 -0800
-Message-Id: <20130109201734.680384900@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933501Ab3AIVdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:33:23 -0500
+Received: from sunsite.ms.mff.cuni.cz ([195.113.15.26]:32975 "EHLO
+	sunsite.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933417Ab3AIVdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:33:19 -0500
+X-Greylist: delayed 1941 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Jan 2013 16:33:18 EST
+Date: Wed, 9 Jan 2013 21:59:48 +0100
+From: Jakub Jelinek <jakub@redhat.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        libc-alpha@sourceware.org, dwalsh@redhat.com, dmalcolm@redhat.com,
+        sds@tycho.nsa.gov, segoon@openwall.com,
+        linux-security-module@vger.kernel.org
+Subject: Re: Friendlier EPERM - Request for input
+Message-ID: <20130109205947.GE26036@sunsite.ms.mff.cuni.cz>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <1357747463.2593.28.camel@localhost>
+ <1357760637.2593.55.camel@localhost>
+ <50EDCFC0.3010401@schaufler-ca.com>
+ <1357763560.1342.7.camel@localhost>
+ <50EDD8D4.60003@schaufler-ca.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50EDD8D4.60003@schaufler-ca.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jan 09, 2013 at 12:53:40PM -0800, Casey Schaufler wrote:
+> I'm suggesting that the string returned by get_extended_error_info()
+> ought to be the audit record the system call would generate, regardless
+> of whether the audit system would emit it or not.
 
-------------------
+What system call would that info be for and would it be reset on next
+syscall that succeeded, or also failed?
 
-From: Tony Prisk <linux@prisktech.co.nz>
+The thing is, various functions e.g. perform some syscall, save errno, do
+some other syscall, and if they decide that the first syscall should be what
+determines the whole function's errno, just restore errno from the saved
+value and return.  Similarly, various functions just set errno upon
+detecting some error condition in userspace.
+There is no 1:1 mapping between many libc library calls and syscalls.
+So, when would it be safe to call this new get_extended_error_info function
+and how to determine to which syscall it was relevant?
 
-commit 2f90b68309683f2c5765a1b04ca23d71e51f1494 upstream.
-
-tm_mon is 0..11, whereas vt8500 expects 1..12 for the month field,
-causing invalid date errors for January, and causing the day field to
-roll over incorrectly.
-
-The century flag is only handled in vt8500_rtc_read_time, but not set in
-vt8500_rtc_set_time.  This patch corrects the behaviour of the century
-flag.
-
-Signed-off-by: Edgar Toernig <froese@gmx.de>
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/rtc/rtc-vt8500.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -116,7 +116,7 @@ static int vt8500_rtc_read_time(struct d
- 	tm->tm_min = bcd2bin((time & TIME_MIN_MASK) >> TIME_MIN_S);
- 	tm->tm_hour = bcd2bin((time & TIME_HOUR_MASK) >> TIME_HOUR_S);
- 	tm->tm_mday = bcd2bin(date & DATE_DAY_MASK);
--	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S);
-+	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S) - 1;
- 	tm->tm_year = bcd2bin((date & DATE_YEAR_MASK) >> DATE_YEAR_S)
- 			+ ((date >> DATE_CENTURY_S) & 1 ? 200 : 100);
- 	tm->tm_wday = (time & TIME_DOW_MASK) >> TIME_DOW_S;
-@@ -135,8 +135,9 @@ static int vt8500_rtc_set_time(struct de
- 	}
- 
- 	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
--		| (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
--		| (bin2bcd(tm->tm_mday)),
-+		| (bin2bcd(tm->tm_mon + 1) << DATE_MONTH_S)
-+		| (bin2bcd(tm->tm_mday))
-+		| ((tm->tm_year >= 200) << DATE_CENTURY_S),
- 		vt8500_rtc->regbase + VT8500_RTC_DS);
- 	writel((bin2bcd(tm->tm_wday) << TIME_DOW_S)
- 		| (bin2bcd(tm->tm_hour) << TIME_HOUR_S)
-
-
+	Jakub
