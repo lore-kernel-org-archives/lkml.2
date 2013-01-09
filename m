@@ -1,61 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab3AIV4z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:56:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27295 "EHLO mx1.redhat.com"
+	id S932968Ab3AIV5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:57:19 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41235 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932934Ab3AIV41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:56:27 -0500
-Message-ID: <50EDE403.4070208@redhat.com>
-Date: Wed, 09 Jan 2013 16:41:23 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Matt Turner <mattst88@gmail.com>, David Howells <dhowells@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
-        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org
-Subject: Re: [PATCH 7/8] mm: use vm_unmapped_area() on powerpc architecture
-References: <1357694895-520-1-git-send-email-walken@google.com> <1357694895-520-8-git-send-email-walken@google.com> <1357697739.4838.30.camel@pasglop> <CANN689EJV_7Q7J4j1ttDxZuqbwD53PAuCHb5DhiE-AVbmNSR7Q@mail.gmail.com> <1357702376.4838.32.camel@pasglop> <20130109112313.GA4905@google.com>
-In-Reply-To: <20130109112313.GA4905@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932909Ab3AIUhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:01 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 15/47] ALSA: usb-audio: Fix missing autopm for MIDI input
+Date: Wed,  9 Jan 2013 12:35:10 -0800
+Message-Id: <20130109201731.225460134@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2013 06:23 AM, Michel Lespinasse wrote:
-> On Wed, Jan 09, 2013 at 02:32:56PM +1100, Benjamin Herrenschmidt wrote:
->> Ok. I think at least you can move that construct:
->>
->> +               if (addr < SLICE_LOW_TOP) {
->> +                       slice = GET_LOW_SLICE_INDEX(addr);
->> +                       addr = (slice + 1) << SLICE_LOW_SHIFT;
->> +                       if (!(available.low_slices & (1u << slice)))
->> +                               continue;
->> +               } else {
->> +                       slice = GET_HIGH_SLICE_INDEX(addr);
->> +                       addr = (slice + 1) << SLICE_HIGH_SHIFT;
->> +                       if (!(available.high_slices & (1u << slice)))
->> +                               continue;
->> +               }
->>
->> Into some kind of helper. It will probably compile to the same thing but
->> at least it's more readable and it will avoid a fuckup in the future if
->> somebody changes the algorithm and forgets to update one of the
->> copies :-)
->
-> All right, does the following look more palatable then ?
-> (didn't re-test it, though)
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Looks equivalent. I have also not tested :)
+------------------
 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-Acked-by: Rik van Riel <riel@redhat.com>
+commit f5f165418cabf2218eb466c0e94693b8b1aee88b upstream.
+
+The commit [88a8516a: ALSA: usbaudio: implement USB autosuspend] added
+the support of autopm for USB MIDI output, but it didn't take the MIDI
+input into account.
+
+This patch adds the following for fixing the autopm:
+- Manage the URB start at the first MIDI input stream open, instead of
+  the time of instance creation
+- Move autopm code to the common substream_open()
+- Make snd_usbmidi_input_start/_stop() more robust and add the running
+  state check
+
+Reviewd-by: Clemens Ladisch <clemens@ladisch.de>
+Tested-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/usb/midi.c |   88 ++++++++++++++++++++++++++++---------------------------
+ 1 file changed, 46 insertions(+), 42 deletions(-)
+
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -125,8 +125,10 @@ struct snd_usb_midi {
+ 		struct snd_usb_midi_in_endpoint *in;
+ 	} endpoints[MIDI_MAX_ENDPOINTS];
+ 	unsigned long input_triggered;
+-	unsigned int opened;
++	bool autopm_reference;
++	unsigned int opened[2];
+ 	unsigned char disconnected;
++	unsigned char input_running;
+ 
+ 	struct snd_kcontrol *roland_load_ctl;
+ };
+@@ -148,7 +150,6 @@ struct snd_usb_midi_out_endpoint {
+ 		struct snd_usb_midi_out_endpoint* ep;
+ 		struct snd_rawmidi_substream *substream;
+ 		int active;
+-		bool autopm_reference;
+ 		uint8_t cable;		/* cable number << 4 */
+ 		uint8_t state;
+ #define STATE_UNKNOWN	0
+@@ -1017,36 +1018,58 @@ static void update_roland_altsetting(str
+ 	snd_usbmidi_input_start(&umidi->list);
+ }
+ 
+-static void substream_open(struct snd_rawmidi_substream *substream, int open)
++static int substream_open(struct snd_rawmidi_substream *substream, int dir,
++			  int open)
+ {
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+ 	struct snd_kcontrol *ctl;
++	int err;
+ 
+ 	down_read(&umidi->disc_rwsem);
+ 	if (umidi->disconnected) {
+ 		up_read(&umidi->disc_rwsem);
+-		return;
++		return open ? -ENODEV : 0;
+ 	}
+ 
+ 	mutex_lock(&umidi->mutex);
+ 	if (open) {
+-		if (umidi->opened++ == 0 && umidi->roland_load_ctl) {
+-			ctl = umidi->roland_load_ctl;
+-			ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+-			snd_ctl_notify(umidi->card,
++		if (!umidi->opened[0] && !umidi->opened[1]) {
++			err = usb_autopm_get_interface(umidi->iface);
++			umidi->autopm_reference = err >= 0;
++			if (err < 0 && err != -EACCES) {
++				mutex_unlock(&umidi->mutex);
++				up_read(&umidi->disc_rwsem);
++				return -EIO;
++			}
++			if (umidi->roland_load_ctl) {
++				ctl = umidi->roland_load_ctl;
++				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
++				snd_ctl_notify(umidi->card,
+ 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
+-			update_roland_altsetting(umidi);
++				update_roland_altsetting(umidi);
++			}
+ 		}
++		umidi->opened[dir]++;
++		if (umidi->opened[1])
++			snd_usbmidi_input_start(&umidi->list);
+ 	} else {
+-		if (--umidi->opened == 0 && umidi->roland_load_ctl) {
+-			ctl = umidi->roland_load_ctl;
+-			ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+-			snd_ctl_notify(umidi->card,
++		umidi->opened[dir]--;
++		if (!umidi->opened[1])
++			snd_usbmidi_input_stop(&umidi->list);
++		if (!umidi->opened[0] && !umidi->opened[1]) {
++			if (umidi->roland_load_ctl) {
++				ctl = umidi->roland_load_ctl;
++				ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
++				snd_ctl_notify(umidi->card,
+ 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
++			}
++			if (umidi->autopm_reference)
++				usb_autopm_put_interface(umidi->iface);
+ 		}
+ 	}
+ 	mutex_unlock(&umidi->mutex);
+ 	up_read(&umidi->disc_rwsem);
++	return 0;
+ }
+ 
+ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
+@@ -1054,7 +1077,6 @@ static int snd_usbmidi_output_open(struc
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+ 	struct usbmidi_out_port* port = NULL;
+ 	int i, j;
+-	int err;
+ 
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
+ 		if (umidi->endpoints[i].out)
+@@ -1068,33 +1090,14 @@ static int snd_usbmidi_output_open(struc
+ 		return -ENXIO;
+ 	}
+ 
+-	down_read(&umidi->disc_rwsem);
+-	if (umidi->disconnected) {
+-		up_read(&umidi->disc_rwsem);
+-		return -ENODEV;
+-	}
+-	err = usb_autopm_get_interface(umidi->iface);
+-	port->autopm_reference = err >= 0;
+-	up_read(&umidi->disc_rwsem);
+-	if (err < 0 && err != -EACCES)
+-		return -EIO;
+ 	substream->runtime->private_data = port;
+ 	port->state = STATE_UNKNOWN;
+-	substream_open(substream, 1);
+-	return 0;
++	return substream_open(substream, 0, 1);
+ }
+ 
+ static int snd_usbmidi_output_close(struct snd_rawmidi_substream *substream)
+ {
+-	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+-	struct usbmidi_out_port *port = substream->runtime->private_data;
+-
+-	substream_open(substream, 0);
+-	down_read(&umidi->disc_rwsem);
+-	if (!umidi->disconnected && port->autopm_reference)
+-		usb_autopm_put_interface(umidi->iface);
+-	up_read(&umidi->disc_rwsem);
+-	return 0;
++	return substream_open(substream, 0, 0);
+ }
+ 
+ static void snd_usbmidi_output_trigger(struct snd_rawmidi_substream *substream, int up)
+@@ -1147,14 +1150,12 @@ static void snd_usbmidi_output_drain(str
+ 
+ static int snd_usbmidi_input_open(struct snd_rawmidi_substream *substream)
+ {
+-	substream_open(substream, 1);
+-	return 0;
++	return substream_open(substream, 1, 1);
+ }
+ 
+ static int snd_usbmidi_input_close(struct snd_rawmidi_substream *substream)
+ {
+-	substream_open(substream, 0);
+-	return 0;
++	return substream_open(substream, 1, 0);
+ }
+ 
+ static void snd_usbmidi_input_trigger(struct snd_rawmidi_substream *substream, int up)
+@@ -2063,12 +2064,15 @@ void snd_usbmidi_input_stop(struct list_
+ 	unsigned int i, j;
+ 
+ 	umidi = list_entry(p, struct snd_usb_midi, list);
++	if (!umidi->input_running)
++		return;
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i) {
+ 		struct snd_usb_midi_endpoint* ep = &umidi->endpoints[i];
+ 		if (ep->in)
+ 			for (j = 0; j < INPUT_URBS; ++j)
+ 				usb_kill_urb(ep->in->urbs[j]);
+ 	}
++	umidi->input_running = 0;
+ }
+ 
+ static void snd_usbmidi_input_start_ep(struct snd_usb_midi_in_endpoint* ep)
+@@ -2093,8 +2097,11 @@ void snd_usbmidi_input_start(struct list
+ 	int i;
+ 
+ 	umidi = list_entry(p, struct snd_usb_midi, list);
++	if (umidi->input_running || !umidi->opened[1])
++		return;
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
+ 		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
++	umidi->input_running = 1;
+ }
+ 
+ /*
+@@ -2222,9 +2229,6 @@ int snd_usbmidi_create(struct snd_card *
+ 	}
+ 
+ 	list_add_tail(&umidi->list, midi_list);
+-
+-	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
+-		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
+ 	return 0;
+ }
+ 
+
 
