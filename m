@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab3AIVEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:04:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43235 "EHLO mail.kernel.org"
+	id S933845Ab3AIVFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:05:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43196 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933800Ab3AIUkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:16 -0500
+	id S933751Ab3AIUkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Eric Dumazet <edumazet@google.com>,
         Kiran Kumar Kella <kkiran@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 62/80] tcp: implement RFC 5961 4.2
-Date: Wed,  9 Jan 2013 12:35:54 -0800
-Message-Id: <20130109201508.373451195@linuxfoundation.org>
+Subject: [ 61/80] tcp: implement RFC 5961 3.2
+Date: Wed,  9 Jan 2013 12:35:53 -0800
+Message-Id: <20130109201508.255559021@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -30,149 +30,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 0c24604b68fc7810d429d6c3657b6f148270e528 ]
+[ Upstream commit 282f23c6ee343126156dd41218b22ece96d747e3 ]
 
 Implement the RFC 5691 mitigation against Blind
-Reset attack using SYN bit.
+Reset attack using RST bit.
 
-Section 4.2 of RFC 5961 advises to send a Challenge ACK and drop
-incoming packet, instead of resetting the session.
+Idea is to validate incoming RST sequence,
+to match RCV.NXT value, instead of previouly accepted
+window : (RCV.NXT <= SEG.SEQ < RCV.NXT+RCV.WND)
 
-Add a new SNMP counter to count number of challenge acks sent
-in response to SYN packets.
-(netstat -s | grep TCPSYNChallenge)
+If sequence is in window but not an exact match, send
+a "challenge ACK", so that the other part can resend an
+RST with the appropriate sequence.
 
-Remove obsolete TCPAbortOnSyn, since we no longer abort a TCP session
-because of a SYN flag.
+Add a new sysctl, tcp_challenge_ack_limit, to limit
+number of challenge ACK sent per second.
+
+Add a new SNMP counter to count number of challenge acks sent.
+(netstat -s | grep TCPChallengeACK)
 
 Signed-off-by: Eric Dumazet <edumazet@google.com>
 Cc: Kiran Kumar Kella <kkiran@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/snmp.h |    2 +-
- net/ipv4/proc.c      |    2 +-
- net/ipv4/tcp_input.c |   32 +++++++++++++++-----------------
- 3 files changed, 17 insertions(+), 19 deletions(-)
+ Documentation/networking/ip-sysctl.txt |    5 +++++
+ include/linux/snmp.h                   |    1 +
+ include/net/tcp.h                      |    1 +
+ net/ipv4/proc.c                        |    1 +
+ net/ipv4/sysctl_net_ipv4.c             |    7 +++++++
+ net/ipv4/tcp_input.c                   |   31 ++++++++++++++++++++++++++++++-
+ 6 files changed, 45 insertions(+), 1 deletion(-)
 
+--- a/Documentation/networking/ip-sysctl.txt
++++ b/Documentation/networking/ip-sysctl.txt
+@@ -537,6 +537,11 @@ tcp_thin_dupack - BOOLEAN
+ 	Documentation/networking/tcp-thin.txt
+ 	Default: 0
+ 
++tcp_challenge_ack_limit - INTEGER
++	Limits number of Challenge ACK sent per second, as recommended
++	in RFC 5961 (Improving TCP's Robustness to Blind In-Window Attacks)
++	Default: 100
++
+ UDP variables:
+ 
+ udp_mem - vector of 3 INTEGERs: min, pressure, max
 --- a/include/linux/snmp.h
 +++ b/include/linux/snmp.h
-@@ -208,7 +208,6 @@ enum
- 	LINUX_MIB_TCPDSACKOFOSENT,		/* TCPDSACKOfoSent */
- 	LINUX_MIB_TCPDSACKRECV,			/* TCPDSACKRecv */
- 	LINUX_MIB_TCPDSACKOFORECV,		/* TCPDSACKOfoRecv */
--	LINUX_MIB_TCPABORTONSYN,		/* TCPAbortOnSyn */
- 	LINUX_MIB_TCPABORTONDATA,		/* TCPAbortOnData */
- 	LINUX_MIB_TCPABORTONCLOSE,		/* TCPAbortOnClose */
- 	LINUX_MIB_TCPABORTONMEMORY,		/* TCPAbortOnMemory */
-@@ -235,6 +234,7 @@ enum
+@@ -234,6 +234,7 @@ enum
+ 	LINUX_MIB_TCPREQQFULLDROP,		/* TCPReqQFullDrop */
  	LINUX_MIB_TCPRETRANSFAIL,		/* TCPRetransFail */
  	LINUX_MIB_TCPRCVCOALESCE,			/* TCPRcvCoalesce */
- 	LINUX_MIB_TCPCHALLENGEACK,		/* TCPChallengeACK */
-+	LINUX_MIB_TCPSYNCHALLENGE,		/* TCPSYNChallenge */
++	LINUX_MIB_TCPCHALLENGEACK,		/* TCPChallengeACK */
  	__LINUX_MIB_MAX
  };
  
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -252,6 +252,7 @@ extern int sysctl_tcp_max_ssthresh;
+ extern int sysctl_tcp_cookie_size;
+ extern int sysctl_tcp_thin_linear_timeouts;
+ extern int sysctl_tcp_thin_dupack;
++extern int sysctl_tcp_challenge_ack_limit;
+ 
+ extern atomic_long_t tcp_memory_allocated;
+ extern struct percpu_counter tcp_sockets_allocated;
 --- a/net/ipv4/proc.c
 +++ b/net/ipv4/proc.c
-@@ -232,7 +232,6 @@ static const struct snmp_mib snmp4_net_l
- 	SNMP_MIB_ITEM("TCPDSACKOfoSent", LINUX_MIB_TCPDSACKOFOSENT),
- 	SNMP_MIB_ITEM("TCPDSACKRecv", LINUX_MIB_TCPDSACKRECV),
- 	SNMP_MIB_ITEM("TCPDSACKOfoRecv", LINUX_MIB_TCPDSACKOFORECV),
--	SNMP_MIB_ITEM("TCPAbortOnSyn", LINUX_MIB_TCPABORTONSYN),
- 	SNMP_MIB_ITEM("TCPAbortOnData", LINUX_MIB_TCPABORTONDATA),
- 	SNMP_MIB_ITEM("TCPAbortOnClose", LINUX_MIB_TCPABORTONCLOSE),
- 	SNMP_MIB_ITEM("TCPAbortOnMemory", LINUX_MIB_TCPABORTONMEMORY),
-@@ -259,6 +258,7 @@ static const struct snmp_mib snmp4_net_l
+@@ -258,6 +258,7 @@ static const struct snmp_mib snmp4_net_l
+ 	SNMP_MIB_ITEM("TCPReqQFullDrop", LINUX_MIB_TCPREQQFULLDROP),
  	SNMP_MIB_ITEM("TCPRetransFail", LINUX_MIB_TCPRETRANSFAIL),
  	SNMP_MIB_ITEM("TCPRcvCoalesce", LINUX_MIB_TCPRCVCOALESCE),
- 	SNMP_MIB_ITEM("TCPChallengeACK", LINUX_MIB_TCPCHALLENGEACK),
-+	SNMP_MIB_ITEM("TCPSYNChallenge", LINUX_MIB_TCPSYNCHALLENGE),
++	SNMP_MIB_ITEM("TCPChallengeACK", LINUX_MIB_TCPCHALLENGEACK),
  	SNMP_MIB_SENTINEL
  };
  
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -590,6 +590,13 @@ static struct ctl_table ipv4_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
++	{
++		.procname	= "tcp_challenge_ack_limit",
++		.data		= &sysctl_tcp_challenge_ack_limit,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec
++	},
+ #ifdef CONFIG_NET_DMA
+ 	{
+ 		.procname	= "tcp_dma_copybreak",
 --- a/net/ipv4/tcp_input.c
 +++ b/net/ipv4/tcp_input.c
-@@ -5288,8 +5288,8 @@ static void tcp_send_challenge_ack(struc
+@@ -88,6 +88,9 @@ int sysctl_tcp_app_win __read_mostly = 3
+ int sysctl_tcp_adv_win_scale __read_mostly = 1;
+ EXPORT_SYMBOL(sysctl_tcp_adv_win_scale);
+ 
++/* rfc5961 challenge ack rate limiting */
++int sysctl_tcp_challenge_ack_limit = 100;
++
+ int sysctl_tcp_stdurg __read_mostly;
+ int sysctl_tcp_rfc1337 __read_mostly;
+ int sysctl_tcp_max_orphans __read_mostly = NR_FILE;
+@@ -5265,6 +5268,23 @@ out:
+ }
+ #endif /* CONFIG_NET_DMA */
+ 
++static void tcp_send_challenge_ack(struct sock *sk)
++{
++	/* unprotected vars, we dont care of overwrites */
++	static u32 challenge_timestamp;
++	static unsigned int challenge_count;
++	u32 now = jiffies / HZ;
++
++	if (now != challenge_timestamp) {
++		challenge_timestamp = now;
++		challenge_count = 0;
++	}
++	if (++challenge_count <= sysctl_tcp_challenge_ack_limit) {
++		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPCHALLENGEACK);
++		tcp_send_ack(sk);
++	}
++}
++
  /* Does PAWS and seqno based validation of an incoming segment, flags will
   * play significant role here.
   */
--static int tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
--			      const struct tcphdr *th, int syn_inerr)
-+static bool tcp_validate_incoming(struct sock *sk, struct sk_buff *skb,
-+				  const struct tcphdr *th, int syn_inerr)
- {
- 	const u8 *hash_location;
- 	struct tcp_sock *tp = tcp_sk(sk);
-@@ -5341,20 +5341,22 @@ static int tcp_validate_incoming(struct
+@@ -5301,7 +5321,16 @@ static int tcp_validate_incoming(struct
  
- 	/* step 3: check security and precedence [ignored] */
- 
--	/* step 4: Check for a SYN in window. */
--	if (th->syn && !before(TCP_SKB_CB(skb)->seq, tp->rcv_nxt)) {
-+	/* step 4: Check for a SYN
-+	 * RFC 5691 4.2 : Send a challenge ack
-+	 */
-+	if (th->syn) {
- 		if (syn_inerr)
- 			TCP_INC_STATS_BH(sock_net(sk), TCP_MIB_INERRS);
--		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPABORTONSYN);
+ 	/* Step 2: check RST bit */
+ 	if (th->rst) {
 -		tcp_reset(sk);
--		return -1;
-+		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPSYNCHALLENGE);
-+		tcp_send_challenge_ack(sk);
-+		goto discard;
++		/* RFC 5961 3.2 :
++		 * If sequence number exactly matches RCV.NXT, then
++		 *     RESET the connection
++		 * else
++		 *     Send a challenge ACK
++		 */
++		if (TCP_SKB_CB(skb)->seq == tp->rcv_nxt)
++			tcp_reset(sk);
++		else
++			tcp_send_challenge_ack(sk);
+ 		goto discard;
  	}
  
--	return 1;
-+	return true;
- 
- discard:
- 	__kfree_skb(skb);
--	return 0;
-+	return false;
- }
- 
- /*
-@@ -5384,7 +5386,6 @@ int tcp_rcv_established(struct sock *sk,
- 			const struct tcphdr *th, unsigned int len)
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
--	int res;
- 
- 	/*
- 	 *	Header prediction.
-@@ -5564,9 +5565,8 @@ slow_path:
- 	 *	Standard slow path.
- 	 */
- 
--	res = tcp_validate_incoming(sk, skb, th, 1);
--	if (res <= 0)
--		return -res;
-+	if (!tcp_validate_incoming(sk, skb, th, 1))
-+		return 0;
- 
- step5:
- 	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
-@@ -5876,7 +5876,6 @@ int tcp_rcv_state_process(struct sock *s
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	struct inet_connection_sock *icsk = inet_csk(sk);
- 	int queued = 0;
--	int res;
- 
- 	tp->rx_opt.saw_tstamp = 0;
- 
-@@ -5931,9 +5930,8 @@ int tcp_rcv_state_process(struct sock *s
- 		return 0;
- 	}
- 
--	res = tcp_validate_incoming(sk, skb, th, 0);
--	if (res <= 0)
--		return -res;
-+	if (!tcp_validate_incoming(sk, skb, th, 0))
-+		return 0;
- 
- 	/* step 5: check the ACK field */
- 	if (th->ack) {
 
 
