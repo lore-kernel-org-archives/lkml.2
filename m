@@ -1,147 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757743Ab3AINmP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 08:42:15 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:64162 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757669Ab3AINmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 08:42:12 -0500
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Sekhar Nori <nsekhar@ti.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Subject: [PATCH RFC 3/3] ARM: da850/omap-l138: vpif capture convert to asynchronously register of subdev
-Date: Wed,  9 Jan 2013 19:11:27 +0530
-Message-Id: <1357738887-8701-4-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1357738887-8701-1-git-send-email-prabhakar.lad@ti.com>
-References: <1357738887-8701-1-git-send-email-prabhakar.lad@ti.com>
+	id S1757911Ab3AINmd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 08:42:33 -0500
+Received: from tundra.namei.org ([65.99.196.166]:51163 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757436Ab3AINm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 08:42:29 -0500
+Date: Thu, 10 Jan 2013 00:42:53 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
+In-Reply-To: <50EC53E3.6070606@schaufler-ca.com>
+Message-ID: <alpine.LRH.2.02.1301100031590.5423@tundra.namei.org>
+References: <50EB7C50.3070605@schaufler-ca.com> <20130108140159.83c07fa6a680e355f024970f@canb.auug.org.au> <50EB9A5E.1080306@schaufler-ca.com> <alpine.LRH.2.02.1301081942030.24212@tundra.namei.org> <50EC53E3.6070606@schaufler-ca.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register the tvp514x decoder devices directly in board platform
-data instead of letting the vpif capture driver register them at
-their run-time. This uses the V4L2 asynchronous subdevice probing capability.
+On Tue, 8 Jan 2013, Casey Schaufler wrote:
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>
----
- arch/arm/mach-davinci/board-da850-evm.c |   57 +++++++++++++++++++++++++++----
- 1 files changed, 50 insertions(+), 7 deletions(-)
+> What I was hoping to say, and apparently didn't, is that people
+> are developing "total" solutions in user space, when some of the
+> work ought to be done in an LSM. Work that is appropriate to the
+> kernel is being done in user space. Often badly, because the
+> kernel provides too many mechanisms to circumvent user space
+> based access controls.
 
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index 0299915..089c127 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -49,6 +49,7 @@
- 
- #include <media/tvp514x.h>
- #include <media/adv7343.h>
-+#include <media/v4l2-async.h>
- 
- #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
- #define DA850_LCD_PWR_PIN		GPIO_TO_PIN(2, 8)
-@@ -732,6 +733,12 @@ static struct pca953x_platform_data da850_evm_bb_expander_info = {
- 	.names		= da850_evm_bb_exp,
- };
- 
-+static struct tvp514x_platform_data tvp5146_pdata = {
-+		.clk_polarity = 0,
-+		.hs_polarity  = 1,
-+		.vs_polarity  = 1,
-+};
-+
- static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
- 	{
- 		I2C_BOARD_INFO("tlv320aic3x", 0x18),
-@@ -744,6 +751,14 @@ static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
- 		I2C_BOARD_INFO("tca6416", 0x21),
- 		.platform_data = &da850_evm_bb_expander_info,
- 	},
-+	{
-+		I2C_BOARD_INFO("tvp5146", 0x5c),
-+		.platform_data = &tvp5146_pdata,
-+	},	{
-+		I2C_BOARD_INFO("tvp5146", 0x5d),
-+		.platform_data = &tvp5146_pdata,
-+	},
-+
- };
- 
- static struct davinci_i2c_platform_data da850_evm_i2c_0_pdata = {
-@@ -1170,15 +1185,10 @@ static __init int da850_evm_init_cpufreq(void) { return 0; }
- 
- #if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
- 
--#define TVP5147_CH0		"tvp514x-0"
--#define TVP5147_CH1		"tvp514x-1"
-+#define TVP5147_CH0		"tvp514x 1-005d"
-+#define TVP5147_CH1		"tvp514x 1-005c"
- 
- /* VPIF capture configuration */
--static struct tvp514x_platform_data tvp5146_pdata = {
--		.clk_polarity = 0,
--		.hs_polarity  = 1,
--		.vs_polarity  = 1,
--};
- 
- #define TVP514X_STD_ALL (V4L2_STD_NTSC | V4L2_STD_PAL)
- 
-@@ -1229,6 +1239,37 @@ static struct vpif_subdev_info da850_vpif_capture_sdev_info[] = {
- 	},
- };
- 
-+static struct v4l2_async_subdev tvp1_sd = {
-+	.hw = {
-+		.bus_type = V4L2_ASYNC_BUS_I2C,
-+		.match.i2c = {
-+			.adapter_id = 1,
-+			.address = 0x5c,
-+		},
-+	},
-+};
-+
-+static struct v4l2_async_subdev tvp2_sd = {
-+	.hw = {
-+		.bus_type = V4L2_ASYNC_BUS_I2C,
-+		.match.i2c = {
-+			.adapter_id = 1,
-+			.address = 0x5d,
-+		},
-+	},
-+};
-+
-+static struct v4l2_async_subdev *vpif_capture_async_subdevs[] = {
-+	/* Single 2-element group */
-+	&tvp1_sd,
-+	&tvp2_sd,
-+};
-+
-+static int vpif_capture_async_subdev_sizes[] = {
-+	ARRAY_SIZE(vpif_capture_async_subdevs),
-+	0,
-+};
-+
- static struct vpif_capture_config da850_vpif_capture_config = {
- 	.subdev_info = da850_vpif_capture_sdev_info,
- 	.subdev_count = ARRAY_SIZE(da850_vpif_capture_sdev_info),
-@@ -1253,6 +1294,8 @@ static struct vpif_capture_config da850_vpif_capture_config = {
- 		},
- 	},
- 	.card_name = "DA850/OMAP-L138 Video Capture",
-+	.asd = vpif_capture_async_subdevs,
-+	.asd_sizes = vpif_capture_async_subdev_sizes,
- };
- 
- /* VPIF display configuration */
+People do stupid things all the time.  How is this particular case our 
+problem to fix?  Do you have any concrete examples?
+
+> And before we get too far, distros are no longer the driving force
+> for Linux development. I suggest that "operating systems", including
+> ChromiumOS, Android and Tizen are every bit as important. 
+
+Indeed.  I was including these projects as "distros".
+
+> > What is the UID issue and how does LSM stacking address it?
+> 
+> Android utilizes UIDs in a way that has often been referred to as
+> "hijacking". The UID mechanism supports much of what they want,
+> but clearly isn't complete. Now that Android is moving to multi-user
+> support they're hitting conflicts with their use of the UID 
+> attribute. They really ought to be using an LSM that implements
+> the security policy they want rather than hacking around the
+> behavior of UID based controls.
+
+Right, so they implement an LSM to do what they need.  What does this have 
+to do with stacking?
+
+> > Also, are you saying that security mechanisms are inherently easier to 
+> > configure if they're composed from a variety of distinct modules vs. a 
+> > monolithic scheme? 
+> 
+> Nope. I'm saying that for specific use cases including but not limited to
+> telephones, TVs and surveillance networks it is simpler and more appropriate
+> to create the access control and security schemes that directly address
+> the needs than to attempt to squeeze them into corsets designed in the
+> 1990's.
+
+That may be true, but we do need at least one significant user to step up 
+with concrete plans for deployment.
+
+
 -- 
-1.7.4.1
-
+James Morris
+<jmorris@namei.org>
