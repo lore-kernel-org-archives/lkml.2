@@ -1,85 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab3AIRiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 12:38:09 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:40237 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab3AIRiI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 12:38:08 -0500
-Date: Wed, 9 Jan 2013 17:38:07 +0000
-From: Morten Rasmussen <Morten.Rasmussen@arm.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 04/22] sched: don't need go to smaller sched domain
-Message-ID: <20130109173807.GB2046@e103034-lin>
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
- <1357375071-11793-5-git-send-email-alex.shi@intel.com>
+	id S932303Ab3AIRqA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 12:46:00 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:41344 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932233Ab3AIRp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 12:45:59 -0500
+Date: Wed, 9 Jan 2013 23:09:18 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] uprobes: Teach handler_chain() to filter out the
+ probed task
+Message-ID: <20130109173918.GL1325@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121229173554.GA2145@redhat.com>
+ <20121229173614.GA2154@redhat.com>
+ <20130108111814.GA1325@linux.vnet.ibm.com>
+ <20130108190018.GA4408@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1357375071-11793-5-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 09 Jan 2013 17:38:03.0969 (UTC) FILETIME=[13DEEB10:01CDEE90]
-X-MC-Unique: 113010917380603201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+In-Reply-To: <20130108190018.GA4408@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010917-5930-0000-0000-0000129B1399
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 08:37:33AM +0000, Alex Shi wrote:
-> If parent sched domain has no task allowed cpu find. neither find in
-> it's child. So, go out to save useless checking.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/fair.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 3c7b09a..ecfbf8e 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3378,10 +3378,8 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->  			load_idx = sd->wake_idx;
->  
->  		group = find_idlest_group(sd, p, cpu, load_idx);
+* Oleg Nesterov <oleg@redhat.com> [2013-01-08 20:00:18]:
 
-The previous patch changed the behavior of find_idlest_group() to
-returning the local group if it is suitable. This effectively means that
-you remove the recursive search for a suitable idle sched group. You
-could as well merge find_idlest_group() and find_idlest_cpu() to avoid
-iterating through the cpus of the same sched group twice.
-
-Morten
-
-> -		if (!group) {
-> -			sd = sd->child;
-> -			continue;
-> -		}
-> +		if (!group)
-> +			goto unlock;
->  
->  		new_cpu = find_idlest_cpu(group, p, cpu);
->  
-> -- 
-> 1.7.12
+> On 01/08, Srikar Dronamraju wrote:
+> >
+> > * Oleg Nesterov <oleg@redhat.com> [2012-12-29 18:36:14]:
+> >
+> > > This patch does the first step to improve the filtering. handler_chain()
+> > > removes the breakpoints installed by this uprobe from current->mm if all
+> > > handlers return UPROBE_HANDLER_REMOVE.
+> > >
+> >
+> > I am thinking of tid based filter, If let say a tracer is just
+> > interested in a particular thread of a process, should such a hanlder
+> > always return 0.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> In this case ->handler() should return
 > 
+> 	current->mm == PROBED_THEAD->mm ? 0 : UPROBE_HANDLER_REMOVE
+> 
+> > In general, does this mean if the handler is not interested for this
+> > particular task, but not sure if other tasks in the same process could
+> > be interested, then such a handler should always return 0?
+> 
+> Probably yes. Obviously it should return UPROBE_HANDLER_REMOVE only if
+> it knows for sure that current can't share ->mm with the "interesting"
+> task.
+> 
+
+okay, then looks good.
+
+> Because, whatever we do, remove_breakpoint() affects ->mm, not task_struct.
+> Our goal is eliminate do_int3(), not to skip uc->handler() call.
+> 
+> > If yes, should we document it (either in handler_chain() or
+> > near uprobe_consumer definition)
+> 
+> Oh yes, I do agree. We need to add some documentation. 
+
+Okay
+
+> I'll try to do
+> this in a separate patch (although I would be happy to see the patch
+> from someone else ;).
+> 
+> > > Note: instead of checking the retcode from uc->handler, we could add
+> > > uc->filter(UPROBE_FILTER_BPHIT). But I think this is not optimal to
+> > > call 2 hooks in a row. This buys nothing, and if handler/filter do
+> > > something nontrivial they will probably do the same work twice.
+> >
+> > I was for having the filter called explicitly. But I am okay with it
+> > being called internally by the handler.
+> 
+> OK, thanks,
+> 
+> > My only small concern was
+> >
+> > - Given that we have an explicit filter, handlers (or folks writing
+> >   handlers can misunderstand and miss filtering assuming that handlers
+> >   would be called after filtering.
+> 
+> Do you mean that they can assume that uc->filter(mm) should be called at
+> least once before uc->handler() with the same current->mm ?
+> 
+yes, thats what I think they can assume.
+
+> They shouldn't in any case. To remind, we can optimize filter_chain()
+> for example and avoid the potentially costly uc->filter() call. Say,
+> we can detect/remember the fact that at least one consumre has
+> ->filter == NULL.
+> 
+> OTOH, UPROBE_HANDLER_REMOVE is not really pre-filtering (although I think
+> it helps to make the things better). It is more like uprobe_unapply_mm()
+> which (perhaps) we need as well. But doing uprobe_unapply_mm() from
+> uc->handler is a) deadlockable and b) not optimal because it has to
+> consult other consumers.
+> 
+> Anyway I agree, the folks writing handlers should understand what do they
+> do ;) and this needs some documentation.
+
+If we document explicitly that filter wont be called, then this should
+be okay.
+
+> 
+> > > +static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+> > > +{
+> > > +	struct uprobe_consumer *uc;
+> > > +	int remove = UPROBE_HANDLER_REMOVE;
+> > > +
+> > > +	down_read(&uprobe->register_rwsem);
+> > > +	for (uc = uprobe->consumers; uc; uc = uc->next) {
+> > > +		int rc = uc->handler(uc, regs);
+> > > +
+> > > +		WARN(rc & ~UPROBE_HANDLER_MASK,
+> > > +			"bad rc=0x%x from %pf()\n", rc, uc->handler);
+> >
 
