@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab3AIPaU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 10:30:20 -0500
-Received: from www84.your-server.de ([213.133.104.84]:59951 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757904Ab3AIPaS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 10:30:18 -0500
-Message-ID: <1357745379.11538.4.camel@wall-e>
-Subject: Re: [PATCH 1/5] kfifo: remove unnecessary type check
-From: Stefani Seibold <stefani@seibold.net>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 09 Jan 2013 16:29:39 +0100
-In-Reply-To: <20130109023503.GC304@yliu-dev.sh.intel.com>
-References: <1357657073-27352-1-git-send-email-yuanhan.liu@linux.intel.com>
-	 <1357657073-27352-2-git-send-email-yuanhan.liu@linux.intel.com>
-	 <1357681864.27255.5.camel@wall-e>
-	 <20130109023503.GC304@yliu-dev.sh.intel.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	id S1758028Ab3AIPeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 10:34:22 -0500
+Received: from mga02.intel.com ([134.134.136.20]:37781 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757904Ab3AIPeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 10:34:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,438,1355126400"; 
+   d="scan'208";a="270055320"
+Date: Wed, 9 Jan 2013 07:10:01 -0800
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Subject: Re: [resend][PATCH 03/16] dmaengine: introduce is_slave_xfer
+ function
+Message-ID: <20130109151001.GR19691@intel.com>
+References: <20130108155423.GJ19691@intel.com>
+ <1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1357719435-29955-4-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20130109135006.GO19691@intel.com>
+ <CAKohpokJGXKZ9jonGtYvTnPNLVr=wjhQ0DN_e=PF=U3nvusp-A@mail.gmail.com>
+ <CAHp75VdWWy7V=PQ2EfXrixX2==yDiakga=tA=jV9bzRrqqzZhw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHp75VdWWy7V=PQ2EfXrixX2==yDiakga=tA=jV9bzRrqqzZhw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 09.01.2013, 10:35 +0800 schrieb Yuanhan Liu:
-> On Tue, Jan 08, 2013 at 10:51:04PM +0100, Stefani Seibold wrote:
-> > Am Dienstag, den 08.01.2013, 22:57 +0800 schrieb Yuanhan Liu:
-> > > Firstly, this kind of type check doesn't work. It does something similar
-> > > as following:
-> > > 	void * __dummy = NULL;
-> > > 	__buf = __dummy;
-> > > 
-> > > __dummy is defined as void *. Thus it will not trigger warnings as
-> > > expected.
-> > > 
-> > > Second, we don't need that kind of check. Since the prototype
-> > > of __kfifo_out is:
-> > > 	unsigned int __kfifo_out(struct __kfifo *fifo,  void *buf, unsigned int len)
-> > > 
-> > > buf is defined as void *, so we don't need do the type check. Remove it.
-> > > 
-> > 
-> > Thats wrong.
-> > 
-> > First the type checking will be used in kfifo_put() and kfifo_in() for
-> > const types to check if the passed type of the data can converted to the
-> > fifo element type. 
+On Wed, Jan 09, 2013 at 04:58:02PM +0200, Andy Shevchenko wrote:
+> On Wed, Jan 9, 2013 at 4:19 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > n 9 January 2013 19:20, Vinod Koul <vinod.koul@intel.com> wrote:
+> >>> +static inline bool is_slave_xfer(enum dma_transfer_direction direction)
+> >>> +{
+> >>> +     return (direction == DMA_MEM_TO_DEV) || (direction == DMA_DEV_TO_MEM);
+> >>> +}
+> >> After reading the subsequent patch I understand what is intent here. Perhaps
+> >> is_slave_dirn() would have been a beter one...
+> >
+> > dirn isn't readable, it took me some time to understand the intent...
+> > Either have xfer or direction :)
 > 
-> Hi Stefani,
-> 
-> Yes, I see now. After rechecking the code, I found that this kind of
-> type checking only works for those static defined kifo by
-> DECLARE/DEFINE_KFIFO. As the ptrtype is the same as the data type:
-> 
->     /* the 4th argument "type" is "ptrtype" */
->     #define STRUCT_KFIFO(type, size) struct __STRUCT_KFIFO(type, size, 0, type)
-> 
->     #define DECLARE_KFIFO(fifo, type, size) STRUCT_KFIFO(type, size) fifo
-> 
-> While, for those kfifo dynamically allocated, the type checking will not
-> work as expected then as ptrtype is always "void":
-> 
->     struct kfifo __STRUCT_KFIFO_PTR(unsigned char, 0, void);
-> 
+> Agree with Viresh. I might rename it to is_slave_direction if you want to.
+direction sounds fine too.
 
-You should avoid using struct kfifo, as you can read in kfifo.h this is
-only for compatibility reason.
-
-If you use the macro DECLARE_KFIFO_PTR(), DECLARE_KFIFO() or
-DEFINE_KFIFO() instead.
-
-Have a look at the examples files in the samples/kfifo directory.
-
-- Stefani
-
-
+--
+~Vinod
