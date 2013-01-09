@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757478Ab3AIJMH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 04:12:07 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25734 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756269Ab3AIJME (ORCPT
+	id S1757502Ab3AIJMg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 04:12:36 -0500
+Received: from mga14.intel.com ([143.182.124.37]:40127 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756879Ab3AIJMd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 04:12:04 -0500
-Message-ID: <50ED344D.9010307@huawei.com>
-Date: Wed, 9 Jan 2013 17:11:41 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 9 Jan 2013 04:12:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,436,1355126400"; 
+   d="scan'208";a="189209865"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: RE: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
+Thread-Topic: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
+Thread-Index: AQHN7Kc47pM6EnqmX0KcFhxlvJmff5g946UAgALUpnA=
+Date: Wed, 9 Jan 2013 09:12:29 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59257F01@BGSMSX101.gar.corp.intel.com>
+References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
+ <1357542806-20449-8-git-send-email-durgadoss.r@intel.com>
+ <20130107192414.GC4465@kroah.com>
+In-Reply-To: <20130107192414.GC4465@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v3 0/6] Update PCI notification patchset to latest kernel
- version
-References: <CAErSpo4G9FQxh1vPjDDnjYrkfV8MNFvBK-ECMeiPnCVGA5Lgjg@mail.gmail.com> <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <CAE9FiQUKPcy5B2ThBw1AzNnsUJ9rLHKTJ1xRFO1rRuiFavw-2w@mail.gmail.com>
-In-Reply-To: <CAE9FiQUKPcy5B2ThBw1AzNnsUJ9rLHKTJ1xRFO1rRuiFavw-2w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/9 2:30, Yinghai Lu wrote:
-> On Tue, Jan 8, 2013 at 8:52 AM, Jiang Liu <liuj97@gmail.com> wrote:
->> Hi Bjorn,
->>         Rafael has developed a patchset targetting 3.9 merging window
->> which outdates the fourth and fifth patches in my previous version,
->> so I have just drop those two patches and updated the others to the
->> latest code from your pci-next branch.
->>         Thanks!
->>
->> Jiang Liu (5):
->>   PCI: make PCI device create/destroy logic symmetric
->>   PCI: split registration of PCI bus devices into two stages
->>   ACPI/pci_slot: update PCI slot information when PCI hotplug event
->>     happens
->>   PCI/acpiphp: update ACPI hotplug slot information when PCI hotplug
->>     happens
->>   PCI/acpiphp: serialize access to the bridge_list list
->>
->> Yijing Wang (1):
->>   PCI/AER: update AER configuration when PCI hotplug event happens
->>
-> 
-> last time during my test before, looks there are some problems with last four.
+Hi Greg,
 
-Hi Yinghai,
-   I will test the patchset again. Do you remember what problems occur during test the last four patches?
-So I can try to find out the flaw.
-
-Thanks!
-Yijing.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Tuesday, January 08, 2013 12:54 AM
+> To: R, Durgadoss
+> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> eduardo.valentin@ti.com; hongbo.zhang@linaro.org; wni@nvidia.com
+> Subject: Re: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
 > 
-> so I only put first two in my pci root bus hotplug branch.
+> On Mon, Jan 07, 2013 at 12:43:24PM +0530, Durgadoss R wrote:
+> > This patch makes MAX_SENSORS_PER_ZONE and
+> > MAX_CDEVS_PER_ZONE values configurable. The
+> > default value is 1, and range is 1-12.
 > 
-> maybe my memory is wrong. too long for those patches till now.
+> Why would we ever want to change this?  Why make this configurable at
+> all, how is a distro supposed to set this value?
 > 
-> 
+> Shouldn't it be specified from the driver itself?
 
+These are platform level parameters, that can differ for various platforms.
+(Mostly due to board design and thermistor layouts). Stand-alone thermal
+sensor drivers are not (need not be) aware of these values.
+That's why these values are made configurable.
 
--- 
-Thanks!
-Yijing
-
+Thanks,
+Durga
