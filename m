@@ -1,113 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab3AIPEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 10:04:49 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42815 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab3AIPEr (ORCPT
+	id S932082Ab3AIPHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 10:07:50 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:37518 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756835Ab3AIPHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 10:04:47 -0500
-Date: Wed, 9 Jan 2013 15:04:28 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH] Proposed removal of IS_ERR_OR_NULL() (was: Re: [PATCH 1/4]
-	gpiolib: introduce descriptor-based GPIO interface)
-Message-ID: <20130109150427.GL3931@n2100.arm.linux.org.uk>
-References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <201301081259.29839.arnd@arndb.de> <CAAVeFu+4VbCbj9TaeMm+NMDJ9_M4-j4O0ONF7Yh_un63wS38+Q@mail.gmail.com> <201301091035.23206.arnd@arndb.de> <20130109104414.GF3931@n2100.arm.linux.org.uk> <20130109111055.GG3931@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1301090932400.6300@xanadu.home>
+	Wed, 9 Jan 2013 10:07:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1301090932400.6300@xanadu.home>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20130109141826.GP19691@intel.com>
+References: <20130108155423.GJ19691@intel.com>
+	<1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1357719435-29955-17-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20130109141826.GP19691@intel.com>
+Date: Wed, 9 Jan 2013 17:07:47 +0200
+Message-ID: <CAHp75VfPzZf2qBw5Mz_quMEZC_zKoLE6Cpswi9srMQ4egosEiw@mail.gmail.com>
+Subject: Re: [resend][PATCH 16/16] dma: dw_dmac: clear suspend bit during termination
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So, it seems there's some concensus building here, and it seems that
-I've become the chosen victi^wvolunteer for this.  So, here's a patch.
-It's missing a Guns-supplied-by: tag though.
+On Wed, Jan 9, 2013 at 4:18 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Wed, Jan 09, 2013 at 10:17:15AM +0200, Andy Shevchenko wrote:
+>> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>>
+>> The DMA transfer could not be established if previously it was paused and
+>> terminated. In that case the channel's suspend bit remains set that prevents to
+>> transfer anything until channel is resumed.
+>>
+>> The patch adds a code that clears the DWC_CFGL_CH_SUSP bit during termination.
+> No this patch calls resume to do so... Can you update the change log
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Mark IS_ERR_OR_NULL() deprecated
+Updated. Will occur in patch v2.
 
-IS_ERR_OR_NULL() attracts a lot of abuse: people use it without much
-thought about it's effects.  Common errors include:
- 1. checking the returned pointer for functions defined as only
-    returning errno-pointer values, rather than using IS_ERR().
-    This leads to: ptr = foo(); if (IS_ERR_OR_NULL(ptr)) return
-     PTR_ERR(ptr);
- 2. using it to check functions which only ever return NULL on error,
-    thereby leading to another zero-error value return.
-In the case of debugfs functions, these return errno-pointer values when
-debugfs is configured out, which means code which blindly checks using 
-IS_ERR_OR_NULL() ends up returning errors, which is rather perverse for
-something that's not implemented.
+>>
+>> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> ---
+>>  drivers/dma/dw_dmac.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+>> index 6a8f8c7..c6ebea1 100644
+>> --- a/drivers/dma/dw_dmac.c
+>> +++ b/drivers/dma/dw_dmac.c
+>> @@ -1059,7 +1059,7 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>>
+>>               dwc_chan_disable(dw, dwc);
+>>
+>> -             dwc->paused = false;
+>> +             dwc_chan_resume(dwc);
+>>
+>>               /* active_list entries will end up before queued entries */
+>>               list_splice_init(&dwc->queue, &list);
+>> --
+>> 1.7.10.4
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Therefore, let's schedule it for removal in a few releases.
 
-Nicolas Pitre comments:
-> I do agree with Russell here.  Despite the original intentions behind
-> IS_ERR_OR_NULL() which were certainly legitimate, the end result in
-> practice is less reliable code with increased maintenance costs.
-> Unlike other convenience macros in the kernel, this one is giving a
-> false sense of correctness with too many people falling in the trap
-> of using it just because it is available.
-> 
-> I strongly think this macro should simply be removed from the source
-> tree entirely and the code reverted to explicit tests against NULL
-> when appropriate.
 
-Suggested-by: David Howells <dhowells@redhat.com>
-Tape-measuring-service-offered-by: Will Deacon <will.deacon@arm.com>
-Victim-for-firing-sqad: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
-Ok, so I'm in the firing line for suggesting this, but it appears
-several people wish this to happen.
-
-I'm not intending to push this patch forwards _just_ yet: we need to
-sort out the existing users _first_ to prevent the kernel turning into
-one hell of a mess of warnings.
-
- include/linux/err.h |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/err.h b/include/linux/err.h
-index f2edce2..d5a85df 100644
---- a/include/linux/err.h
-+++ b/include/linux/err.h
-@@ -34,7 +34,22 @@ static inline long __must_check IS_ERR(const void *ptr)
- 	return IS_ERR_VALUE((unsigned long)ptr);
- }
- 
--static inline long __must_check IS_ERR_OR_NULL(const void *ptr)
-+/*
-+ * IS_ERR_OR_NULL() attracts a lot of abuse: people use it without much
-+ * thought about it's effects.  Common errors include:
-+ *  1. checking the returned pointer for functions defined as only returning
-+ *     errno-pointer values, rather than using IS_ERR().
-+ *     This leads to: ptr = foo(); if (IS_ERR_OR_NULL(ptr)) return PTR_ERR(ptr);
-+ *  2. using it to check functions which only ever return NULL on error,
-+ *     thereby leading to another zero-error value return.
-+ * In the case of debugfs functions, these return errno-pointer values when
-+ * debugfs is configured out, which means code which blindly checks using
-+ * IS_ERR_OR_NULL() ends up returning errors, which is rather perverse for
-+ * something that's not implemented.
-+ *
-+ * Therefore, let's schedule it for removal in a few releases.
-+ */
-+static inline long __must_check __deprecated IS_ERR_OR_NULL(const void *ptr)
- {
- 	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
- }
-
+-- 
+With Best Regards,
+Andy Shevchenko
