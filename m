@@ -1,183 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933795Ab3AIVO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:14:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42862 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933645Ab3AIUjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:40 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Chintan Mehta <chintan.mehta@sibridgetech.com>,
-        Shimmer Huang <shimmering.h@gmail.com>,
-        Bhavik Kothari <bhavik.kothari@sibridgetech.com>
-Subject: [ 49/80] xHCI: Fix TD Size calculation on 1.0 hosts.
-Date: Wed,  9 Jan 2013 12:35:41 -0800
-Message-Id: <20130109201506.719366083@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933991Ab3AIVPN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:15:13 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38423 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933645Ab3AIVPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:15:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <87d2xeul5v.fsf@xmission.com>
+References: <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
+	<8762382z2c.fsf@xmission.com>
+	<CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
+	<87y5g4z7rp.fsf@xmission.com>
+	<CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
+	<CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
+	<20130109004340.GA12234@konrad-lan.dumpdata.com>
+	<87txqruq8p.fsf@xmission.com>
+	<CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
+	<CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
+	<20130109132409.GB18395@phenom.dumpdata.com>
+	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
+	<87d2xeul5v.fsf@xmission.com>
+Date: Wed, 9 Jan 2013 13:15:06 -0800
+X-Google-Sender-Auth: knCxZBYZ7UPOVeMW5qNuDApJU2k
+Message-ID: <CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jan 9, 2013 at 1:00 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Yinghai Lu <yinghai@kernel.org> writes:
+>
+>> please check updated attached. It should address all your request.
+>
+> There is one significant bug that I can see.
+>
+> swiotlb_print_info tests no_iotlb_memory but no_iotlb_memory is set
+> after swiotlb_init_with_tlb returns.
 
-------------------
+there is another swiotlb_print_info calling from
+pci_swiotlb_late_init
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+void __init pci_swiotlb_late_init(void)
+{
+        /* An IOMMU turned us off. */
+        if (!swiotlb)
+                swiotlb_free();
+        else {
+                printk(KERN_INFO "PCI-DMA: "
+                       "Using software bounce buffering for IO (SWIOTLB)\n");
+                swiotlb_print_info();
+        }
+}
 
-commit 4525c0a10dff7ad3669763c28016c7daffc3900e upstream.
+so we need that checking when swiotlb == 1, but actually we can not
+allocate that before.
 
-The xHCI 1.0 specification made a change to the TD Size field in TRBs.
-The value is now the number of packets that remain to be sent in the TD,
-not including this TRB.  The TD Size value for the last TRB in a TD must
-always be zero.
+Thanks
 
-The xHCI function xhci_v1_0_td_remainder() attempts to calculate this,
-but it gets it wrong.  First, it erroneously reuses the old
-xhci_td_remainder function, which will right shift the value by 10.  The
-xHCI 1.0 spec as of June 2011 says nothing about right shifting by 10.
-Second, it does not set the TD size for the last TRB in a TD to zero.
-
-Third, it uses roundup instead of DIV_ROUND_UP.  The total packet count
-is supposed to be the total number of bytes in this TD, divided by the
-max packet size, rounded up.  DIV_ROUND_UP is the right function to use
-in that case.
-
-With the old code, a TD on an endpoint with max packet size 1024 would
-be set up like so:
-TRB 1, TRB length = 600 bytes, TD size = 0
-TRB 1, TRB length = 200 bytes, TD size = 0
-TRB 1, TRB length = 100 bytes, TD size = 0
-
-With the new code, the TD would be set up like this:
-TRB 1, TRB length = 600 bytes, TD size = 1
-TRB 1, TRB length = 200 bytes, TD size = 1
-TRB 1, TRB length = 100 bytes, TD size = 0
-
-This commit should be backported to kernels as old as 3.0, that contain
-the commit 4da6e6f247a2601ab9f1e63424e4d944ed4124f3 "xhci 1.0: Update TD
-size field format."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Chintan Mehta <chintan.mehta@sibridgetech.com>
-Reported-by: Shimmer Huang <shimmering.h@gmail.com>
-Tested-by: Bhavik Kothari <bhavik.kothari@sibridgetech.com>
-Tested-by: Shimmer Huang <shimmering.h@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/xhci-ring.c |   32 +++++++++++++++++++-------------
- 1 file changed, 19 insertions(+), 13 deletions(-)
-
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3069,11 +3069,11 @@ static u32 xhci_td_remainder(unsigned in
- }
- 
- /*
-- * For xHCI 1.0 host controllers, TD size is the number of packets remaining in
-- * the TD (*not* including this TRB).
-+ * For xHCI 1.0 host controllers, TD size is the number of max packet sized
-+ * packets remaining in the TD (*not* including this TRB).
-  *
-  * Total TD packet count = total_packet_count =
-- *     roundup(TD size in bytes / wMaxPacketSize)
-+ *     DIV_ROUND_UP(TD size in bytes / wMaxPacketSize)
-  *
-  * Packets transferred up to and including this TRB = packets_transferred =
-  *     rounddown(total bytes transferred including this TRB / wMaxPacketSize)
-@@ -3081,15 +3081,16 @@ static u32 xhci_td_remainder(unsigned in
-  * TD size = total_packet_count - packets_transferred
-  *
-  * It must fit in bits 21:17, so it can't be bigger than 31.
-+ * The last TRB in a TD must have the TD size set to zero.
-  */
--
- static u32 xhci_v1_0_td_remainder(int running_total, int trb_buff_len,
--		unsigned int total_packet_count, struct urb *urb)
-+		unsigned int total_packet_count, struct urb *urb,
-+		unsigned int num_trbs_left)
- {
- 	int packets_transferred;
- 
- 	/* One TRB with a zero-length data packet. */
--	if (running_total == 0 && trb_buff_len == 0)
-+	if (num_trbs_left == 0 || (running_total == 0 && trb_buff_len == 0))
- 		return 0;
- 
- 	/* All the TRB queueing functions don't count the current TRB in
-@@ -3098,7 +3099,9 @@ static u32 xhci_v1_0_td_remainder(int ru
- 	packets_transferred = (running_total + trb_buff_len) /
- 		usb_endpoint_maxp(&urb->ep->desc);
- 
--	return xhci_td_remainder(total_packet_count - packets_transferred);
-+	if ((total_packet_count - packets_transferred) > 31)
-+		return 31 << 17;
-+	return (total_packet_count - packets_transferred) << 17;
- }
- 
- static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
-@@ -3125,7 +3128,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 
- 	num_trbs = count_sg_trbs_needed(xhci, urb);
- 	num_sgs = urb->num_mapped_sgs;
--	total_packet_count = roundup(urb->transfer_buffer_length,
-+	total_packet_count = DIV_ROUND_UP(urb->transfer_buffer_length,
- 			usb_endpoint_maxp(&urb->ep->desc));
- 
- 	trb_buff_len = prepare_transfer(xhci, xhci->devs[slot_id],
-@@ -3208,7 +3211,8 @@ static int queue_bulk_sg_tx(struct xhci_
- 					running_total);
- 		} else {
- 			remainder = xhci_v1_0_td_remainder(running_total,
--					trb_buff_len, total_packet_count, urb);
-+					trb_buff_len, total_packet_count, urb,
-+					num_trbs - 1);
- 		}
- 		length_field = TRB_LEN(trb_buff_len) |
- 			remainder |
-@@ -3316,7 +3320,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *
- 	start_cycle = ep_ring->cycle_state;
- 
- 	running_total = 0;
--	total_packet_count = roundup(urb->transfer_buffer_length,
-+	total_packet_count = DIV_ROUND_UP(urb->transfer_buffer_length,
- 			usb_endpoint_maxp(&urb->ep->desc));
- 	/* How much data is in the first TRB? */
- 	addr = (u64) urb->transfer_dma;
-@@ -3362,7 +3366,8 @@ int xhci_queue_bulk_tx(struct xhci_hcd *
- 					running_total);
- 		} else {
- 			remainder = xhci_v1_0_td_remainder(running_total,
--					trb_buff_len, total_packet_count, urb);
-+					trb_buff_len, total_packet_count, urb,
-+					num_trbs - 1);
- 		}
- 		length_field = TRB_LEN(trb_buff_len) |
- 			remainder |
-@@ -3625,7 +3630,7 @@ static int xhci_queue_isoc_tx(struct xhc
- 		addr = start_addr + urb->iso_frame_desc[i].offset;
- 		td_len = urb->iso_frame_desc[i].length;
- 		td_remain_len = td_len;
--		total_packet_count = roundup(td_len,
-+		total_packet_count = DIV_ROUND_UP(td_len,
- 				usb_endpoint_maxp(&urb->ep->desc));
- 		/* A zero-length transfer still involves at least one packet. */
- 		if (total_packet_count == 0)
-@@ -3704,7 +3709,8 @@ static int xhci_queue_isoc_tx(struct xhc
- 			} else {
- 				remainder = xhci_v1_0_td_remainder(
- 						running_total, trb_buff_len,
--						total_packet_count, urb);
-+						total_packet_count, urb,
-+						(trbs_per_td - j - 1));
- 			}
- 			length_field = TRB_LEN(trb_buff_len) |
- 				remainder |
-
-
+Yinghai
