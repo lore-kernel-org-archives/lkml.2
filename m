@@ -1,83 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab3AJR3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 12:29:35 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:33011 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388Ab3AJR3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 12:29:34 -0500
-Message-ID: <50EEF8FD.9000004@suse.cz>
-Date: Thu, 10 Jan 2013 18:23:09 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+	id S1754640Ab3AJRcm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 12:32:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab3AJRcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 12:32:41 -0500
+Date: Thu, 10 Jan 2013 15:30:36 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 5/5] KVM: x86: improve reexecute_instruction
+Message-ID: <20130110173036.GB24703@amt.cnet>
+References: <50EBBE54.1040007@linux.vnet.ibm.com>
+ <50EBBEEC.2060100@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Florian Westphal <fw@strlen.de>
-CC: Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        gaowanlong@cn.fujitsu.com, gregkh@linuxfoundation.org,
-        frank@lichtenheld.de
-Subject: Re: regression, bisected: openpty fails from 3.7 onwards without
- devpts
-References: <20130110144626.GA26279@breakpoint.cc> <20130110155058.12f66e73@bob.linux.org.uk> <20130110162907.GB26279@breakpoint.cc>
-In-Reply-To: <20130110162907.GB26279@breakpoint.cc>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50EBBEEC.2060100@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 05:29 PM, Florian Westphal wrote:
-> Alan Cox <alan@linux.intel.com> wrote:
->> > On Thu, 10 Jan 2013 15:46:26 +0100
->> > Florian Westphal <fw@strlen.de> wrote:
->>> > > Frank Lichtenheld discovered that openpty() doesn't work anymore when
->>> > > /dev/pts is not present.
->>> > > 
->>> > > We bisected this down to
->>> > > 
->>> > > commit bbb63c514a3464342967237a51a21ea8f61ab951
->>> > > Author: Wanlong Gao <gaowanlong@cn.fujitsu.com>
->>> > > Subject: drivers:tty:fix up ENOIOCTLCMD error handling
-> [..]
+On Tue, Jan 08, 2013 at 02:38:36PM +0800, Xiao Guangrong wrote:
+> The current reexecute_instruction can not well detect the failed instruction
+> emulation. It allows guest to retry all the instructions except it accesses
+> on error pfn
 > 
->>> > > #include <stdio.h>
->>> > > #include <pty.h>
->>> > > int main(void) {
->>> > >  int pty_fd, tty_fd;
->>> > >  if (openpty(&pty_fd, &tty_fd, NULL, NULL, NULL) != 0) {
->>> > >   perror("openpty");
->>> > >   return 1;
->>> > >  }
->>> > > return 0;
->>> > > }
->>> > > ----
->>> > > [ compile with cc -lutil pty.c -o pty ]
->>> > > 
->>> > > If devpts is available or above commit reverted openpty works again.
->> > 
->> > The commit is fairly general - what we need to do here is to figure out
->> > which specific thing trips up openpty so we can put the error on that
->> > back as it was (or find a better way) so it still works.
->> > 
->> > Can you attach an strace of the working/failing cases without /dev/pts 
-> Sure, attached.  /dev/pts is not present.
-> Both traces are from the same machine, with same kernel version (except
-> above commit reverted).
+> For example, some cases are nested-write-protect - if the page we want to
+> write is used as PDE but it chains to itself. Under this case, we should
+> stop the emulation and report the case to userspace
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    7 +++++++
+>  arch/x86/kvm/paging_tmpl.h      |   27 ++++++++++++++++++++-------
+>  arch/x86/kvm/x86.c              |    8 +++++++-
+>  3 files changed, 34 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index c431b33..d6ab8d2 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -502,6 +502,13 @@ struct kvm_vcpu_arch {
+>  		u64 msr_val;
+>  		struct gfn_to_hva_cache data;
+>  	} pv_eoi;
+> +
+> +	/*
+> +	 * Indicate whether the access faults on its page table in guest
+> +	 * which is set when fix page fault and used to detect unhandeable
+> +	 * instruction.
+> +	 */
+> +	bool write_fault_to_shadow_pgtable;
+>  };
+> 
+>  struct kvm_lpage_info {
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index 67b390d..df50560 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -497,26 +497,34 @@ out_gpte_changed:
+>   * created when kvm establishes shadow page table that stop kvm using large
+>   * page size. Do it early can avoid unnecessary #PF and emulation.
+>   *
+> + * @write_fault_to_shadow_pgtable will return true if the fault gfn is
+> + * currently used as its page table.
+> + *
+>   * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
+>   * since the PDPT is always shadowed, that means, we can not use large page
+>   * size to map the gfn which is used as PDPT.
+>   */
+>  static bool
+>  FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
+> -			      struct guest_walker *walker, int user_fault)
+> +			      struct guest_walker *walker, int user_fault,
+> +			      bool *write_fault_to_shadow_pgtable)
+>  {
+>  	int level;
+>  	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
+> +	bool self_changed = false;
+> 
+>  	if (!(walker->pte_access & ACC_WRITE_MASK ||
+>  	      (!is_write_protection(vcpu) && !user_fault)))
+>  		return false;
+> 
+> -	for (level = walker->level; level <= walker->max_level; level++)
+> -		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
+> -			return true;
+> +	for (level = walker->level; level <= walker->max_level; level++) {
+> +		gfn_t gfn = walker->gfn ^ walker->table_gfn[level - 1];
+> +
+> +		self_changed |= !(gfn & mask);
+> +		*write_fault_to_shadow_pgtable |= !gfn;
+> +	}
+> 
+> -	return false;
+> +	return self_changed;
+>  }
+> 
+>  /*
+> @@ -544,7 +552,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+>  	int level = PT_PAGE_TABLE_LEVEL;
+>  	int force_pt_level;
+>  	unsigned long mmu_seq;
+> -	bool map_writable;
+> +	bool map_writable, is_self_change_mapping;
+> 
+>  	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
+> 
+> @@ -572,9 +580,14 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+>  		return 0;
+>  	}
+> 
+> +	vcpu->arch.write_fault_to_shadow_pgtable = false;
+> +
+> +	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu,
+> +	      &walker, user_fault, &vcpu->arch.write_fault_to_shadow_pgtable);
+> +
+>  	if (walker.level >= PT_DIRECTORY_LEVEL)
+>  		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
+> -		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
+> +		   || is_self_change_mapping;
+>  	else
+>  		force_pt_level = 1;
+>  	if (!force_pt_level) {
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 6f13e03..2957012 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -4810,7 +4810,13 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t cr2)
+>  	 * guest to let CPU execute the instruction.
+>  	 */
+>  	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+> -	return true;
+> +
+> +	/*
+> +	 * If the access faults on its page table, it can not
+> +	 * be fixed by unprotecting shadow page and it should
+> +	 * be reported to userspace.
+> +	 */
+> +	return !vcpu->arch.write_fault_to_shadow_pgtable;
+>  }
+> 
+>  static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
 
-> execve("./ptytest", ["./ptytest"], [/* 7 vars */]) = 0
-...
-> open("/dev/ptmx", O_RDWR)         = -1 ENOSPC (No space left on device)
-> open("/dev/ptyp0", O_RDWR)        = 3
-> ioctl(3, SNDCTL_TMR_TIMEBASE or TCGETS, {B38400 opost isig icanon echo ...}) = 0
-> ioctl(3, TIOCGPTN, [0])           = -1 ENOTTY (Inappropriate ioctl for device)
+Also should make sure vcpu->arch.write_fault_to_shadow_pgtable is never
+reused. Say, clean when exiting x86_emulate_instruction?
 
-
-getptsname expects EINVAL on failure to fall back to /dev/ttyp*... The
-same as unlockpt. We should definitely revert now and can teach glibc to
-accept also ENOTTY. After some years, we can try again :).
-
-thanks,
--- 
-js
-suse labs
