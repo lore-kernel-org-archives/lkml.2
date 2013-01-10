@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab3AJQeS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 11:34:18 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:46898 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752899Ab3AJQeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 11:34:16 -0500
-Date: Thu, 10 Jan 2013 08:32:47 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RELEASE] Userspace RCU 0.7.6
-Message-ID: <20130110083247.591ad0ba@nehalam.linuxnetplumber.net>
-In-Reply-To: <20130109184616.GA14968@Krystal>
-References: <20130109184616.GA14968@Krystal>
-Organization: Vyatta
+	id S1754922Ab3AJQea (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 11:34:30 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:47196 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab3AJQe2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 11:34:28 -0500
+Date: Thu, 10 Jan 2013 17:34:13 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Laurent Navet <laurent.navet@gmail.com>
+Cc: w.sang@pengutronix.de, ben-linux@fluff.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: i2c-nforce2: fix coding style issues
+Message-ID: <20130110173413.25e637b8@endymion.delvare>
+In-Reply-To: <1357826862-4975-1-git-send-email-laurent.navet@gmail.com>
+References: <1357826862-4975-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,40 +24,250 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jan 2013 13:46:17 -0500
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+On Thu, 10 Jan 2013 15:07:42 +0100, Laurent Navet wrote:
+> avoid these checkpatch.pl issues :
+> - ERROR: "foo * bar" should be "foo *bar"
+> - ERROR: switch and case should be at the same indent
+> - ERROR: "(foo*)" should be "(foo *)"
+> - ERROR: do not use assignment in if condition
+> - ERROR: space required before the open parenthesis '('
+> - WARNING: suspect code indent for conditional statements
+> - WARNING: quoted string split across lines
+> - WARNING: space prohibited between function name and open parenthesis '('
+> - WARNING: line over 80 characters
+> also add spaces around some "+", "=", "*"
+> 
+> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+> ---
+>  drivers/i2c/busses/i2c-nforce2.c |  152 +++++++++++++++++++-------------------
+>  1 file changed, 76 insertions(+), 76 deletions(-)
 
-> liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-> data synchronization library provides read-side access which scales
-> linearly with the number of cores. It does so by allowing multiples
-> copies of a given data structure to live at the same time, and by
-> monitoring the data structure accesses to detect grace periods after
-> which memory reclamation is possible.
-> 
-> liburcu-cds provides efficient data structures based on RCU and
-> lock-free algorithms. Those structures include hash tables, queues,
-> stacks, and doubly-linked lists.
-> 
-> This is a bugfix release, mainly fixing handling of processes using
-> call_rcu, then fork() without following exec(), and then continuing use
-> of synchronize_rcu() or call_rcu() in the child process. A hang in
-> synchronize_rcu() in the child could occur, which is fixed by this
-> release.
-> 
-> Changelog:
-> 2013-01-09 Userspace RCU 0.7.6
->         * Discourage use of pthread_atfork() for call_rcu handlers
->         * Fix call_rcu fork handling
->         * test: fork handling
->         * Fix TLS detection: test with linker, add --disable-compiler-tls
->         * Cleanup: cast pthread_self() return value to unsigned long
->         * Fallback mechanism not working on platform where TLS is unsupported
-> 
-> Project website: http://lttng.org/urcu
-> Download link: http://lttng.org/files/urcu/
-> 
+Very nice, thanks for the good work.
 
-Why is the git repository still at 0.7.4 and there is no tag for 0.7.6?
-Am I looking at the right place?
-  $ git remote -v
-origin	git://git.lttng.org/userspace-rcu.git (fetch)
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
+
+> 
+> diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
+> index adac854..ac88f40 100644
+> --- a/drivers/i2c/busses/i2c-nforce2.c
+> +++ b/drivers/i2c/busses/i2c-nforce2.c
+> @@ -60,7 +60,7 @@
+>  #include <linux/io.h>
+>  
+>  MODULE_LICENSE("GPL");
+> -MODULE_AUTHOR ("Hans-Frieder Vogt <hfvogt@gmx.net>");
+> +MODULE_AUTHOR("Hans-Frieder Vogt <hfvogt@gmx.net>");
+>  MODULE_DESCRIPTION("nForce2/3/4/5xx SMBus driver");
+>  
+>  
+> @@ -188,9 +188,9 @@ static int nforce2_check_status(struct i2c_adapter *adap)
+>  }
+>  
+>  /* Return negative errno on error */
+> -static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
+> +static s32 nforce2_access(struct i2c_adapter *adap, u16 addr,
+>  		unsigned short flags, char read_write,
+> -		u8 command, int size, union i2c_smbus_data * data)
+> +		u8 command, int size, union i2c_smbus_data *data)
+>  {
+>  	struct nforce2_smbus *smbus = adap->algo_data;
+>  	unsigned char protocol, pec;
+> @@ -202,56 +202,54 @@ static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
+>  	pec = (flags & I2C_CLIENT_PEC) ? NVIDIA_SMB_PRTCL_PEC : 0;
+>  
+>  	switch (size) {
+> +	case I2C_SMBUS_QUICK:
+> +		protocol |= NVIDIA_SMB_PRTCL_QUICK;
+> +		read_write = I2C_SMBUS_WRITE;
+> +		break;
+>  
+> -		case I2C_SMBUS_QUICK:
+> -			protocol |= NVIDIA_SMB_PRTCL_QUICK;
+> -			read_write = I2C_SMBUS_WRITE;
+> -			break;
+> -
+> -		case I2C_SMBUS_BYTE:
+> -			if (read_write == I2C_SMBUS_WRITE)
+> -				outb_p(command, NVIDIA_SMB_CMD);
+> -			protocol |= NVIDIA_SMB_PRTCL_BYTE;
+> -			break;
+> -
+> -		case I2C_SMBUS_BYTE_DATA:
+> -			outb_p(command, NVIDIA_SMB_CMD);
+> -			if (read_write == I2C_SMBUS_WRITE)
+> -				outb_p(data->byte, NVIDIA_SMB_DATA);
+> -			protocol |= NVIDIA_SMB_PRTCL_BYTE_DATA;
+> -			break;
+> -
+> -		case I2C_SMBUS_WORD_DATA:
+> +	case I2C_SMBUS_BYTE:
+> +		if (read_write == I2C_SMBUS_WRITE)
+>  			outb_p(command, NVIDIA_SMB_CMD);
+> -			if (read_write == I2C_SMBUS_WRITE) {
+> -				 outb_p(data->word, NVIDIA_SMB_DATA);
+> -				 outb_p(data->word >> 8, NVIDIA_SMB_DATA+1);
+> -			}
+> -			protocol |= NVIDIA_SMB_PRTCL_WORD_DATA | pec;
+> -			break;
+> -
+> -		case I2C_SMBUS_BLOCK_DATA:
+> -			outb_p(command, NVIDIA_SMB_CMD);
+> -			if (read_write == I2C_SMBUS_WRITE) {
+> -				len = data->block[0];
+> -				if ((len == 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
+> -					dev_err(&adap->dev,
+> -						"Transaction failed "
+> -						"(requested block size: %d)\n",
+> -						len);
+> -					return -EINVAL;
+> -				}
+> -				outb_p(len, NVIDIA_SMB_BCNT);
+> -				for (i = 0; i < I2C_SMBUS_BLOCK_MAX; i++)
+> -					outb_p(data->block[i + 1],
+> -					       NVIDIA_SMB_DATA+i);
+> +		protocol |= NVIDIA_SMB_PRTCL_BYTE;
+> +		break;
+> +
+> +	case I2C_SMBUS_BYTE_DATA:
+> +		outb_p(command, NVIDIA_SMB_CMD);
+> +		if (read_write == I2C_SMBUS_WRITE)
+> +			outb_p(data->byte, NVIDIA_SMB_DATA);
+> +		protocol |= NVIDIA_SMB_PRTCL_BYTE_DATA;
+> +		break;
+> +
+> +	case I2C_SMBUS_WORD_DATA:
+> +		outb_p(command, NVIDIA_SMB_CMD);
+> +		if (read_write == I2C_SMBUS_WRITE) {
+> +			outb_p(data->word, NVIDIA_SMB_DATA);
+> +			outb_p(data->word >> 8, NVIDIA_SMB_DATA + 1);
+> +		}
+> +		protocol |= NVIDIA_SMB_PRTCL_WORD_DATA | pec;
+> +		break;
+> +
+> +	case I2C_SMBUS_BLOCK_DATA:
+> +		outb_p(command, NVIDIA_SMB_CMD);
+> +		if (read_write == I2C_SMBUS_WRITE) {
+> +			len = data->block[0];
+> +			if ((len == 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
+> +				dev_err(&adap->dev,
+> +					"Transaction failed (requested block size: %d)\n",
+> +					len);
+> +				return -EINVAL;
+>  			}
+> -			protocol |= NVIDIA_SMB_PRTCL_BLOCK_DATA | pec;
+> -			break;
+> +			outb_p(len, NVIDIA_SMB_BCNT);
+> +			for (i = 0; i < I2C_SMBUS_BLOCK_MAX; i++)
+> +				outb_p(data->block[i + 1],
+> +				       NVIDIA_SMB_DATA + i);
+> +		}
+> +		protocol |= NVIDIA_SMB_PRTCL_BLOCK_DATA | pec;
+> +		break;
+>  
+> -		default:
+> -			dev_err(&adap->dev, "Unsupported transaction %d\n", size);
+> -			return -EOPNOTSUPP;
+> +	default:
+> +		dev_err(&adap->dev, "Unsupported transaction %d\n", size);
+> +		return -EOPNOTSUPP;
+>  	}
+>  
+>  	outb_p((addr & 0x7f) << 1, NVIDIA_SMB_ADDR);
+> @@ -265,28 +263,28 @@ static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
+>  		return 0;
+>  
+>  	switch (size) {
+> -
+> -		case I2C_SMBUS_BYTE:
+> -		case I2C_SMBUS_BYTE_DATA:
+> -			data->byte = inb_p(NVIDIA_SMB_DATA);
+> -			break;
+> -
+> -		case I2C_SMBUS_WORD_DATA:
+> -			data->word = inb_p(NVIDIA_SMB_DATA) | (inb_p(NVIDIA_SMB_DATA+1) << 8);
+> -			break;
+> -
+> -		case I2C_SMBUS_BLOCK_DATA:
+> -			len = inb_p(NVIDIA_SMB_BCNT);
+> -			if ((len <= 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
+> -				dev_err(&adap->dev, "Transaction failed "
+> -					"(received block size: 0x%02x)\n",
+> -					len);
+> -				return -EPROTO;
+> -			}
+> -			for (i = 0; i < len; i++)
+> -				data->block[i+1] = inb_p(NVIDIA_SMB_DATA + i);
+> -			data->block[0] = len;
+> -			break;
+> +	case I2C_SMBUS_BYTE:
+> +	case I2C_SMBUS_BYTE_DATA:
+> +		data->byte = inb_p(NVIDIA_SMB_DATA);
+> +		break;
+> +
+> +	case I2C_SMBUS_WORD_DATA:
+> +		data->word = inb_p(NVIDIA_SMB_DATA) |
+> +			     (inb_p(NVIDIA_SMB_DATA + 1) << 8);
+> +		break;
+> +
+> +	case I2C_SMBUS_BLOCK_DATA:
+> +		len = inb_p(NVIDIA_SMB_BCNT);
+> +		if ((len <= 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
+> +			dev_err(&adap->dev,
+> +				"Transaction failed (received block size: 0x%02x)\n",
+> +				len);
+> +			return -EPROTO;
+> +		}
+> +		for (i = 0; i < len; i++)
+> +			data->block[i + 1] = inb_p(NVIDIA_SMB_DATA + i);
+> +		data->block[0] = len;
+> +		break;
+>  	}
+>  
+>  	return 0;
+> @@ -299,7 +297,7 @@ static u32 nforce2_func(struct i2c_adapter *adapter)
+>  	return I2C_FUNC_SMBUS_QUICK | I2C_FUNC_SMBUS_BYTE |
+>  	       I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA |
+>  	       I2C_FUNC_SMBUS_PEC |
+> -	       (((struct nforce2_smbus*)adapter->algo_data)->blockops ?
+> +	       (((struct nforce2_smbus *)adapter->algo_data)->blockops ?
+>  		I2C_FUNC_SMBUS_BLOCK_DATA : 0);
+>  }
+>  
+> @@ -327,7 +325,7 @@ static DEFINE_PCI_DEVICE_TABLE(nforce2_ids) = {
+>  	{ 0 }
+>  };
+>  
+> -MODULE_DEVICE_TABLE (pci, nforce2_ids);
+> +MODULE_DEVICE_TABLE(pci, nforce2_ids);
+>  
+>  
+>  static int nforce2_probe_smb(struct pci_dev *dev, int bar, int alt_reg,
+> @@ -377,7 +375,8 @@ static int nforce2_probe_smb(struct pci_dev *dev, int bar, int alt_reg,
+>  		release_region(smbus->base, smbus->size);
+>  		return error;
+>  	}
+> -	dev_info(&smbus->adapter.dev, "nForce2 SMBus adapter at %#x\n", smbus->base);
+> +	dev_info(&smbus->adapter.dev, "nForce2 SMBus adapter at %#x\n",
+> +		smbus->base);
+>  	return 0;
+>  }
+>  
+> @@ -388,11 +387,12 @@ static int nforce2_probe(struct pci_dev *dev, const struct pci_device_id *id)
+>  	int res1, res2;
+>  
+>  	/* we support 2 SMBus adapters */
+> -	if (!(smbuses = kzalloc(2*sizeof(struct nforce2_smbus), GFP_KERNEL)))
+> +	smbuses = kzalloc(2 * sizeof(struct nforce2_smbus), GFP_KERNEL);
+> +	if (!smbuses)
+>  		return -ENOMEM;
+>  	pci_set_drvdata(dev, smbuses);
+>  
+> -	switch(dev->device) {
+> +	switch (dev->device) {
+>  	case PCI_DEVICE_ID_NVIDIA_NFORCE2_SMBUS:
+>  	case PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_SMBUS:
+>  	case PCI_DEVICE_ID_NVIDIA_NFORCE_MCP55_SMBUS:
+
+
+-- 
+Jean Delvare
