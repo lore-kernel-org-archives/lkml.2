@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab3AJICK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 03:02:10 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53493 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932550Ab3AJICJ (ORCPT
+	id S932730Ab3AJIFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 03:05:37 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:56604 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932635Ab3AJIFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 03:02:09 -0500
-Date: Thu, 10 Jan 2013 00:02:08 -0800 (PST)
-Message-Id: <20130110.000208.2040524620441942742.davem@davemloft.net>
-To: bh74.an@samsung.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        peppe.cavallaro@st.com, jeffrey.t.kirsher@intel.com,
-        kgene.kim@samsung.com
-Subject: Re: [PATCH v2 3/3] net: stmmac: add gmac autonego set for ethtool
- support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <000601cdedf8$5d39bdf0$17ad39d0$@samsung.com>
-References: <000601cdedf8$5d39bdf0$17ad39d0$@samsung.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jan 2013 03:05:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130110075422.GA11458@S2101-09.ap.freescale.net>
+References: <aa10abe640afed8700abf262dbfc9b9c22659b6a.1357729671.git.viresh.kumar@linaro.org>
+	<20130110075422.GA11458@S2101-09.ap.freescale.net>
+Date: Thu, 10 Jan 2013 13:35:35 +0530
+Message-ID: <CAKohpone-pXUjuDsP7r73mP+rzSUUb1oWiu5c+NL8R_WsYoJZg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Simplify __cpufreq_remove_dev()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, linaro-dev@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Byungho An <bh74.an@samsung.com>
-Date: Tue, 08 Jan 2013 15:32:02 -0800
+On 10 January 2013 13:24, Shawn Guo <shawn.guo@linaro.org> wrote:
+> On Wed, Jan 09, 2013 at 04:50:44PM +0530, Viresh Kumar wrote:
+>> @Shawn: I believe your driver don't require that ugly code anymore (Though i
+>> know there is a situation for that to happen, if we have two cpus, you remove
+>> second one and then add it back. With this cpufreq_add_dev() would call init()
+>> first and then try to match if there are any managed_policies present. But the
+>> issue you pointed out about unregistering the driver would be solved by this
+>> patch.)
+>
+> Yes, just played it and it works for me.  However, I would have to keep
+> that little ugly code in my patch to save the dependency on your patch.
+> Will send a follow-up to clean that up once your patch hits mainline.
 
-> @@ -348,6 +349,10 @@ stmmac_set_pauseparam(struct net_device *netdev,
->  
->  	if (phy->autoneg) {
->  		if (netif_running(netdev))
-> +			if((interface == PHY_INTERFACE_MODE_SGMII) ||
-> +				(interface == PHY_INTERFACE_MODE_TBI) ||
-> +				(interface == PHY_INTERFACE_MODE_RTBI)) 
-> +				priv->hw->mac->set_autoneg(priv->ioaddr);
+Another thing, can i have a tested-by from you for both my patches ? remove and
+add dev?
 
-This is improperly indented and formatted, use this style:
-
-	if (A ||
-	    B ||
-	    C)
-		statement();
-
-I can tell what you're trying to do, you are just trying to use TAB
-characters exclusivly to indent because you are lazy.  But that's not
-the objective here.
+That would help it go quicker.
