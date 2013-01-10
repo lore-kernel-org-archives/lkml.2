@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab3AJBHo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 20:07:44 -0500
-Received: from mga11.intel.com ([192.55.52.93]:3373 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932323Ab3AJBHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 20:07:43 -0500
-Message-Id: <b94cdc$83e88b@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,440,1355126400"; 
-   d="scan'208";a="272048395"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Lijo Antony <lijo.kernel@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-In-Reply-To: <20130110004025.GB11605@kroah.com>
-References: <20130108223611.GA19672@kroah.com> <20130109003824.GA21075@kroah.com> <CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com> <20130109042533.GA9164@kroah.com> <CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com> <50ED1C12.2090608@gmail.com> <50EDC8A1.30307@oracle.com> <50EDCF14.4080101@oracle.com> <20130110004025.GB11605@kroah.com>
-Date: Thu, 10 Jan 2013 01:07:33 +0000
+	id S932602Ab3AJBJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 20:09:31 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:54570
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932323Ab3AJBJ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 20:09:28 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bh8275dhz2dh668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1155h)
+X-WSS-ID: 0MGDXVH-02-0OG-02
+X-M-MSG: 
+From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+To: <rjw@sisk.pl>, <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Subject: [PATCH] drivers/cpufreq: Warn user when powernow-k8 tries to fall back to acpi-cpufreq and it is unavailable.
+Date: Wed, 9 Jan 2013 19:09:21 -0600
+Message-ID: <1357780161-30581-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jan 2013 16:40:25 -0800, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, Jan 09, 2013 at 02:12:04PM -0600, Dave Kleikamp wrote:
-> > On 01/09/2013 01:44 PM, Dave Kleikamp wrote:
-> > > 
-> > > I can easily reproduce it running glxgears on 3.8-rc1 or 3.8-rc2.
-> > > 
-> > > 00:02.0 VGA compatible controller [0300]: Intel Corporation Core
-> > > Processor Integrated Graphics Controller [8086:0046] (rev 02)
-> > > 
-> > > Thinkpad T410
-> > > 
-> > > Shaggy
-> > 
-> > Daniel's patch:
-> > 
-> > drm/i915: Revert shrinker changes from "Track unbound pages"
-> > 
-> > fixes the problem for me.
-> 
-> After an afternoon of multiple kernel builds and other stressful things,
-> it looks like it fixes it for me as well.  Chris, this will be going to
-> Linus soon, right?
+This patch is in reference to bug#:51741. (https://bugzilla.kernel.org/show_bug.cgi?id=51741)
+powernow-k8 falls back to acpi-cpufreq if CPU is not supported. However, it states that acpi-cpufreq
+has taken over even if acpi-cpufreq is not compiled in. This patch rewords the warning message to
+clarify that the CPU is unsupported and prints a warning message when there is no acpi-cpufreq
+present.
 
-Daniel will send it on. I hope before he does so, he will clarify the
-changelog to note that it is just papering over the issue. If the
-conjecture is right, it will not prevent that path from triggering the
-hang, nor does it prevent other eviction paths from potentially causing
-the same issue.
--Chris
+Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+---
+ drivers/cpufreq/powernow-k8.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index 056faf6..6fa58b4 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -1256,7 +1256,15 @@ static int __cpuinit powernowk8_init(void)
+ 	int rv;
+ 
+ 	if (static_cpu_has(X86_FEATURE_HW_PSTATE)) {
+-		pr_warn(PFX "this CPU is not supported anymore, using acpi-cpufreq instead.\n");
++		pr_warn(PFX
++			"this CPU is not supported anymore, use acpi-cpufreq instead"
++			"Look for message from acpi-cpufreq to ensure it is loaded."
++			".\n");
++#ifndef CONFIG_X86_ACPI_CPUFREQ
++	pr_warn(PFX "acpi-cpufreq is disabled."
++		"Enable it in the config options to get frequency scaling.\n");
++	return -ENODEV;
++#endif
+ 		request_module("acpi-cpufreq");
+ 		return -ENODEV;
+ 	}
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.10.4
+
+
