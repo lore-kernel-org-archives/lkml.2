@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab3AJP2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:28:16 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44626 "EHLO mail.skyhub.de"
+	id S1754066Ab3AJPao (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:30:44 -0500
+Received: from mga03.intel.com ([143.182.124.21]:8375 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847Ab3AJP2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:28:15 -0500
-Date: Thu, 10 Jan 2013 16:28:13 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Daniel J Blueman <daniel@numascale-asia.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] NumaScale changes
-Message-ID: <20130110152813.GG23008@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Daniel J Blueman <daniel@numascale-asia.com>,
-	lkml <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753679Ab3AJPan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:30:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,444,1355126400"; 
+   d="scan'208";a="189780069"
+Date: Thu, 10 Jan 2013 15:50:58 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Florian Westphal <fw@strlen.de>
+Cc: linux-kernel@vger.kernel.org, gaowanlong@cn.fujitsu.com,
+        gregkh@linuxfoundation.org, frank@lichtenheld.de
+Subject: Re: regression, bisected: openpty fails from 3.7 onwards without
+ devpts
+Message-ID: <20130110155058.12f66e73@bob.linux.org.uk>
+In-Reply-To: <20130110144626.GA26279@breakpoint.cc>
+References: <20130110144626.GA26279@breakpoint.cc>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Thu, 10 Jan 2013 15:46:26 +0100
+Florian Westphal <fw@strlen.de> wrote:
 
-those changes have been a bit longer in the works and were ready even
-before the merge window but it was better to hold them off after it and
-send them out then. They basically incorporate PCI domain numbers into
-AMD northbridge IDs, thus adding support for Numascale confederated
-systems.
+> Frank Lichtenheld discovered that openpty() doesn't work anymore when
+> /dev/pts is not present.
+> 
+> We bisected this down to
+> 
+> commit bbb63c514a3464342967237a51a21ea8f61ab951
+> Author: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> Subject: drivers:tty:fix up ENOIOCTLCMD error handling
+> 
+> The original program triggering the error was pptpd, but
+> the test program below is sufficient:
+> ----
+> #include <stdio.h>
+> #include <pty.h>
+> int main(void) {
+>  int pty_fd, tty_fd;
+>  if (openpty(&pty_fd, &tty_fd, NULL, NULL, NULL) != 0) {
+>   perror("openpty");
+>   return 1;
+>  }
+> return 0;
+> }
+> ----
+> [ compile with cc -lutil pty.c -o pty ]
+> 
+> If devpts is available or above commit reverted openpty works again.
 
-Please pull,
-thanks.
+The commit is fairly general - what we need to do here is to figure out
+which specific thing trips up openpty so we can put the error on that
+back as it was (or find a better way) so it still works.
 
---
-The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
+Can you attach an strace of the working/failing cases without /dev/pts 
 
-  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
+Alan
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/numascale
-
-for you to fetch changes up to c7e5301a1b7c3f47af635a8b1b14480b81426025:
-
-  amd64_edac: Fix type usage in NB IDs and memory ranges (2013-01-10 16:18:00 +0100)
-
-----------------------------------------------------------------
-This patchset adds support for federated systems where multiple memory
-controllers can exist and see each other over multiple PCI domains. This
-basically means that AMD node ids can be more than 8 now and the code
-handling this is taught to incorporate PCI domain into those IDs.
-
-----------------------------------------------------------------
-Daniel J Blueman (4):
-      x86, AMD, NB: Add multi-domain support
-      x86, AMD, NB: Use u16 for northbridge IDs in amd_get_nb_id
-      amd64_edac: Fix PCI function lookup
-      amd64_edac: Fix type usage in NB IDs and memory ranges
-
- arch/x86/include/asm/amd_nb.h    |  17 ++++++++++++++++
- arch/x86/include/asm/processor.h |   2 +-
- arch/x86/kernel/cpu/amd.c        |   4 ++--
- drivers/edac/amd64_edac.c        | 109 ++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------------------------
- drivers/edac/amd64_edac.h        |  12 +++--------
- 5 files changed, 80 insertions(+), 64 deletions(-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
