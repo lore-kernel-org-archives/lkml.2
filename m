@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab3AJJyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:54:33 -0500
-Received: from smtp-out-052.synserver.de ([212.40.185.52]:1688 "EHLO
-	smtp-out-052.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab3AJJyb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:54:31 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 9922
-Message-ID: <50EE8FFD.2000000@metafoo.de>
-Date: Thu, 10 Jan 2013 10:55:09 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+	id S1753048Ab3AJJyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:54:40 -0500
+Received: from mga11.intel.com ([192.55.52.93]:5299 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750827Ab3AJJye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 04:54:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
+   d="scan'208";a="272182731"
+Date: Thu, 10 Jan 2013 11:58:03 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, eric.y.miao@gmail.com,
+        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from
+ platform data
+Message-ID: <20130110095803.GJ13897@intel.com>
+References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
+ <50EC90C3.2090604@intel.com>
+ <20130109122550.GA20956@opensource.wolfsonmicro.com>
+ <4412354.TD27KzhhVJ@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 1/3] spi: Add helper functions for setting up transfers
-References: <1357752671-30222-1-git-send-email-lars@metafoo.de> <alpine.DEB.2.02.1301100951060.2063@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1301100951060.2063@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4412354.TD27KzhhVJ@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 09:53 AM, Julia Lawall wrote:
->> +@r1@
->> +identifier fn;
->> +identifier xfers;
->> +@@
->> +fn(...)
->> +{
->> +	...
->> +(
->> +	struct spi_transfer xfers[...];
->> +|
->> +	struct spi_transfer xfers[];
->> +)
->> +	...
->> +}
+On Wed, Jan 09, 2013 at 11:07:26PM +0100, Rafael J. Wysocki wrote:
+> We hardcode different kinds of information into the kernel anyway, but it
+> would be good to be able to use some criteria to decide whether or not we need
+> that information on the given system.
 > 
-> Can it happen that there would be more than one spi_transfer or spi_message
-> variable per function?  This semantic patch will only treat the case where
-> there is only one, because the ... before an after the variable declaration
-> won't match another declaration of the same form.
+> In this particular case, we'll only need the fixed clock rate for the SPI
+> which is not present on other x86 systems to date.
 > 
-> julia
+> Mika, do you have any idea what checks to apply to figure out whether or not
+> the SPI clock will be necessary?
 
-I guess it could happen, but I would consider it to be very rare. There are
-a few examples of multiple transfers in the kernel. But most of them look like
+I've tried to figure out them but so far I have no ideas :-/
 
-struct spi_message msg;
-struct spi_transfer xfer_foo;
-struct spi_transfer xfer_bar;
+If we put that behind some config option, it 1) confuses users and 2)
+distro makers will select it anyway, so I don't see this as an option.
 
-...
-spi_message_add_tail(&xfer_foo, &msg);
-spi_message_add_tail(&xfer_bar, &msg);
+> Perhaps we can add a check into acpi_create_platform_device()?  Something like
+> "if the device ID is present in table X, then run function Y for the device"
+> where Y will configure the clock if the SPI is matched?
 
-So the transformation can't be applied here anyway.
+That would work but then we must also make sure that if the device was
+enumerated from PCI, it gets this clock via some other means.
 
-Do you have an idea how to change the rule to work with multiple
-transfers/messages per function? If it would make the cocci file more
-complex I wouldn't bother to take care of it, since it basically has no
-practical use.
+The LPSS devices can be configured to either appear on PCI or ACPI and of
+course ACPI has the advantage because then we can enumerate the slave
+devices behind the bus as well. However, it might be possible that we need
+to support PCI enumeration at some point.
 
-- Lars
+Furthermore, the SPI controller has an existing PCI glue driver
+(spi-pxa2xx-pci.c) that needs to pass this clock as well. This is for Intel
+CE4100 platform and we must make sure that it still works after our change.
