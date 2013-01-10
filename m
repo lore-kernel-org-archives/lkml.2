@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab3AJSSL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 13:18:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24734 "EHLO mx1.redhat.com"
+	id S1754429Ab3AJSUc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 13:20:32 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:45796 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753777Ab3AJSSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 13:18:09 -0500
-Date: Thu, 10 Jan 2013 13:17:51 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Colin Cross <ccross@android.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] hardlockup: detect hard lockups without NMIs using
- secondary cpus
-Message-ID: <20130110181751.GR88797@redhat.com>
-References: <1357783059-13923-1-git-send-email-ccross@android.com>
- <20130110140215.GP88797@redhat.com>
- <CAMbhsRT7q+DSKOdPMtUqtPZJrB_z-ixmv09TkT2ZweUJGXjkYg@mail.gmail.com>
+	id S1752388Ab3AJSU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 13:20:29 -0500
+Date: Thu, 10 Jan 2013 11:20:07 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
+Message-ID: <20130110182007.GA28004@obsidianresearch.com>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130109231758.GA27065@obsidianresearch.com>
+ <20130110071937.GG15212@avionic-0098.adnet.avionic-design.de>
+ <201301100917.19577.arnd@arndb.de>
+ <20130110102544.GA5546@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMbhsRT7q+DSKOdPMtUqtPZJrB_z-ixmv09TkT2ZweUJGXjkYg@mail.gmail.com>
+In-Reply-To: <20130110102544.GA5546@avionic-0098.adnet.avionic-design.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 09:27:28AM -0800, Colin Cross wrote:
-> On Thu, Jan 10, 2013 at 6:02 AM, Don Zickus <dzickus@redhat.com> wrote:
-> > On Wed, Jan 09, 2013 at 05:57:39PM -0800, Colin Cross wrote:
-> >> Emulate NMIs on systems where they are not available by using timer
-> >> interrupts on other cpus.  Each cpu will use its softlockup hrtimer
-> >> to check that the next cpu is processing hrtimer interrupts by
-> >> verifying that a counter is increasing.
-> >>
-> >> This patch is useful on systems where the hardlockup detector is not
-> >> available due to a lack of NMIs, for example most ARM SoCs.
-> >
-> > I have seen other cpus, like Sparc I think, create a 'virtual NMI' by
-> > reserving an IRQ line as 'special' (can not be masked).  Not sure if that
-> > is something worth looking at here (or even possible).
-> >
-> >> Without this patch any cpu stuck with interrupts disabled can
-> >> cause a hardware watchdog reset with no debugging information,
-> >> but with this patch the kernel can detect the lockup and panic,
-> >> which can result in useful debugging info.
-> >
-> > <SNIP>
-> >> +#ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
-> >> +static int is_hardlockup_other_cpu(int cpu)
-> >> +{
-> >> +     unsigned long hrint = per_cpu(hrtimer_interrupts, cpu);
-> >> +
-> >> +     if (per_cpu(hrtimer_interrupts_saved, cpu) == hrint)
-> >> +             return 1;
-> >> +
-> >> +     per_cpu(hrtimer_interrupts_saved, cpu) = hrint;
-> >> +     return 0;
-> >
-> > Will this race with the other cpu you are checking?  For example if cpuA
-> > just updated its hrtimer_interrupts_saved and cpuB goes to check cpuA's
-> > hrtimer_interrupts_saved, it seems possible that cpuB could falsely assume
-> > cpuA is stuck?
+On Thu, Jan 10, 2013 at 11:25:44AM +0100, Thierry Reding wrote:
+> On Thu, Jan 10, 2013 at 09:17:19AM +0000, Arnd Bergmann wrote:
+> > On Thursday 10 January 2013, Thierry Reding wrote:
+> > > On Wed, Jan 09, 2013 at 04:17:58PM -0700, Jason Gunthorpe wrote:
+> > > > On Wed, Jan 09, 2013 at 04:12:31PM -0700, Stephen Warren wrote:
+> > > > You could decrease the size of the mapping to only span the bus
+> > > > numbers that are configured for use via DT.
+> > > 
+> > > That won't work, unfortunately. The mapping is such that the bus number
+> > > is not encoded in the uppermost bits, the extended register number is.
+> > > So the only thing that we could do is decrease the size of the extended
+> > > register space for *all* devices.
+> > 
+> > But you could still a method to map 16 separate areas per bus, each 65536
+> > bytes long, which results in 1MB per bus. That is probably ok, since
+> > very few systems have more than a handful of buses in practice.
+> > 
+> > In theory, doing static mappings on a per-page base would let you
+> > do 16 devices at a time, but it's probably worth doing at this fine
+> > granularity.
 > 
-> cpuA doesn't update its own hrtimer_interrupts_saved, cpuB does.
-> However, there may be a similar race condition during hotplug if cpuB
-> updates hrtimer_interrupts_saved for cpuA, then goes offline, then
-> cpuC may try to check cpuA and see that hrtimer_interrupts_saved ==
-> hrtimer_interrupts.  I think this can be solved by setting
-> watchdog_nmi_touch for the next cpu when a cpu goes online or offline.
+> I don't understand how this would help. The encoding is like this:
+> 
+> 	[27:24] extended register number
+> 	[23:16] bus number
+> 	[15:11] device number
+> 	[10: 8] function number
+> 	[ 7: 0] register number
+> 
+> So it doesn't matter whether I use separate areas per bus or not. As
+> soon as the whole extended configuration space needs to be accessed a
+> whopping 28 bits (256 MiB) are required.
 
-Ah, that is where my misunderstanding was.  I overlooked the fact that it
-was only updated by the other cpu.  Sorry about that.
+You'd piece a mapping together, each bus requires 16 64k mappings, a
+simple 2d array of busnr*16 of pointers would do the trick. A more
+clever solution would be to allocate contiguous virtual memory and
+split that up..
 
-I'll re-review it again with that in mind.
+> > Actually, AER probably needs this, and I believe some broken devices 
+> > need to mask interrupts using the PCI command word in the config space,
+> > it it can happen.
+> 
+> Ugh... that would kill any such dynamic mapping approach. Perhaps if we
+> could mark a device as requiring a static mapping we could pin that
+> cache entry. But that doesn't sound very encouraging.
 
-Cheers,
-Don
+AER applies to pretty much every PCI-E device these days.
+
+Jason
