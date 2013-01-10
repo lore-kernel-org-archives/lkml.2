@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab3AJSZP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 13:25:15 -0500
-Received: from mail-vb0-f74.google.com ([209.85.212.74]:53413 "EHLO
-	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267Ab3AJSZM (ORCPT
+	id S1755278Ab3AJSZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 13:25:45 -0500
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:64329 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753746Ab3AJSZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 13:25:12 -0500
+	Thu, 10 Jan 2013 13:25:14 -0500
 From: Doug Anderson <dianders@chromium.org>
 To: linux-mmc@vger.kernel.org
 Cc: linux-samsung-soc@vger.kernel.org,
@@ -16,47 +16,168 @@ Cc: linux-samsung-soc@vger.kernel.org,
         Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
         Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
         Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Arun Kumar K <arun.kk@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [REPOST PATCH v3 2/4] ARM: dts: Add disable-wp for sd card slot on smdk5250
-Date: Thu, 10 Jan 2013 10:24:27 -0800
-Message-Id: <1357842269-15062-2-git-send-email-dianders@chromium.org>
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: [REPOST PATCH v3 1/4] mmc: dw_mmc: Add "disable-wp" device tree property
+Date: Thu, 10 Jan 2013 10:24:26 -0800
+Message-Id: <1357842269-15062-1-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1357842269-15062-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1354251857-21587-1-git-send-email-dianders@chromium.org>
 References: <1354251857-21587-1-git-send-email-dianders@chromium.org>
- <1357842269-15062-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next change will remove the code from the dw_mmc-exynos that added
-the DW_MCI_QUIRK_NO_WRITE_PROTECT.  Keep existing functionality of
-having no write protect pin on smdk5250 by adding the disable-wp
-property.
+The "disable-wp" property is used to specify that a given SD card slot
+doesn't have a concept of write protect.  This eliminates the need for
+special case code for SD slots that should never be write protected
+(like a micro SD slot or a dev board).
+
+The dw_mmc driver is special in needing to specify "disable-wp"
+because the lack of a "wp-gpios" property means to use the special
+purpose write protect line.  On some other mmc devices the lack of
+"wp-gpios" means that write protect should be disabled.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
 ---
 Changes in v3:
-- New for this version of the patch series.
+- New for this version of the patch series.  Chose "disable-wp" rather
+  than the discussed "broken-internal-wp" since it mapped more cleanly
+  to an existing quirk (and the only reason to specify that the
+  internal wp is broken is if you're disabling the write protect
+  anyway).
+- Reposted series 3 with Seungwon's ack, since it hasn't been picked
+  up by anyone.
 
- arch/arm/boot/dts/exynos5250-smdk5250.dts |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ .../devicetree/bindings/mmc/synopsis-dw-mshc.txt   |   12 +++++-
+ drivers/mmc/host/dw_mmc.c                          |   36 +++++++++++++++++++-
+ include/linux/mmc/dw_mmc.h                         |    4 ++
+ 3 files changed, 49 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-index 942d576..75b9d83 100644
---- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
-+++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-@@ -146,6 +146,7 @@
- 			reg = <0>;
- 			bus-width = <4>;
- 			samsung,cd-pinmux-gpio = <&gpc3 2 2 3 3>;
-+			disable-wp;
- 			gpios = <&gpc3 0 2 0 3>, <&gpc3 1 2 0 3>,
- 				<&gpc3 3 2 3 3>, <&gpc3 4 2 3 3>,
- 				<&gpc3 5 2 3 3>, <&gpc3 6 2 3 3>,
+diff --git a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
+index 06cd32d08..726fd21 100644
+--- a/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
++++ b/Documentation/devicetree/bindings/mmc/synopsis-dw-mshc.txt
+@@ -26,8 +26,16 @@ Required Properties:
+ 	* bus-width: as documented in mmc core bindings.
+ 
+ 	* wp-gpios: specifies the write protect gpio line. The format of the
+-	  gpio specifier depends on the gpio controller. If the write-protect
+-	  line is not available, this property is optional.
++	  gpio specifier depends on the gpio controller. If a GPIO is not used
++	  for write-protect, this property is optional.
++
++	* disable-wp: If the wp-gpios property isn't present then (by default)
++	  we'd assume that the write protect is hooked up directly to the
++	  controller's special purpose write protect line (accessible via
++	  the WRTPRT register).  However, it's possible that we simply don't
++	  want write protect.  In that case specify 'disable-wp'.
++	  NOTE: This property is not required for slots known to always
++	  connect to eMMC or SDIO cards.
+ 
+ Optional properties:
+ 
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 323c502..bc0b030 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -74,6 +74,7 @@ struct idmac_desc {
+  * struct dw_mci_slot - MMC slot state
+  * @mmc: The mmc_host representing this slot.
+  * @host: The MMC controller this slot is using.
++ * @quirks: Slot-level quirks (DW_MCI_SLOT_QUIRK_XXX)
+  * @ctype: Card type for this slot.
+  * @mrq: mmc_request currently being processed or waiting to be
+  *	processed, or NULL when the slot is idle.
+@@ -88,6 +89,8 @@ struct dw_mci_slot {
+ 	struct mmc_host		*mmc;
+ 	struct dw_mci		*host;
+ 
++	int			quirks;
++
+ 	u32			ctype;
+ 
+ 	struct mmc_request	*mrq;
+@@ -825,7 +828,8 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
+ 	struct dw_mci_board *brd = slot->host->pdata;
+ 
+ 	/* Use platform get_ro function, else try on board write protect */
+-	if (brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT)
++	if ((brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT) ||
++	    (slot->quirks & DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT))
+ 		read_only = 0;
+ 	else if (brd->get_ro)
+ 		read_only = brd->get_ro(slot->id);
+@@ -1785,6 +1789,30 @@ static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
+ 	return NULL;
+ }
+ 
++static struct dw_mci_of_slot_quirks {
++	char *quirk;
++	int id;
++} of_slot_quirks[] = {
++	{
++		.quirk	= "disable-wp",
++		.id	= DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT,
++	},
++};
++
++static int dw_mci_of_get_slot_quirks(struct device *dev, u8 slot)
++{
++	struct device_node *np = dw_mci_of_find_slot_node(dev, slot);
++	int quirks = 0;
++	int idx;
++
++	/* get quirks */
++	for (idx = 0; idx < ARRAY_SIZE(of_slot_quirks); idx++)
++		if (of_get_property(np, of_slot_quirks[idx].quirk, NULL))
++			quirks |= of_slot_quirks[idx].id;
++
++	return quirks;
++}
++
+ /* find out bus-width for a given slot */
+ static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
+ {
+@@ -1800,6 +1828,10 @@ static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
+ 	return bus_wd;
+ }
+ #else /* CONFIG_OF */
++static int dw_mci_of_get_slot_quirks(struct device *dev, u8 slot)
++{
++	return 0;
++}
+ static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
+ {
+ 	return 1;
+@@ -1828,6 +1860,8 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+ 	slot->host = host;
+ 	host->slot[id] = slot;
+ 
++	slot->quirks = dw_mci_of_get_slot_quirks(host->dev, slot->id);
++
+ 	mmc->ops = &dw_mci_ops;
+ 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
+ 	mmc->f_max = host->bus_hz;
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index 34be4f4..24dc3a8 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -212,6 +212,10 @@ struct dw_mci_dma_ops {
+ /* Write Protect detection not available */
+ #define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(4)
+ 
++/* Slot level quirks */
++/* This slot has no write protect */
++#define DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT	BIT(0)
++
+ struct dma_pdata;
+ 
+ struct block_settings {
 -- 
 1.7.7.3
 
