@@ -1,613 +1,1377 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab3AJPlS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:41:18 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:55618 "EHLO multi.imgtec.com"
+	id S1755096Ab3AJPlz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:41:55 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:52769 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754230Ab3AJPco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:32:44 -0500
+	id S1754325Ab3AJPcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:32:39 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
 CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v3 25/44] metag: System Calls
-Date: Thu, 10 Jan 2013 15:30:53 +0000
-Message-ID: <1357831872-29451-26-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH v3 12/44] metag: Cache/TLB handling
+Date: Thu, 10 Jan 2013 15:30:40 +0000
+Message-ID: <1357831872-29451-13-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_30
+X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add metag system call and gateway page interfaces. The metag
-architecture port uses the generic system call numbers from
-asm-generic/unistd.h, as well as a user gateway page mapped at
-0x6ffff000 which contains fast atomic primitives (depending on SMP) and
-a fast method of accessing TLS data.
+Add cache and TLB handling code for metag, including the required
+callbacks used by MM switches and DMA operations. Caches can be
+partitioned between the hardware threads and the global space, however
+this is usually configured by the bootloader so Linux doesn't make any
+changes to this configuration. TLBs aren't configurable, so only need
+consideration to flush them.
 
-System calls use the SWITCH instruction with the immediate 0x440001 to
-signal a system call.
+On Meta1 the L1 cache was VIVT which required a full flush on MM switch.
+Meta2 has a VIPT L1 cache so it doesn't require the full flush on MM
+switch. Meta2 can also have a writeback L2 with hardware prefetch which
+requires some special handling. Support is optional, and the L2 can be
+detected and initialised by Linux.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/metag/include/asm/mman.h         |   11 ++
- arch/metag/include/asm/syscall.h      |  104 +++++++++++++++++++
- arch/metag/include/asm/syscalls.h     |   39 +++++++
- arch/metag/include/asm/unistd.h       |   12 ++
- arch/metag/include/asm/user_gateway.h |   44 ++++++++
- arch/metag/include/uapi/asm/unistd.h  |   21 ++++
- arch/metag/kernel/sys_metag.c         |  181 +++++++++++++++++++++++++++++++++
- arch/metag/kernel/user_gateway.S      |   97 ++++++++++++++++++
- 8 files changed, 509 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/mman.h
- create mode 100644 arch/metag/include/asm/syscall.h
- create mode 100644 arch/metag/include/asm/syscalls.h
- create mode 100644 arch/metag/include/asm/unistd.h
- create mode 100644 arch/metag/include/asm/user_gateway.h
- create mode 100644 arch/metag/include/uapi/asm/unistd.h
- create mode 100644 arch/metag/kernel/sys_metag.c
- create mode 100644 arch/metag/kernel/user_gateway.S
+ arch/metag/include/asm/cache.h      |   23 ++
+ arch/metag/include/asm/cacheflush.h |  250 ++++++++++++++++++++
+ arch/metag/include/asm/l2cache.h    |  258 ++++++++++++++++++++
+ arch/metag/include/asm/tlb.h        |   36 +++
+ arch/metag/include/asm/tlbflush.h   |   77 ++++++
+ arch/metag/mm/cache.c               |  441 +++++++++++++++++++++++++++++++++++
+ arch/metag/mm/l2cache.c             |  192 +++++++++++++++
+ 7 files changed, 1277 insertions(+), 0 deletions(-)
+ create mode 100644 arch/metag/include/asm/cache.h
+ create mode 100644 arch/metag/include/asm/cacheflush.h
+ create mode 100644 arch/metag/include/asm/l2cache.h
+ create mode 100644 arch/metag/include/asm/tlb.h
+ create mode 100644 arch/metag/include/asm/tlbflush.h
+ create mode 100644 arch/metag/mm/cache.c
+ create mode 100644 arch/metag/mm/l2cache.c
 
-diff --git a/arch/metag/include/asm/mman.h b/arch/metag/include/asm/mman.h
+diff --git a/arch/metag/include/asm/cache.h b/arch/metag/include/asm/cache.h
 new file mode 100644
-index 0000000..17999db
+index 0000000..a43b650
 --- /dev/null
-+++ b/arch/metag/include/asm/mman.h
-@@ -0,0 +1,11 @@
-+#ifndef __METAG_MMAN_H__
-+#define __METAG_MMAN_H__
++++ b/arch/metag/include/asm/cache.h
+@@ -0,0 +1,23 @@
++#ifndef __ASM_METAG_CACHE_H
++#define __ASM_METAG_CACHE_H
 +
-+#include <uapi/asm/mman.h>
++/* L1 cache line size (64 bytes) */
++#define L1_CACHE_SHIFT		6
++#define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
 +
-+#ifndef __ASSEMBLY__
-+#define arch_mmap_check metag_mmap_check
-+int metag_mmap_check(unsigned long addr, unsigned long len,
-+		     unsigned long flags);
-+#endif
-+#endif /* __METAG_MMAN_H__ */
-diff --git a/arch/metag/include/asm/syscall.h b/arch/metag/include/asm/syscall.h
-new file mode 100644
-index 0000000..24fc979
---- /dev/null
-+++ b/arch/metag/include/asm/syscall.h
-@@ -0,0 +1,104 @@
++/* Meta requires large data items to be 8 byte aligned. */
++#define ARCH_SLAB_MINALIGN	8
++
 +/*
-+ * Access to user system call parameters and results
-+ *
-+ * Copyright (C) 2008 Imagination Technologies Ltd.
-+ *
-+ * This copyrighted material is made available to anyone wishing to use,
-+ * modify, copy, or redistribute it subject to the terms and conditions
-+ * of the GNU General Public License v.2.
-+ *
-+ * See asm-generic/syscall.h for descriptions of what we must do here.
++ * With an L2 cache, we may invalidate dirty lines, so we need to ensure DMA
++ * buffers have cache line alignment.
++ */
++#ifdef CONFIG_METAG_L2C
++#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
++#else
++#define ARCH_DMA_MINALIGN	8
++#endif
++
++#define __read_mostly __attribute__((__section__(".data..read_mostly")))
++
++#endif
+diff --git a/arch/metag/include/asm/cacheflush.h b/arch/metag/include/asm/cacheflush.h
+new file mode 100644
+index 0000000..7787ec5
+--- /dev/null
++++ b/arch/metag/include/asm/cacheflush.h
+@@ -0,0 +1,250 @@
++#ifndef _METAG_CACHEFLUSH_H
++#define _METAG_CACHEFLUSH_H
++
++#include <linux/mm.h>
++#include <linux/sched.h>
++#include <linux/io.h>
++
++#include <asm/l2cache.h>
++#include <asm/metag_isa.h>
++#include <asm/metag_mem.h>
++
++void metag_cache_probe(void);
++
++void metag_data_cache_flush_all(const void *start);
++void metag_code_cache_flush_all(const void *start);
++
++/*
++ * Routines to flush physical cache lines that may be used to cache data or code
++ * normally accessed via the linear address range supplied. The region flushed
++ * must either lie in local or global address space determined by the top bit of
++ * the pStart address. If Bytes is >= 4K then the whole of the related cache
++ * state will be flushed rather than a limited range.
++ */
++void metag_data_cache_flush(const void *start, int bytes);
++void metag_code_cache_flush(const void *start, int bytes);
++
++#ifdef CONFIG_METAG_META12
++
++/* Write through, virtually tagged, split I/D cache. */
++
++static inline void __flush_cache_all(void)
++{
++	metag_code_cache_flush_all((void *) PAGE_OFFSET);
++	metag_data_cache_flush_all((void *) PAGE_OFFSET);
++}
++
++#define flush_cache_all() __flush_cache_all()
++
++/* flush the entire user address space referenced in this mm structure */
++static inline void flush_cache_mm(struct mm_struct *mm)
++{
++	if (mm == current->mm)
++		__flush_cache_all();
++}
++
++#define flush_cache_dup_mm(mm) flush_cache_mm(mm)
++
++/* flush a range of addresses from this mm */
++static inline void flush_cache_range(struct vm_area_struct *vma,
++				     unsigned long start, unsigned long end)
++{
++	flush_cache_mm(vma->vm_mm);
++}
++
++static inline void flush_cache_page(struct vm_area_struct *vma,
++				    unsigned long vmaddr, unsigned long pfn)
++{
++	flush_cache_mm(vma->vm_mm);
++}
++
++#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE	1
++static inline void flush_dcache_page(struct page *page)
++{
++	metag_data_cache_flush_all((void *) PAGE_OFFSET);
++}
++
++#define flush_dcache_mmap_lock(mapping)		do { } while (0)
++#define flush_dcache_mmap_unlock(mapping)	do { } while (0)
++
++static inline void flush_icache_page(struct vm_area_struct *vma,
++				     struct page *page)
++{
++	metag_code_cache_flush(page_to_virt(page), PAGE_SIZE);
++}
++
++static inline void flush_cache_vmap(unsigned long start, unsigned long end)
++{
++	metag_data_cache_flush_all((void *) PAGE_OFFSET);
++}
++
++static inline void flush_cache_vunmap(unsigned long start, unsigned long end)
++{
++	metag_data_cache_flush_all((void *) PAGE_OFFSET);
++}
++
++#else
++
++/* Write through, physically tagged, split I/D cache. */
++
++#define flush_cache_all()			do { } while (0)
++#define flush_cache_mm(mm)			do { } while (0)
++#define flush_cache_dup_mm(mm)			do { } while (0)
++#define flush_cache_range(vma, start, end)	do { } while (0)
++#define flush_cache_page(vma, vmaddr, pfn)	do { } while (0)
++#define flush_dcache_mmap_lock(mapping)		do { } while (0)
++#define flush_dcache_mmap_unlock(mapping)	do { } while (0)
++#define flush_icache_page(vma, pg)		do { } while (0)
++#define flush_cache_vmap(start, end)		do { } while (0)
++#define flush_cache_vunmap(start, end)		do { } while (0)
++
++#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE	1
++static inline void flush_dcache_page(struct page *page)
++{
++	/* FIXME: We can do better than this. All we are trying to do is
++	 * make the i-cache coherent, we should use the PG_arch_1 bit like
++	 * e.g. powerpc.
++	 */
++#ifdef CONFIG_SMP
++	metag_out32(1, SYSC_ICACHE_FLUSH);
++#else
++	metag_code_cache_flush_all((void *) PAGE_OFFSET);
++#endif
++}
++
++#endif
++
++/* Push n pages at kernel virtual address and clear the icache */
++static inline void flush_icache_range(unsigned long address,
++				      unsigned long endaddr)
++{
++#ifdef CONFIG_SMP
++	metag_out32(1, SYSC_ICACHE_FLUSH);
++#else
++	metag_code_cache_flush((void *) address, endaddr - address);
++#endif
++}
++
++static inline void flush_cache_sigtramp(unsigned long addr, int size)
++{
++	/*
++	 * Flush the icache in case there was previously some code
++	 * fetched from this address, perhaps a previous sigtramp.
++	 *
++	 * We don't need to flush the dcache, it's write through and
++	 * we just wrote the sigtramp code through it.
++	 */
++#ifdef CONFIG_SMP
++	metag_out32(1, SYSC_ICACHE_FLUSH);
++#else
++	metag_code_cache_flush((void *) addr, size);
++#endif
++}
++
++#ifdef CONFIG_METAG_L2C
++
++/*
++ * Perform a single specific CACHEWD operation on an address, masking lower bits
++ * of address first.
++ */
++static inline void cachewd_line(void *addr, unsigned int data)
++{
++	unsigned long masked = (unsigned long)addr & -0x40;
++	__builtin_meta2_cachewd((void *)masked, data);
++}
++
++/* Perform a certain CACHEW op on each cache line in a range */
++static inline void cachew_region_op(void *start, unsigned long size,
++				    unsigned int op)
++{
++	unsigned long offset = (unsigned long)start & 0x3f;
++	int i;
++	if (offset) {
++		size += offset;
++		start -= offset;
++	}
++	i = (size - 1) >> 6;
++	do {
++		__builtin_meta2_cachewd(start, op);
++		start += 0x40;
++	} while (i--);
++}
++
++/* prevent write fence and flushbacks being reordered in L2 */
++static inline void l2c_fence_flush(void *addr)
++{
++	/*
++	 * Synchronise by reading back and re-flushing.
++	 * It is assumed this access will miss, as the caller should have just
++	 * flushed the cache line.
++	 */
++	(void)(volatile u8 *)addr;
++	cachewd_line(addr, CACHEW_FLUSH_L1D_L2);
++}
++
++/* prevent write fence and writebacks being reordered in L2 */
++static inline void l2c_fence(void *addr)
++{
++	/*
++	 * A write back has occurred, but not necessarily an invalidate, so the
++	 * readback in l2c_fence_flush() would hit in the cache and have no
++	 * effect. Therefore fully flush the line first.
++	 */
++	cachewd_line(addr, CACHEW_FLUSH_L1D_L2);
++	l2c_fence_flush(addr);
++}
++
++/* Used to keep memory consistent when doing DMA. */
++static inline void flush_dcache_region(void *start, unsigned long size)
++{
++	/* metag_data_cache_flush won't flush L2 cache lines if size >= 4096 */
++	if (meta_l2c_is_enabled()) {
++		cachew_region_op(start, size, CACHEW_FLUSH_L1D_L2);
++		if (meta_l2c_is_writeback())
++			l2c_fence_flush(start + size - 1);
++	} else {
++		metag_data_cache_flush(start, size);
++	}
++}
++
++/* Write back dirty lines to memory (or do nothing if no writeback caches) */
++static inline void writeback_dcache_region(void *start, unsigned long size)
++{
++	if (meta_l2c_is_enabled() && meta_l2c_is_writeback()) {
++		cachew_region_op(start, size, CACHEW_WRITEBACK_L1D_L2);
++		l2c_fence(start + size - 1);
++	}
++}
++
++/* Invalidate (may also write back if necessary) */
++static inline void invalidate_dcache_region(void *start, unsigned long size)
++{
++	if (meta_l2c_is_enabled())
++		cachew_region_op(start, size, CACHEW_INVALIDATE_L1D_L2);
++	else
++		metag_data_cache_flush(start, size);
++}
++#else
++#define flush_dcache_region(s, l)	metag_data_cache_flush((s), (l))
++#define writeback_dcache_region(s, l)	do {} while (0)
++#define invalidate_dcache_region(s, l)	flush_dcache_region((s), (l))
++#endif
++
++static inline void copy_to_user_page(struct vm_area_struct *vma,
++				     struct page *page, unsigned long vaddr,
++				     void *dst, const void *src,
++				     unsigned long len)
++{
++	memcpy(dst, src, len);
++	flush_icache_range((unsigned long)dst, (unsigned long)dst + len);
++}
++
++static inline void copy_from_user_page(struct vm_area_struct *vma,
++				       struct page *page, unsigned long vaddr,
++				       void *dst, const void *src,
++				       unsigned long len)
++{
++	memcpy(dst, src, len);
++}
++
++#endif /* _METAG_CACHEFLUSH_H */
+diff --git a/arch/metag/include/asm/l2cache.h b/arch/metag/include/asm/l2cache.h
+new file mode 100644
+index 0000000..bffbeaa
+--- /dev/null
++++ b/arch/metag/include/asm/l2cache.h
+@@ -0,0 +1,258 @@
++#ifndef _METAG_L2CACHE_H
++#define _METAG_L2CACHE_H
++
++#ifdef CONFIG_METAG_L2C
++
++#include <asm/global_lock.h>
++#include <asm/io.h>
++
++/*
++ * Store the last known value of pfenable (we don't want prefetch enabled while
++ * L2 is off).
++ */
++extern int l2c_pfenable;
++
++/* defined in arch/metag/drivers/core-sysfs.c */
++extern struct sysdev_class cache_sysclass;
++
++static inline void wr_fence(void);
++
++/*
++ * Functions for reading of L2 cache configuration.
 + */
 +
-+#ifndef _ASM_METAG_SYSCALL_H
-+#define _ASM_METAG_SYSCALL_H
-+
-+#include <linux/sched.h>
-+#include <linux/err.h>
-+#include <linux/uaccess.h>
-+
-+#include <asm/switch.h>
-+
-+static inline long syscall_get_nr(struct task_struct *task,
-+				  struct pt_regs *regs)
++/* Get raw L2 config register (CORE_CONFIG3) */
++static inline unsigned int meta_l2c_config(void)
 +{
-+	unsigned long insn;
++	const unsigned int *corecfg3 = (const unsigned int *)METAC_CORE_CONFIG3;
++	return *corecfg3;
++}
++
++/* Get whether the L2 is present */
++static inline int meta_l2c_is_present(void)
++{
++	return meta_l2c_config() & METAC_CORECFG3_L2C_HAVE_L2C_BIT;
++}
++
++/* Get whether the L2 is configured for write-back instead of write-through */
++static inline int meta_l2c_is_writeback(void)
++{
++	return meta_l2c_config() & METAC_CORECFG3_L2C_MODE_BIT;
++}
++
++/* Get whether the L2 is unified instead of separated code/data */
++static inline int meta_l2c_is_unified(void)
++{
++	return meta_l2c_config() & METAC_CORECFG3_L2C_UNIFIED_BIT;
++}
++
++/* Get the L2 cache size in bytes */
++static inline unsigned int meta_l2c_size(void)
++{
++	unsigned int size_s;
++	if (!meta_l2c_is_present())
++		return 0;
++	size_s = (meta_l2c_config() & METAC_CORECFG3_L2C_SIZE_BITS)
++			>> METAC_CORECFG3_L2C_SIZE_S;
++	/* L2CSIZE is in KiB */
++	return 1024 << size_s;
++}
++
++/* Get the number of ways in the L2 cache */
++static inline unsigned int meta_l2c_ways(void)
++{
++	unsigned int ways_s;
++	if (!meta_l2c_is_present())
++		return 0;
++	ways_s = (meta_l2c_config() & METAC_CORECFG3_L2C_NUM_WAYS_BITS)
++			>> METAC_CORECFG3_L2C_NUM_WAYS_S;
++	return 0x1 << ways_s;
++}
++
++/* Get the line size of the L2 cache */
++static inline unsigned int meta_l2c_linesize(void)
++{
++	unsigned int line_size;
++	if (!meta_l2c_is_present())
++		return 0;
++	line_size = (meta_l2c_config() & METAC_CORECFG3_L2C_LINE_SIZE_BITS)
++			>> METAC_CORECFG3_L2C_LINE_SIZE_S;
++	switch (line_size) {
++	case METAC_CORECFG3_L2C_LINE_SIZE_64B:
++		return 64;
++	default:
++		return 0;
++	}
++}
++
++/* Get the revision ID of the L2 cache */
++static inline unsigned int meta_l2c_revision(void)
++{
++	return (meta_l2c_config() & METAC_CORECFG3_L2C_REV_ID_BITS)
++			>> METAC_CORECFG3_L2C_REV_ID_S;
++}
++
++
++/*
++ * Start an initialisation of the L2 cachelines and wait for completion.
++ * This should only be done in a LOCK1 or LOCK2 critical section while the L2
++ * is disabled.
++ */
++static inline void _meta_l2c_init(void)
++{
++	metag_out32(SYSC_L2C_INIT_INIT, SYSC_L2C_INIT);
++	while (metag_in32(SYSC_L2C_INIT) == SYSC_L2C_INIT_IN_PROGRESS)
++		/* do nothing */;
++}
++
++/*
++ * Start a writeback of dirty L2 cachelines and wait for completion.
++ * This should only be done in a LOCK1 or LOCK2 critical section.
++ */
++static inline void _meta_l2c_purge(void)
++{
++	metag_out32(SYSC_L2C_PURGE_PURGE, SYSC_L2C_PURGE);
++	while (metag_in32(SYSC_L2C_PURGE) == SYSC_L2C_PURGE_IN_PROGRESS)
++		/* do nothing */;
++}
++
++/* Set whether the L2 cache is enabled. */
++static inline void _meta_l2c_enable(int enabled)
++{
++	unsigned int enable;
++
++	enable = metag_in32(SYSC_L2C_ENABLE);
++	if (enabled)
++		enable |= SYSC_L2C_ENABLE_ENABLE_BIT;
++	else
++		enable &= ~SYSC_L2C_ENABLE_ENABLE_BIT;
++	metag_out32(enable, SYSC_L2C_ENABLE);
++}
++
++/* Set whether the L2 cache prefetch is enabled. */
++static inline void _meta_l2c_pf_enable(int pfenabled)
++{
++	unsigned int enable;
++
++	enable = metag_in32(SYSC_L2C_ENABLE);
++	if (pfenabled)
++		enable |= SYSC_L2C_ENABLE_PFENABLE_BIT;
++	else
++		enable &= ~SYSC_L2C_ENABLE_PFENABLE_BIT;
++	metag_out32(enable, SYSC_L2C_ENABLE);
++}
++
++/* Return whether the L2 cache is enabled */
++static inline int _meta_l2c_is_enabled(void)
++{
++	return metag_in32(SYSC_L2C_ENABLE) & SYSC_L2C_ENABLE_ENABLE_BIT;
++}
++
++/* Return whether the L2 cache prefetch is enabled */
++static inline int _meta_l2c_pf_is_enabled(void)
++{
++	return metag_in32(SYSC_L2C_ENABLE) & SYSC_L2C_ENABLE_PFENABLE_BIT;
++}
++
++
++/* Return whether the L2 cache is enabled */
++static inline int meta_l2c_is_enabled(void)
++{
++	int en;
 +
 +	/*
-+	 * FIXME there's no way to find out how we got here other than to
-+	 * examine the memory at the PC to see if it is a syscall
-+	 * SWITCH instruction.
++	 * There is no need to lock at the moment, as the enable bit is never
++	 * intermediately changed, so we will never see an intermediate result.
 +	 */
-+	if (get_user(insn, (unsigned long *)(regs->ctx.CurrPC - 4)))
-+		return -1;
++	en = _meta_l2c_is_enabled();
 +
-+	if (insn == __METAG_SW_ENCODING(SYS))
-+		return regs->ctx.DX[0].U1;
-+	else
-+		return -1L;
++	return en;
 +}
 +
-+static inline void syscall_rollback(struct task_struct *task,
-+				    struct pt_regs *regs)
-+{
-+	/* do nothing */
-+}
-+
-+static inline long syscall_get_error(struct task_struct *task,
-+				     struct pt_regs *regs)
-+{
-+	unsigned long error = regs->ctx.DX[0].U0;
-+	return IS_ERR_VALUE(error) ? error : 0;
-+}
-+
-+static inline long syscall_get_return_value(struct task_struct *task,
-+					    struct pt_regs *regs)
-+{
-+	return regs->ctx.DX[0].U0;
-+}
-+
-+static inline void syscall_set_return_value(struct task_struct *task,
-+					    struct pt_regs *regs,
-+					    int error, long val)
-+{
-+	regs->ctx.DX[0].U0 = (long) error ?: val;
-+}
-+
-+static inline void syscall_get_arguments(struct task_struct *task,
-+					 struct pt_regs *regs,
-+					 unsigned int i, unsigned int n,
-+					 unsigned long *args)
-+{
-+	unsigned int reg, j;
-+	BUG_ON(i + n > 6);
-+
-+	for (j = i, reg = 6 - i; j < (i + n); j++, reg--) {
-+		if (reg % 2)
-+			args[j] = regs->ctx.DX[(reg + 1) / 2].U0;
-+		else
-+			args[j] = regs->ctx.DX[reg / 2].U1;
-+	}
-+}
-+
-+static inline void syscall_set_arguments(struct task_struct *task,
-+					 struct pt_regs *regs,
-+					 unsigned int i, unsigned int n,
-+					 const unsigned long *args)
-+{
-+	unsigned int reg;
-+	BUG_ON(i + n > 6);
-+
-+	for (reg = 6 - i; i < (i + n); i++, reg--) {
-+		if (reg % 2)
-+			regs->ctx.DX[(reg + 1) / 2].U0 = args[i];
-+		else
-+			regs->ctx.DX[reg / 2].U1 = args[i];
-+	}
-+}
-+
-+#define NR_syscalls __NR_syscalls
-+
-+/* generic syscall table */
-+extern const void *sys_call_table[];
-+
-+#endif	/* _ASM_METAG_SYSCALL_H */
-diff --git a/arch/metag/include/asm/syscalls.h b/arch/metag/include/asm/syscalls.h
-new file mode 100644
-index 0000000..a02b955
---- /dev/null
-+++ b/arch/metag/include/asm/syscalls.h
-@@ -0,0 +1,39 @@
-+#ifndef _ASM_METAG_SYSCALLS_H
-+#define _ASM_METAG_SYSCALLS_H
-+
-+#include <linux/compiler.h>
-+#include <linux/linkage.h>
-+#include <linux/types.h>
-+#include <linux/signal.h>
-+
-+/* kernel/signal.c */
-+#define sys_rt_sigreturn sys_rt_sigreturn
-+asmlinkage long sys_rt_sigreturn(void);
-+
-+#include <asm-generic/syscalls.h>
-+
-+/* kernel/sys_metag.c */
-+asmlinkage int sys_metag_setglobalbit(char __user *, int);
-+asmlinkage void sys_metag_set_fpu_flags(unsigned int);
-+asmlinkage int sys_metag_set_tls(void __user *);
-+asmlinkage void *sys_metag_get_tls(void);
-+
-+asmlinkage long sys_truncate64_metag(const char __user *, unsigned long,
-+				     unsigned long);
-+asmlinkage long sys_ftruncate64_metag(unsigned int, unsigned long,
-+				      unsigned long);
-+asmlinkage long sys_fadvise64_64_metag(int, unsigned long, unsigned long,
-+				       unsigned long, unsigned long, int);
-+asmlinkage long sys_readahead_metag(int, unsigned long, unsigned long, size_t);
-+asmlinkage ssize_t sys_pread64_metag(unsigned long, char __user *, size_t,
-+				     unsigned long, unsigned long);
-+asmlinkage ssize_t sys_pwrite64_metag(unsigned long, char __user *, size_t,
-+				      unsigned long, unsigned long);
-+asmlinkage long sys_sync_file_range_metag(int, unsigned long, unsigned long,
-+					  unsigned long, unsigned long,
-+					  unsigned int);
-+
-+int do_work_pending(struct pt_regs *regs, unsigned int thread_flags,
-+		    int syscall);
-+
-+#endif /* _ASM_METAG_SYSCALLS_H */
-diff --git a/arch/metag/include/asm/unistd.h b/arch/metag/include/asm/unistd.h
-new file mode 100644
-index 0000000..32955a1
---- /dev/null
-+++ b/arch/metag/include/asm/unistd.h
-@@ -0,0 +1,12 @@
 +/*
-+ * Copyright (C) 2012 Imagination Technologies Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * Ensure the L2 cache is disabled.
++ * Return whether the L2 was previously disabled.
 + */
++int meta_l2c_disable(void);
 +
-+#include <uapi/asm/unistd.h>
-+
-+#define __ARCH_WANT_SYS_CLONE
-diff --git a/arch/metag/include/asm/user_gateway.h b/arch/metag/include/asm/user_gateway.h
-new file mode 100644
-index 0000000..e404c09
---- /dev/null
-+++ b/arch/metag/include/asm/user_gateway.h
-@@ -0,0 +1,44 @@
 +/*
-+ * Copyright (C) 2010 Imagination Technologies
++ * Ensure the L2 cache is enabled.
++ * Return whether the L2 was previously enabled.
 + */
++int meta_l2c_enable(void);
 +
-+#ifndef __ASM_METAG_USER_GATEWAY_H
-+#define __ASM_METAG_USER_GATEWAY_H
++/* Return whether the L2 cache prefetch is enabled */
++static inline int meta_l2c_pf_is_enabled(void)
++{
++	return l2c_pfenable;
++}
 +
++/*
++ * Set whether the L2 cache prefetch is enabled.
++ * Return whether the L2 prefetch was previously enabled.
++ */
++int meta_l2c_pf_enable(int pfenable);
++
++/*
++ * Flush the L2 cache.
++ * Return 1 if the L2 is disabled.
++ */
++int meta_l2c_flush(void);
++
++/*
++ * Write back all dirty cache lines in the L2 cache.
++ * Return 1 if the L2 is disabled or there isn't any writeback.
++ */
++static inline int meta_l2c_writeback(void)
++{
++	unsigned long flags;
++	int en;
++
++	/* no need to purge if it's not a writeback cache */
++	if (!meta_l2c_is_writeback())
++		return 1;
++
++	/*
++	 * Purge only works if the L2 is enabled, and involves reading back to
++	 * detect completion, so keep this operation atomic with other threads.
++	 */
++	__global_lock1(flags);
++	en = meta_l2c_is_enabled();
++	if (likely(en)) {
++		wr_fence();
++		_meta_l2c_purge();
++	}
++	__global_unlock1(flags);
++
++	return !en;
++}
++
++#else /* CONFIG_METAG_L2C */
++
++#define meta_l2c_config()		0
++#define meta_l2c_is_present()		0
++#define meta_l2c_is_writeback()		0
++#define meta_l2c_is_unified()		0
++#define meta_l2c_size()			0
++#define meta_l2c_ways()			0
++#define meta_l2c_linesize()		0
++#define meta_l2c_revision()		0
++
++#define meta_l2c_is_enabled()		0
++#define _meta_l2c_pf_is_enabled()	0
++#define meta_l2c_pf_is_enabled()	0
++#define meta_l2c_disable()		1
++#define meta_l2c_enable()		0
++#define meta_l2c_pf_enable(X)		0
++static inline int meta_l2c_flush(void)
++{
++	return 1;
++}
++static inline int meta_l2c_writeback(void)
++{
++	return 1;
++}
++
++#endif /* CONFIG_METAG_L2C */
++
++#endif /* _METAG_L2CACHE_H */
+diff --git a/arch/metag/include/asm/tlb.h b/arch/metag/include/asm/tlb.h
+new file mode 100644
+index 0000000..048282f1
+--- /dev/null
++++ b/arch/metag/include/asm/tlb.h
+@@ -0,0 +1,36 @@
++#ifndef __ASM_METAG_TLB_H
++#define __ASM_METAG_TLB_H
++
++#include <asm/cacheflush.h>
 +#include <asm/page.h>
 +
-+/* Page of kernel code accessible to userspace. */
-+#define USER_GATEWAY_PAGE	0x6ffff000
-+/* Offset of TLS pointer array in gateway page. */
-+#define USER_GATEWAY_TLS	0x100
++/* Note, read http://lkml.org/lkml/2004/1/15/6 */
 +
-+#ifndef __ASSEMBLY__
-+
-+extern char __user_gateway_start;
-+extern char __user_gateway_end;
-+
-+/* Kernel mapping of the gateway page. */
-+extern void *gateway_page;
-+
-+static inline void set_gateway_tls(void __user *tls_ptr)
-+{
-+	void **gateway_tls = (void **)(gateway_page + USER_GATEWAY_TLS +
-+				       hard_processor_id() * 4);
-+
-+	*gateway_tls = (__force void *)tls_ptr;
 +#ifdef CONFIG_METAG_META12
-+	/* Avoid cache aliases on virtually tagged cache. */
-+	__builtin_dcache_flush((void *)USER_GATEWAY_PAGE + USER_GATEWAY_TLS +
-+				       hard_processor_id() * sizeof(void *));
++
++#define tlb_start_vma(tlb, vma)						      \
++	do {								      \
++		if (!tlb->fullmm)					      \
++			flush_cache_range(vma, vma->vm_start, vma->vm_end);   \
++	} while (0)
++
++#define tlb_end_vma(tlb, vma)						      \
++	do {								      \
++		if (!tlb->fullmm)					      \
++			flush_tlb_range(vma, vma->vm_start, vma->vm_end);     \
++	} while (0)
++
++
++#else
++
++#define tlb_start_vma(tlb, vma)			do { } while (0)
++#define tlb_end_vma(tlb, vma)			do { } while (0)
++
++#endif
++
++#define __tlb_remove_tlb_entry(tlb, pte, addr)	do { } while (0)
++#define tlb_flush(tlb)				flush_tlb_mm((tlb)->mm)
++
++#include <asm-generic/tlb.h>
++
++#endif
+diff --git a/arch/metag/include/asm/tlbflush.h b/arch/metag/include/asm/tlbflush.h
+new file mode 100644
+index 0000000..566acf9
+--- /dev/null
++++ b/arch/metag/include/asm/tlbflush.h
+@@ -0,0 +1,77 @@
++#ifndef __ASM_METAG_TLBFLUSH_H
++#define __ASM_METAG_TLBFLUSH_H
++
++#include <linux/io.h>
++#include <linux/sched.h>
++#include <asm/metag_mem.h>
++#include <asm/pgalloc.h>
++
++/*
++ * TLB flushing:
++ *
++ *  - flush_tlb() flushes the current mm struct TLBs
++ *  - flush_tlb_all() flushes all processes TLBs
++ *  - flush_tlb_mm(mm) flushes the specified mm context TLB's
++ *  - flush_tlb_page(vma, vmaddr) flushes one page
++ *  - flush_tlb_range(mm, start, end) flushes a range of pages
++ *  - flush_tlb_kernel_range(start, end) flushes a range of kernel pages
++ *  - flush_tlb_pgtables(mm, start, end) flushes a range of page tables
++ *
++ * FIXME: Meta 2 can flush single TLB entries.
++ *
++ */
++
++#if defined(CONFIG_METAG_META21) && !defined(CONFIG_SMP)
++static inline void __flush_tlb(void)
++{
++	/* flush TLB entries for just the current hardware thread */
++	int thread = hard_processor_id();
++	metag_out32(0, (LINSYSCFLUSH_TxMMCU_BASE +
++			LINSYSCFLUSH_TxMMCU_STRIDE * thread));
++}
++#else
++static inline void __flush_tlb(void)
++{
++	/* flush TLB entries for all hardware threads */
++	metag_out32(0, LINSYSCFLUSH_MMCU);
++}
++#endif /* defined(CONFIG_METAG_META21) && !defined(CONFIG_SMP) */
++
++#define flush_tlb() __flush_tlb()
++
++#define flush_tlb_all() __flush_tlb()
++
++#define local_flush_tlb_all() __flush_tlb()
++
++static inline void flush_tlb_mm(struct mm_struct *mm)
++{
++	if (mm == current->active_mm)
++		__flush_tlb();
++}
++
++static inline void flush_tlb_page(struct vm_area_struct *vma,
++				  unsigned long addr)
++{
++	flush_tlb_mm(vma->vm_mm);
++}
++
++static inline void flush_tlb_range(struct vm_area_struct *vma,
++				   unsigned long start, unsigned long end)
++{
++	flush_tlb_mm(vma->vm_mm);
++}
++
++static inline void flush_tlb_pgtables(struct mm_struct *mm,
++				      unsigned long start, unsigned long end)
++{
++	flush_tlb_mm(mm);
++}
++
++static inline void flush_tlb_kernel_range(unsigned long start,
++					  unsigned long end)
++{
++	flush_tlb_all();
++}
++
++#endif /* __ASM_METAG_TLBFLUSH_H */
++
+diff --git a/arch/metag/mm/cache.c b/arch/metag/mm/cache.c
+new file mode 100644
+index 0000000..b713ec0
+--- /dev/null
++++ b/arch/metag/mm/cache.c
+@@ -0,0 +1,441 @@
++/*
++ * arch/metag/mm/cache.c
++ *
++ * Copyright (C) 2001, 2002, 2005, 2007, 2012 Imagination Technologies.
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
++ *
++ * Cache control code
++ */
++
++#include <linux/export.h>
++#include <linux/io.h>
++#include <asm/cacheflush.h>
++#include <asm/core_reg.h>
++#include <asm/metag_isa.h>
++#include <asm/metag_mem.h>
++#include <asm/metag_regs.h>
++
++#define DEFAULT_CACHE_WAYS_LOG2	2
++
++/*
++ * Size of a set in the caches. Initialised for default 16K stride, adjusted
++ * according to values passed through TBI global heap segment via LDLK (on ATP)
++ * or config registers (on HTP/MTP)
++ */
++static int dcache_set_shift = METAG_TBI_CACHE_SIZE_BASE_LOG2
++					- DEFAULT_CACHE_WAYS_LOG2;
++static int icache_set_shift = METAG_TBI_CACHE_SIZE_BASE_LOG2
++					- DEFAULT_CACHE_WAYS_LOG2;
++/*
++ * The number of sets in the caches. Initialised for HTP/ATP, adjusted
++ * according to NOMMU setting in config registers
++ */
++static unsigned char dcache_sets_log2 = DEFAULT_CACHE_WAYS_LOG2;
++static unsigned char icache_sets_log2 = DEFAULT_CACHE_WAYS_LOG2;
++
++/**
++ * metag_cache_probe() - Probe L1 cache configuration.
++ *
++ * Probe the L1 cache configuration to aid the L1 physical cache flushing
++ * functions.
++ */
++void metag_cache_probe(void)
++{
++#ifndef CONFIG_METAG_META12
++	int coreid = metag_in32(METAC_CORE_ID);
++	int config = metag_in32(METAC_CORE_CONFIG2);
++	int cfgcache = coreid & METAC_COREID_CFGCACHE_BITS;
++
++	if (cfgcache == METAC_COREID_CFGCACHE_TYPE0 ||
++	    cfgcache == METAC_COREID_CFGCACHE_PRIVNOMMU) {
++		icache_sets_log2 = 1;
++		dcache_sets_log2 = 1;
++	}
++
++	/* For normal size caches, the smallest size is 4Kb.
++	   For small caches, the smallest size is 64b */
++	icache_set_shift = (config & METAC_CORECFG2_ICSMALL_BIT)
++				? 6 : 12;
++	icache_set_shift += (config & METAC_CORE_C2ICSZ_BITS)
++				>> METAC_CORE_C2ICSZ_S;
++	icache_set_shift -= icache_sets_log2;
++
++	dcache_set_shift = (config & METAC_CORECFG2_DCSMALL_BIT)
++				? 6 : 12;
++	dcache_set_shift += (config & METAC_CORECFG2_DCSZ_BITS)
++				>> METAC_CORECFG2_DCSZ_S;
++	dcache_set_shift -= dcache_sets_log2;
++#else
++	/* Extract cache sizes from global heap segment */
++	unsigned long val, u;
++	int width, shift, addend;
++	PTBISEG seg;
++
++	seg = __TBIFindSeg(NULL, TBID_SEG(TBID_THREAD_GLOBAL,
++					  TBID_SEGSCOPE_GLOBAL,
++					  TBID_SEGTYPE_HEAP));
++	if (seg != NULL) {
++		val = seg->Data[1];
++
++		/* Work out width of I-cache size bit-field */
++		u = ((unsigned long) METAG_TBI_ICACHE_SIZE_BITS)
++		       >> METAG_TBI_ICACHE_SIZE_S;
++		width = 0;
++		while (u & 1) {
++			width++;
++			u >>= 1;
++		}
++		/* Extract sign-extended size addend value */
++		shift = 32 - (METAG_TBI_ICACHE_SIZE_S + width);
++		addend = (long) ((val & METAG_TBI_ICACHE_SIZE_BITS)
++				 << shift)
++			>> (shift + METAG_TBI_ICACHE_SIZE_S);
++		/* Now calculate I-cache set size */
++		icache_set_shift = (METAG_TBI_CACHE_SIZE_BASE_LOG2
++				    - DEFAULT_CACHE_WAYS_LOG2)
++					+ addend;
++
++		/* Similarly for D-cache */
++		u = ((unsigned long) METAG_TBI_DCACHE_SIZE_BITS)
++		       >> METAG_TBI_DCACHE_SIZE_S;
++		width = 0;
++		while (u & 1) {
++			width++;
++			u >>= 1;
++		}
++		shift = 32 - (METAG_TBI_DCACHE_SIZE_S + width);
++		addend = (long) ((val & METAG_TBI_DCACHE_SIZE_BITS)
++				 << shift)
++			>> (shift + METAG_TBI_DCACHE_SIZE_S);
++		dcache_set_shift = (METAG_TBI_CACHE_SIZE_BASE_LOG2
++				    - DEFAULT_CACHE_WAYS_LOG2)
++					+ addend;
++	}
 +#endif
 +}
 +
-+extern int __kuser_get_tls(void);
-+extern char *__kuser_get_tls_end[];
-+
-+extern int __kuser_cmpxchg(int, int, unsigned long *);
-+extern char *__kuser_cmpxchg_end[];
-+
-+#endif
-+
-+#endif
-diff --git a/arch/metag/include/uapi/asm/unistd.h b/arch/metag/include/uapi/asm/unistd.h
-new file mode 100644
-index 0000000..b80b8e8
---- /dev/null
-+++ b/arch/metag/include/uapi/asm/unistd.h
-@@ -0,0 +1,21 @@
-+/*
-+ * Copyright (C) 2012 Imagination Technologies Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+/* Use the standard ABI for syscalls. */
-+#include <asm-generic/unistd.h>
-+
-+/* metag-specific syscalls. */
-+#define __NR_metag_setglobalbit		(__NR_arch_specific_syscall + 1)
-+__SYSCALL(__NR_metag_setglobalbit, sys_metag_setglobalbit)
-+#define __NR_metag_set_fpu_flags	(__NR_arch_specific_syscall + 2)
-+__SYSCALL(__NR_metag_set_fpu_flags, sys_metag_set_fpu_flags)
-+#define __NR_metag_set_tls		(__NR_arch_specific_syscall + 3)
-+__SYSCALL(__NR_metag_set_tls, sys_metag_set_tls)
-+#define __NR_metag_get_tls		(__NR_arch_specific_syscall + 4)
-+__SYSCALL(__NR_metag_get_tls, sys_metag_get_tls)
-diff --git a/arch/metag/kernel/sys_metag.c b/arch/metag/kernel/sys_metag.c
-new file mode 100644
-index 0000000..2e4db67
---- /dev/null
-+++ b/arch/metag/kernel/sys_metag.c
-@@ -0,0 +1,181 @@
-+/*
-+ * This file contains various random system calls that
-+ * have a non-standard calling sequence on the Linux/Meta
-+ * platform.
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/syscalls.h>
-+#include <linux/mman.h>
-+#include <linux/file.h>
-+#include <linux/fs.h>
-+#include <linux/uaccess.h>
-+#include <linux/unistd.h>
-+#include <asm/cacheflush.h>
-+#include <asm/global_lock.h>
-+#include <asm/switch.h>
-+#include <asm/syscall.h>
-+#include <asm/syscalls.h>
-+#include <asm/user_gateway.h>
-+
-+#define merge_64(hi, lo) ((((unsigned long long)(hi)) << 32) + \
-+			  ((lo) & 0xffffffffUL))
-+
-+int metag_mmap_check(unsigned long addr, unsigned long len,
-+		     unsigned long flags)
++static void metag_phys_data_cache_flush(const void *start)
 +{
-+	/* We can't have people trying to write to the bottom of the
-+	 * memory map, there are mysterious unspecified things there that
-+	 * we don't want people trampling on.
++	unsigned long flush0, flush1, flush2, flush3;
++	int loops, step;
++	int thread;
++	int part, offset;
++	int set_shift;
++
++	/* Use a sequence of writes to flush the cache region requested */
++	thread = (__core_reg_get(TXENABLE) & TXENABLE_THREAD_BITS)
++					  >> TXENABLE_THREAD_S;
++
++	/* Cache is broken into sets which lie in contiguous RAMs */
++	set_shift = dcache_set_shift;
++
++	/* Move to the base of the physical cache flush region */
++	flush0 = LINSYSCFLUSH_DCACHE_LINE;
++	step   = 64;
++
++	/* Get partition data for this thread */
++	part = metag_in32(SYSC_DCPART0 +
++			      (SYSC_xCPARTn_STRIDE * thread));
++
++	if ((int)start < 0)
++		/* Access Global vs Local partition */
++		part >>= SYSC_xCPARTG_AND_S
++			- SYSC_xCPARTL_AND_S;
++
++	/* Extract offset and move SetOff */
++	offset = (part & SYSC_xCPARTL_OR_BITS)
++			>> SYSC_xCPARTL_OR_S;
++	flush0 += (offset << (set_shift - 4));
++
++	/* Shrink size */
++	part = (part & SYSC_xCPARTL_AND_BITS)
++			>> SYSC_xCPARTL_AND_S;
++	loops = ((part + 1) << (set_shift - 4));
++
++	/* Reduce loops by step of cache line size */
++	loops /= step;
++
++	flush1 = flush0 + (1 << set_shift);
++	flush2 = flush0 + (2 << set_shift);
++	flush3 = flush0 + (3 << set_shift);
++
++	if (dcache_sets_log2 == 1) {
++		flush2 = flush1;
++		flush3 = flush1 + step;
++		flush1 = flush0 + step;
++		step  <<= 1;
++		loops >>= 1;
++	}
++
++	/* Clear loops ways in cache */
++	while (loops-- != 0) {
++		/* Clear the ways. */
++#if 0
++		/*
++		 * GCC doesn't generate very good code for this so we
++		 * provide inline assembly instead.
++		 */
++		metag_out8(0, flush0);
++		metag_out8(0, flush1);
++		metag_out8(0, flush2);
++		metag_out8(0, flush3);
++
++		flush0 += step;
++		flush1 += step;
++		flush2 += step;
++		flush3 += step;
++#else
++		asm volatile (
++			"SETB\t[%0+%4++],%5\n"
++			"SETB\t[%1+%4++],%5\n"
++			"SETB\t[%2+%4++],%5\n"
++			"SETB\t[%3+%4++],%5\n"
++			: "+e" (flush0),
++			  "+e" (flush1),
++			  "+e" (flush2),
++			  "+e" (flush3)
++			: "e" (step), "a" (0));
++#endif
++	}
++}
++
++void metag_data_cache_flush_all(const void *start)
++{
++	if ((metag_in32(SYSC_CACHE_MMU_CONFIG) & SYSC_CMMUCFG_DC_ON_BIT) == 0)
++		/* No need to flush the data cache it's not actually enabled */
++		return;
++
++	metag_phys_data_cache_flush(start);
++}
++
++void metag_data_cache_flush(const void *start, int bytes)
++{
++	unsigned long flush0;
++	int loops, step;
++
++	if ((metag_in32(SYSC_CACHE_MMU_CONFIG) & SYSC_CMMUCFG_DC_ON_BIT) == 0)
++		/* No need to flush the data cache it's not actually enabled */
++		return;
++
++	if (bytes >= 4096) {
++		metag_phys_data_cache_flush(start);
++		return;
++	}
++
++	/* Use linear cache flush mechanism on META IP */
++	flush0 = (int)start;
++	loops  = ((int)start & (DCACHE_LINE_BYTES - 1)) + bytes +
++					(DCACHE_LINE_BYTES - 1);
++	loops  >>= DCACHE_LINE_S;
++
++#define PRIM_FLUSH(addr, offset) do {			\
++	int __addr = ((int) (addr)) + ((offset) * 64);	\
++	__builtin_dcache_flush((void *)(__addr));	\
++	} while (0)
++
++#define LOOP_INC (4*64)
++
++	do {
++		/* By default stop */
++		step = 0;
++
++		switch (loops) {
++		/* Drop Thru Cases! */
++		default:
++			PRIM_FLUSH(flush0, 3);
++			loops -= 4;
++			step = 1;
++		case 3:
++			PRIM_FLUSH(flush0, 2);
++		case 2:
++			PRIM_FLUSH(flush0, 1);
++		case 1:
++			PRIM_FLUSH(flush0, 0);
++			flush0 += LOOP_INC;
++		case 0:
++			break;
++		}
++	} while (step);
++}
++EXPORT_SYMBOL(metag_data_cache_flush);
++
++static void metag_phys_code_cache_flush(const void *start, int bytes)
++{
++	unsigned long flush0, flush1, flush2, flush3, end_set;
++	int loops, step;
++	int thread;
++	int set_shift, set_size;
++	int part, offset;
++
++	/* Use a sequence of writes to flush the cache region requested */
++	thread = (__core_reg_get(TXENABLE) & TXENABLE_THREAD_BITS)
++					  >> TXENABLE_THREAD_S;
++	set_shift = icache_set_shift;
++
++	/* Move to the base of the physical cache flush region */
++	flush0 = LINSYSCFLUSH_ICACHE_LINE;
++	step   = 64;
++
++	/* Get partition code for this thread */
++	part = metag_in32(SYSC_ICPART0 +
++			  (SYSC_xCPARTn_STRIDE * thread));
++
++	if ((int)start < 0)
++		/* Access Global vs Local partition */
++		part >>= SYSC_xCPARTG_AND_S-SYSC_xCPARTL_AND_S;
++
++	/* Extract offset and move SetOff */
++	offset = (part & SYSC_xCPARTL_OR_BITS)
++			>> SYSC_xCPARTL_OR_S;
++	flush0 += (offset << (set_shift - 4));
++
++	/* Shrink size */
++	part = (part & SYSC_xCPARTL_AND_BITS)
++			>> SYSC_xCPARTL_AND_S;
++	loops = ((part + 1) << (set_shift - 4));
++
++	/* Where does the Set end? */
++	end_set = flush0 + loops;
++	set_size = loops;
++
++#ifdef CONFIG_METAG_META12
++	if ((bytes < 4096) && (bytes < loops)) {
++		/* Unreachable on HTP/MTP */
++		/* Only target the sets that could be relavent */
++		flush0 += (loops - step) & ((int) start);
++		loops = (((int) start) & (step-1)) + bytes + step - 1;
++	}
++#endif
++
++	/* Reduce loops by step of cache line size */
++	loops /= step;
++
++	flush1 = flush0 + (1<<set_shift);
++	flush2 = flush0 + (2<<set_shift);
++	flush3 = flush0 + (3<<set_shift);
++
++	if (icache_sets_log2 == 1) {
++		flush2 = flush1;
++		flush3 = flush1 + step;
++		flush1 = flush0 + step;
++#if 0
++		/* flush0 will stop one line early in this case
++		 * (flush1 will do the final line).
++		 * However we don't correct end_set here at the moment
++		 * because it will never wrap on HTP/MTP
++		 */
++		end_set -= step;
++#endif
++		step  <<= 1;
++		loops >>= 1;
++	}
++
++	/* Clear loops ways in cache */
++	while (loops-- != 0) {
++#if 0
++		/*
++		 * GCC doesn't generate very good code for this so we
++		 * provide inline assembly instead.
++		 */
++		/* Clear the ways */
++		metag_out8(0, flush0);
++		metag_out8(0, flush1);
++		metag_out8(0, flush2);
++		metag_out8(0, flush3);
++
++		flush0 += step;
++		flush1 += step;
++		flush2 += step;
++		flush3 += step;
++#else
++		asm volatile (
++			"SETB\t[%0+%4++],%5\n"
++			"SETB\t[%1+%4++],%5\n"
++			"SETB\t[%2+%4++],%5\n"
++			"SETB\t[%3+%4++],%5\n"
++			: "+e" (flush0),
++			  "+e" (flush1),
++			  "+e" (flush2),
++			  "+e" (flush3)
++			: "e" (step), "a" (0));
++#endif
++
++		if (flush0 == end_set) {
++			/* Wrap within Set 0 */
++			flush0 -= set_size;
++			flush1 -= set_size;
++			flush2 -= set_size;
++			flush3 -= set_size;
++		}
++	}
++}
++
++void metag_code_cache_flush_all(const void *start)
++{
++	if ((metag_in32(SYSC_CACHE_MMU_CONFIG) & SYSC_CMMUCFG_IC_ON_BIT) == 0)
++		/* No need to flush the code cache it's not actually enabled */
++		return;
++
++	metag_phys_code_cache_flush(start, 4096);
++}
++
++void metag_code_cache_flush(const void *start, int bytes)
++{
++#ifndef CONFIG_METAG_META12
++	void *flush;
++	int loops, step;
++#endif /* !CONFIG_METAG_META12 */
++
++	if ((metag_in32(SYSC_CACHE_MMU_CONFIG) & SYSC_CMMUCFG_IC_ON_BIT) == 0)
++		/* No need to flush the code cache it's not actually enabled */
++		return;
++
++#ifdef CONFIG_METAG_META12
++	/* CACHEWD isn't available on Meta1, so always do full cache flush */
++	metag_phys_code_cache_flush(start, bytes);
++
++#else /* CONFIG_METAG_META12 */
++	/* If large size do full physical cache flush */
++	if (bytes >= 4096) {
++		metag_phys_code_cache_flush(start, bytes);
++		return;
++	}
++
++	/* Use linear cache flush mechanism on META IP */
++	flush = (void *)((int)start & ~(ICACHE_LINE_BYTES-1));
++	loops  = ((int)start & (ICACHE_LINE_BYTES-1)) + bytes +
++		(ICACHE_LINE_BYTES-1);
++	loops  >>= ICACHE_LINE_S;
++
++#define PRIM_IFLUSH(addr, offset) \
++	__builtin_meta2_cachewd(((addr) + ((offset) * 64)), CACHEW_ICACHE_BIT)
++
++#define LOOP_INC (4*64)
++
++	do {
++		/* By default stop */
++		step = 0;
++
++		switch (loops) {
++		/* Drop Thru Cases! */
++		default:
++			PRIM_IFLUSH(flush, 3);
++			loops -= 4;
++			step = 1;
++		case 3:
++			PRIM_IFLUSH(flush, 2);
++		case 2:
++			PRIM_IFLUSH(flush, 1);
++		case 1:
++			PRIM_IFLUSH(flush, 0);
++			flush += LOOP_INC;
++		case 0:
++			break;
++		}
++	} while (step);
++#endif /* !CONFIG_METAG_META12 */
++}
++EXPORT_SYMBOL(metag_code_cache_flush);
+diff --git a/arch/metag/mm/l2cache.c b/arch/metag/mm/l2cache.c
+new file mode 100644
+index 0000000..c64ee61
+--- /dev/null
++++ b/arch/metag/mm/l2cache.c
+@@ -0,0 +1,192 @@
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/delay.h>
++
++#include <asm/l2cache.h>
++#include <asm/metag_isa.h>
++
++/* If non-0, then initialise the L2 cache */
++static int l2cache_init = 1;
++/* If non-0, then initialise the L2 cache prefetch */
++static int l2cache_init_pf = 1;
++
++int l2c_pfenable;
++
++static volatile u32 l2c_testdata[16] __initdata __aligned(64);
++
++static int __init parse_l2cache(char *p)
++{
++	char *cp = p;
++
++	if (get_option(&cp, &l2cache_init) != 1) {
++		pr_err("Bad l2cache parameter (%s)\n", p);
++		return 1;
++	}
++	return 0;
++}
++early_param("l2cache", parse_l2cache);
++
++static int __init parse_l2cache_pf(char *p)
++{
++	char *cp = p;
++
++	if (get_option(&cp, &l2cache_init_pf) != 1) {
++		pr_err("Bad l2cache_pf parameter (%s)\n", p);
++		return 1;
++	}
++	return 0;
++}
++early_param("l2cache_pf", parse_l2cache_pf);
++
++static int __init meta_l2c_setup(void)
++{
++	/*
++	 * If the L2 cache isn't even present, don't do anything, but say so in
++	 * the log.
 +	 */
-+	if ((flags & MAP_FIXED) && (addr < TASK_UNMAPPED_BASE))
-+		return -EINVAL;
++	if (!meta_l2c_is_present()) {
++		pr_info("L2 Cache: Not present\n");
++		return 0;
++	}
++
++	/*
++	 * Check whether the line size is recognised.
++	 */
++	if (!meta_l2c_linesize()) {
++		pr_warn_once("L2 Cache: unknown line size id (config=0x%08x)\n",
++			     meta_l2c_config());
++	}
++
++	/*
++	 * Initialise state.
++	 */
++	l2c_pfenable = _meta_l2c_pf_is_enabled();
++
++	/*
++	 * Enable the L2 cache and print to log whether it was already enabled
++	 * by the bootloader.
++	 */
++	if (l2cache_init) {
++		pr_info("L2 Cache: Enabling... ");
++		if (meta_l2c_enable())
++			pr_cont("already enabled\n");
++		else
++			pr_cont("done\n");
++	} else {
++		pr_info("L2 Cache: Not enabling\n");
++	}
++
++	/*
++	 * Enable L2 cache prefetch.
++	 */
++	if (l2cache_init_pf) {
++		pr_info("L2 Cache: Enabling prefetch... ");
++		if (meta_l2c_pf_enable(1))
++			pr_cont("already enabled\n");
++		else
++			pr_cont("done\n");
++	} else {
++		pr_info("L2 Cache: Not enabling prefetch\n");
++	}
 +
 +	return 0;
 +}
++core_initcall(meta_l2c_setup);
 +
-+asmlinkage long sys_mmap2(unsigned long addr, unsigned long len,
-+			  unsigned long prot, unsigned long flags,
-+			  unsigned long fd, unsigned long pgoff)
++int meta_l2c_disable(void)
 +{
-+	/* The shift for mmap2 is constant, regardless of PAGE_SIZE setting. */
-+	if (pgoff & ((1 << (PAGE_SHIFT - 12)) - 1))
-+		return -EINVAL;
++	unsigned long flags;
++	int en;
 +
-+	pgoff >>= PAGE_SHIFT - 12;
++	if (!meta_l2c_is_present())
++		return 1;
 +
-+	return sys_mmap_pgoff(addr, len, prot, flags, fd, pgoff);
-+}
-+
-+asmlinkage int sys_metag_setglobalbit(char __user *addr, int mask)
-+{
-+	char tmp;
-+	int ret = 0;
-+	unsigned int flags;
-+
-+	if (!((__force unsigned int)addr >= LINCORE_BASE))
-+		return -EFAULT;
-+
++	/*
++	 * Prevent other threads writing during the writeback, otherwise the
++	 * writes will get "lost" when the L2 is disabled.
++	 */
 +	__global_lock2(flags);
-+
-+	metag_data_cache_flush((__force void *)addr, sizeof(mask));
-+
-+	ret = __get_user(tmp, addr);
-+	if (ret)
-+		goto out;
-+	tmp |= mask;
-+	ret = __put_user(tmp, addr);
-+
-+	metag_data_cache_flush((__force void *)addr, sizeof(mask));
-+
-+out:
++	en = meta_l2c_is_enabled();
++	if (likely(en)) {
++		_meta_l2c_pf_enable(0);
++		wr_fence();
++		_meta_l2c_purge();
++		_meta_l2c_enable(0);
++	}
 +	__global_unlock2(flags);
 +
-+	return ret;
++	return !en;
 +}
 +
-+#define TXDEFR_FPU_MASK ((0x1f << 16) | 0x1f)
-+
-+asmlinkage void sys_metag_set_fpu_flags(unsigned int flags)
++int meta_l2c_enable(void)
 +{
-+	unsigned int temp;
++	unsigned long flags;
++	int en;
 +
-+	flags &= TXDEFR_FPU_MASK;
++	if (!meta_l2c_is_present())
++		return 0;
 +
-+	asm volatile ("MOV %0,TXDEFR\n" : "=r" (temp));
-+
-+	temp &= ~TXDEFR_FPU_MASK;
-+	temp |= flags;
-+
-+	asm volatile ("MOV TXDEFR,%0\n" : : "r" (temp));
-+}
-+
-+asmlinkage int sys_metag_set_tls(void __user *ptr)
-+{
-+	current->thread.tls_ptr = ptr;
-+	set_gateway_tls(ptr);
-+
-+	return 0;
-+}
-+
-+asmlinkage void *sys_metag_get_tls(void)
-+{
-+	return (__force void *)current->thread.tls_ptr;
-+}
-+
-+asmlinkage long sys_truncate64_metag(const char __user *path, unsigned long lo,
-+				     unsigned long hi)
-+{
-+	return sys_truncate64(path, merge_64(hi, lo));
-+}
-+
-+asmlinkage long sys_ftruncate64_metag(unsigned int fd, unsigned long lo,
-+				      unsigned long hi)
-+{
-+	return sys_ftruncate64(fd, merge_64(hi, lo));
-+}
-+
-+asmlinkage long sys_fadvise64_64_metag(int fd, unsigned long offs_lo,
-+				       unsigned long offs_hi,
-+				       unsigned long len_lo,
-+				       unsigned long len_hi, int advice)
-+{
-+	return sys_fadvise64_64(fd, merge_64(offs_hi, offs_lo),
-+				merge_64(len_hi, len_lo), advice);
-+}
-+
-+asmlinkage long sys_readahead_metag(int fd, unsigned long lo, unsigned long hi,
-+				    size_t count)
-+{
-+	return sys_readahead(fd, merge_64(hi, lo), count);
-+}
-+
-+asmlinkage ssize_t sys_pread64_metag(unsigned long fd, char __user *buf,
-+				     size_t count, unsigned long lo,
-+				     unsigned long hi)
-+{
-+	return sys_pread64(fd, buf, count, merge_64(hi, lo));
-+}
-+
-+asmlinkage ssize_t sys_pwrite64_metag(unsigned long fd, char __user *buf,
-+				      size_t count, unsigned long lo,
-+				      unsigned long hi)
-+{
-+	return sys_pwrite64(fd, buf, count, merge_64(hi, lo));
-+}
-+
-+asmlinkage long sys_sync_file_range_metag(int fd, unsigned long offs_lo,
-+					  unsigned long offs_hi,
-+					  unsigned long len_lo,
-+					  unsigned long len_hi,
-+					  unsigned int flags)
-+{
-+	return sys_sync_file_range(fd, merge_64(offs_hi, offs_lo),
-+				   merge_64(len_hi, len_lo), flags);
-+}
-+
-+/* Provide the actual syscall number to call mapping. */
-+#undef __SYSCALL
-+#define __SYSCALL(nr, call) [nr] = (call),
-+
-+/*
-+ * We need wrappers for anything with unaligned 64bit arguments
-+ */
-+#define sys_truncate64		sys_truncate64_metag
-+#define sys_ftruncate64		sys_ftruncate64_metag
-+#define sys_fadvise64_64	sys_fadvise64_64_metag
-+#define sys_readahead		sys_readahead_metag
-+#define sys_pread64		sys_pread64_metag
-+#define sys_pwrite64		sys_pwrite64_metag
-+#define sys_sync_file_range	sys_sync_file_range_metag
-+
-+/*
-+ * Note that we can't include <linux/unistd.h> here since the header
-+ * guard will defeat us; <asm/unistd.h> checks for __SYSCALL as well.
-+ */
-+const void *sys_call_table[__NR_syscalls] = {
-+	[0 ... __NR_syscalls-1] = sys_ni_syscall,
-+#include <asm/unistd.h>
-+};
-diff --git a/arch/metag/kernel/user_gateway.S b/arch/metag/kernel/user_gateway.S
-new file mode 100644
-index 0000000..7167f3e
---- /dev/null
-+++ b/arch/metag/kernel/user_gateway.S
-@@ -0,0 +1,97 @@
-+/*
-+ * Copyright (C) 2010 Imagination Technologies Ltd.
-+ *
-+ * This file contains code that can be accessed from userspace and can
-+ * access certain kernel data structures without the overhead of a system
-+ * call.
-+ */
-+
-+#include <asm/metag_regs.h>
-+#include <asm/user_gateway.h>
-+
-+/*
-+ * User helpers.
-+ *
-+ * These are segment of kernel provided user code reachable from user space
-+ * at a fixed address in kernel memory.  This is used to provide user space
-+ * with some operations which require kernel help because of unimplemented
-+ * native feature and/or instructions in some Meta CPUs. The idea is for
-+ * this code to be executed directly in user mode for best efficiency but
-+ * which is too intimate with the kernel counter part to be left to user
-+ * libraries.  The kernel reserves the right to change this code as needed
-+ * without warning. Only the entry points and their results are guaranteed
-+ * to be stable.
-+ *
-+ * Each segment is 64-byte aligned.  This mechanism should be used only for
-+ * for things that are really small and justified, and not be abused freely.
-+ */
-+	.text
-+	.global	___user_gateway_start
-+___user_gateway_start:
-+
-+	/* get_tls
-+	 * Offset:	 0
-+	 * Description:	 Get the TLS pointer for this process.
-+	 */
-+	.global	___kuser_get_tls
-+	.type	___kuser_get_tls,function
-+___kuser_get_tls:
-+	MOVT	D1Ar1,#HI(USER_GATEWAY_PAGE + USER_GATEWAY_TLS)
-+	ADD	D1Ar1,D1Ar1,#LO(USER_GATEWAY_PAGE + USER_GATEWAY_TLS)
-+	MOV	D1Ar3,TXENABLE
-+	AND	D1Ar3,D1Ar3,#(TXENABLE_THREAD_BITS)
-+	LSR	D1Ar3,D1Ar3,#(TXENABLE_THREAD_S - 2)
-+	GETD	D0Re0,[D1Ar1+D1Ar3]
-+___kuser_get_tls_end:		/* Beyond this point the read will complete */
-+	MOV	PC,D1RtP
-+	.size	___kuser_get_tls,.-___kuser_get_tls
-+	.global	___kuser_get_tls_end
-+
-+	/* cmpxchg
-+	 * Offset:	 64
-+	 * Description:  Replace the value at 'ptr' with 'newval' if the current
-+	 *		 value is 'oldval'. Return zero if we succeeded,
-+	 *		 non-zero otherwise.
-+	 *
-+	 * Reference prototype:
-+	 *
-+	 *	int __kuser_cmpxchg(int oldval, int newval, unsigned long *ptr)
-+	 *
-+	 */
-+	.balign 64
-+	.global ___kuser_cmpxchg
-+	.type   ___kuser_cmpxchg,function
-+___kuser_cmpxchg:
-+#ifdef CONFIG_SMP
 +	/*
-+	 * We must use LNKGET/LNKSET with an SMP kernel because the other method
-+	 * does not provide atomicity across multiple CPUs.
++	 * Init (clearing the L2) can happen while the L2 is disabled, so other
++	 * threads are safe to continue executing, however we must not init the
++	 * cache if it's already enabled (dirty lines would be discarded), so
++	 * this operation should still be atomic with other threads.
 +	 */
-+0:	LNKGETD	D0Re0,[D1Ar3]
-+	CMP	D0Re0,D1Ar1
-+	LNKSETDZ [D1Ar3],D0Ar2
-+	BNZ	1f
-+	DEFR	D0Re0,TXSTAT
-+	ANDT	D0Re0,D0Re0,#HI(0x3f000000)
-+	CMPT	D0Re0,#HI(0x02000000)
-+	BNE	0b
-+#ifdef CONFIG_METAG_LNKGET_AROUND_CACHE
-+	DCACHE  [D1Ar3], D0Re0
-+#endif
-+1:	MOV	D0Re0,#1
-+	XORZ	D0Re0,D0Re0,D0Re0
-+	MOV	PC,D1RtP
-+#else
-+	GETD	D0Re0,[D1Ar3]
-+	CMP	D0Re0,D1Ar1
-+	SETDZ	[D1Ar3],D0Ar2
-+___kuser_cmpxchg_end:		/* Beyond this point the write will complete */
-+	MOV	D0Re0,#1
-+	XORZ	D0Re0,D0Re0,D0Re0
-+	MOV	PC,D1RtP
-+#endif /* CONFIG_SMP */
-+	.size	___kuser_cmpxchg,.-___kuser_cmpxchg
-+	.global	___kuser_cmpxchg_end
++	__global_lock1(flags);
++	en = meta_l2c_is_enabled();
++	if (likely(!en)) {
++		_meta_l2c_init();
++		_meta_l2c_enable(1);
++		_meta_l2c_pf_enable(l2c_pfenable);
++	}
++	__global_unlock1(flags);
 +
-+	.global	___user_gateway_end
-+___user_gateway_end:
++	return en;
++}
++
++int meta_l2c_pf_enable(int pfenable)
++{
++	unsigned long flags;
++	int en = l2c_pfenable;
++
++	if (!meta_l2c_is_present())
++		return 0;
++
++	/*
++	 * We read modify write the enable register, so this operation must be
++	 * atomic with other threads.
++	 */
++	__global_lock1(flags);
++	en = l2c_pfenable;
++	l2c_pfenable = pfenable;
++	if (meta_l2c_is_enabled())
++		_meta_l2c_pf_enable(pfenable);
++	__global_unlock1(flags);
++
++	return en;
++}
++
++int meta_l2c_flush(void)
++{
++	unsigned long flags;
++	int en;
++
++	/*
++	 * Prevent other threads writing during the writeback. This also
++	 * involves read modify writes.
++	 */
++	__global_lock2(flags);
++	en = meta_l2c_is_enabled();
++	if (likely(en)) {
++		_meta_l2c_pf_enable(0);
++		wr_fence();
++		_meta_l2c_purge();
++		_meta_l2c_enable(0);
++		_meta_l2c_init();
++		_meta_l2c_enable(1);
++		_meta_l2c_pf_enable(l2c_pfenable);
++	}
++	__global_unlock2(flags);
++
++	return !en;
++}
 -- 
 1.7.7.6
 
