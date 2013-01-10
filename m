@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab3AJJL4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:11:56 -0500
-Received: from mga11.intel.com ([192.55.52.93]:23269 "EHLO mga11.intel.com"
+	id S1753456Ab3AJJMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:12:09 -0500
+Received: from linux-sh.org ([111.68.239.195]:51964 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181Ab3AJJLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:11:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="272170289"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Subject: [PATCHv2.1] dw_dmac: make usage of dw_dma_slave optional
-Date: Thu, 10 Jan 2013 11:11:41 +0200
-Message-Id: <1357809101-5077-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <CAHp75VdmAe7pFE8BeZ91Pi9Kx30JPkQELAL6nfqatrZbpj6h7g@mail.gmail.com>
-References: <CAHp75VdmAe7pFE8BeZ91Pi9Kx30JPkQELAL6nfqatrZbpj6h7g@mail.gmail.com>
+	id S1752899Ab3AJJMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 04:12:05 -0500
+X-Greylist: delayed 722 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jan 2013 04:12:05 EST
+Date: Thu, 10 Jan 2013 17:59:24 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: clk dereference in arch/sh/kernel/cpufreq.c
+Message-ID: <20130110085923.GA7785@linux-sh.org>
+References: <alpine.DEB.2.02.1301031038030.1989@hadrien>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1301031038030.1989@hadrien>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver requires a custom slave configuration to be present to be able to
-make the slave transfers. Nevertheless, in some cases we need only the request
-line as an additional information to the generic slave configuration.  The
-request line is provided by slave_id parameter of the dma_slave_config
-structure. That's why the custom slave configuration could be optional for such
-cases.
-
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/dma/dw_dmac.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index a2c5a60..e5378b5 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -50,11 +50,12 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
- 		struct dw_dma_slave *__slave = (_chan->private);	\
- 		struct dw_dma_chan *_dwc = to_dw_dma_chan(_chan);	\
- 		struct dma_slave_config	*_sconfig = &_dwc->dma_sconfig;	\
-+		bool _is_slave = is_slave_direction(_dwc->direction);	\
- 		int _dms = dwc_get_dms(__slave);		\
- 		int _sms = dwc_get_sms(__slave);		\
--		u8 _smsize = __slave ? _sconfig->src_maxburst :	\
-+		u8 _smsize = _is_slave ? _sconfig->src_maxburst :	\
- 			DW_DMA_MSIZE_16;			\
--		u8 _dmsize = __slave ? _sconfig->dst_maxburst :	\
-+		u8 _dmsize = _is_slave ? _sconfig->dst_maxburst :	\
- 			DW_DMA_MSIZE_16;			\
- 								\
- 		(DWC_CTLL_DST_MSIZE(_dmsize)			\
-@@ -328,7 +329,7 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc,
- 	list_splice_init(&desc->tx_list, &dwc->free_list);
- 	list_move(&desc->desc_node, &dwc->free_list);
- 
--	if (!dwc->chan.private) {
-+	if (!is_slave_direction(dwc->direction)) {
- 		struct device *parent = chan2parent(&dwc->chan);
- 		if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
- 			if (txd->flags & DMA_COMPL_DEST_UNMAP_SINGLE)
-@@ -804,7 +805,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 
- 	dev_vdbg(chan2dev(chan), "%s\n", __func__);
- 
--	if (unlikely(!dws || !sg_len))
-+	if (unlikely(!is_slave_direction(direction) || !sg_len))
- 		return NULL;
- 
- 	dwc->direction = direction;
-@@ -980,8 +981,8 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
- {
- 	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
- 
--	/* Check if it is chan is configured for slave transfers */
--	if (!chan->private)
-+	/* Check if chan will be configured for slave transfers */
-+	if (!is_slave_direction(sconfig->direction))
- 		return -EINVAL;
- 
- 	memcpy(&dwc->dma_sconfig, sconfig, sizeof(*sconfig));
--- 
-1.7.10.4
-
+On Thu, Jan 03, 2013 at 10:40:20AM +0100, Julia Lawall wrote:
+> There has been a discussion recently about how the result of get_clk
+> should be an opaque handle, not a value that can be dereferenced:
+> 
+> https://lkml.org/lkml/2012/12/20/105
+> 
+> There is such a dereference in arch/sh/kernel/cpufreq.c, in the function
+> sh_cpufreq_cpu_init:
+> 
+> freq_table = cpuclk->nr_freqs ? cpuclk->freq_table : NULL;
+> 
+> It was not obvious to me, however, what API function should be used
+> instead, so I am just reporting the (potential) problem.
+> 
+In this case we would have to add some new API for fetching the frequency
+table associated with the struct clk, which is reasonably
+straightforward. It's not obvious how a private API vs deref of a type we
+have a private definition for is any better or worse, though. This code
+is not aimed at the common struct clk in any event.
