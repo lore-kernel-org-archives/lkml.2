@@ -1,102 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab3AJOr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 09:47:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5905 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753598Ab3AJOrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 09:47:55 -0500
-Message-ID: <50EED495.4040405@redhat.com>
-Date: Thu, 10 Jan 2013 22:47:49 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753777Ab3AJO6W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 09:58:22 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:47972 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab3AJO6V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 09:58:21 -0500
+X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jan 2013 09:58:21 EST
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Stefan Hajnoczi <stefanha@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Moore <pmoore@redhat.com>
-Subject: Re: [PATCH] tun: avoid owner checks on IFF_ATTACH_QUEUE
-References: <20130110113108.GF13451@redhat.com> <50EECB43.8020405@redhat.com> <20130110141939.GA30557@redhat.com> <50EECFC8.9020402@redhat.com> <20130110144138.GA30731@redhat.com>
-In-Reply-To: <20130110144138.GA30731@redhat.com>
+In-Reply-To: <18607840.Is41JcgqAR@vostro.rjw.lan>
+References: <20121030040237.GA10472@google.com> <5274779.gJQ3WSr6QB@vostro.rjw.lan>
+ <CAErSpo7QBNzaMKOGpkrPxop+WN+RMAoeOBUPiFDi9HFyH+UoOQ@mail.gmail.com> <18607840.Is41JcgqAR@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 10 Jan 2013 07:49:46 -0700
+Message-ID: <CAErSpo7rnmSjtsMu1AJ81VmSQytBDdAL=qrJWJHQ15iaJRvuhw@mail.gmail.com>
+Subject: Re: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for
+ hot-add root bus
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 10:41 PM, Michael S. Tsirkin wrote:
-> On Thu, Jan 10, 2013 at 10:27:20PM +0800, Jason Wang wrote:
->> On 01/10/2013 10:19 PM, Michael S. Tsirkin wrote:
->>> On Thu, Jan 10, 2013 at 10:08:03PM +0800, Jason Wang wrote:
->>>> On 01/10/2013 07:31 PM, Michael S. Tsirkin wrote:
->>>>> At the moment, we check owner when we enable queue in tun.
->>>>> This seems redundant and will break some valid uses
->>>>> where fd is passed around: I think TUNSETOWNER is there
->>>>> to prevent others from attaching to a persistent device not
->>>>> owned by them. Here the fd is already attached,
->>>>> enabling/disabling queue is more like read/write.
->>>> It also change the number of queues of the tuntap, maybe we should limit
->>>> this.
->>> Number of active queues? Why does it matter?
->>> Max number of queues is already limited by SETIFF.
->> Yes the number of active(real) queues in the kernel net device and this
->> changing may introduce other events such uevent.
-> How can it trigger a uevent?
-
-netif_set_real_num_{tx|rx}_queues() will update the queue kobjects which
-may trigger an uevent.
+On Thu, Jan 10, 2013 at 6:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, January 09, 2013 05:34:32 PM Bjorn Helgaas wrote:
+>> On Wed, Jan 9, 2013 at 1:10 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Wednesday, January 09, 2013 11:01:39 AM Yinghai Lu wrote:
+>> >> On Wed, Jan 9, 2013 at 10:39 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> >> >> the reason why we need to change those codes for x86, we want to make it support
+>> >> >> pci root bus hotplug. So it would be reasonable for us to align other
+>> >> >> platform to x86
+>> >> >> changes after pci root bus hotplug change is completely done.
+>> >> >
+>> >> > OK, I opened https://bugzilla.kernel.org/show_bug.cgi?id=52531 as a
+>> >> > way to keep track of this consistency issue and merged
+>> >> > pci/yinghai-survey-resources to my -next branch.
+>> >>
+>> >> Thanks a lot. will send other pci root bus hotplug out.
+>> >>
+>> >> question: now Rafael's tree has acpi-scan branch and it touches pci-root.c.
+>> >>
+>> >> so is it ok for me to base patches on your pci/next and his pm/acpi-scan?
+>> >> how?
+>> >> can you two have some arrangement like you pulling Rafael's branch?
+>> >
+>> > My acpi-scan branch is not going to be rebased going forward, so it can be
+>> > pulled from safely if that helps.
+>>
+>> I'm happy to do that, but it is outside the scope of my limited git
+>> experience.  My guess is that I should do this (doing the pull into a
+>> branch which I later merge into my -next branch):
+>>
+>>   $ git checkout -b pci/yinghai-survey-resources+acpi-scan
+>> pci/yinghai-survey-resources
+>>   $ git pull --no-ff --log
+>> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
+>> acpi-scan
+>>   $ vi drivers/acpi/pci_root.c    # resolve conflicts
+>>   $ git add drivers/acpi/pci_root.c
+>>   $ git commit
+>>
+>>   $ git checkout next
+>>   $ git merge --no-ff --log pci/yinghai-survey-resources+acpi-scan
+>>
+>> Is that reasonable?
 >
->> With this patch, even
->> if a owner is set for tap, every user could change the number of real
->> queues which I don't think is not expected. Without this patch, we can
->> limit a user that just do read and write.
-> In the end if you want very fine tuned security policy you have to
-> use an LSM.
+> Yes, it looks reasonable.
 >
-> Here we are talking about the expected usage without an LSM.
-> There, enabling/disabling queues is just an optimization:
-> if an application wants to process data from a single thread
-> it's better off getting it through a single fd.
-> Having to channel threading changes through a priveledged
-> proxy would be very awkward.
-
-Yes, but we have something similar like bridge-helper in qemu which
-create devices through a privileged proxy.
->>>> Note that if management layer does not call TUNSETOWNER, the check
->>>> is just a nop. So if management layer want to limit the behavior, it's
->>>> its duty to do this correctly.
->>> The point is that management limits tun to allow SETIFF from libvirt
->>> only, then passes the fds to qemu.
->> Yes, but looks like libvirt does not call TUNSETOWNER before passing it
->> to qemu, so we're ok even without this patch. And if libvirt want to do
->> this, it can just call TUNSETOWNER to the user of qemu.
-> No, that would allow qemu to do SETIFF which we don't want.
-
-True, I was wrong.
+>> This won't cause issues when both Rafael and I ask Linus to pull from our
+>> trees later?
 >
->>>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->>>>>
->>>>> ---
->>>>>
->>>>> Note: this is unrelated to Stefan's bugfix.
->>>>>
->>>>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->>>>> index fbd106e..78e3225 100644
->>>>> --- a/drivers/net/tun.c
->>>>> +++ b/drivers/net/tun.c
->>>>> @@ -1789,10 +1792,8 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
->>>>>  		tun = tfile->detached;
->>>>>  		if (!tun)
->>>>>  			ret = -EINVAL;
->>>>> -		else if (tun_not_capable(tun))
->>>>> -			ret = -EPERM;
->>>>>  		else
->>>>>  			ret = tun_attach(tun, file);
->>>>>  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
->>>>>  		tun = rcu_dereference_protected(tfile->tun,
->>>>>  						lockdep_rtnl_is_held());
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> No, it won't, as long as I don't rebase the original acpi-scan branch (which
+> I'm not going to do) and you don't rebase your
+> pci/yinghai-survey-resources+acpi-scan branch going forward.
+>
+> The pull makes your tree contain the same commits (i.e. commit IDs along with
+> the data) that are in my acpi-scan branch, so when Linus merges them together,
+> git will notice that the commits are the same.
 
+OK, I did the above, merged it into my -next branch, and pushed it.
+Let me know if you see any issues.
+
+Bjorn
