@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab3AJKvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 05:51:24 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:52805 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470Ab3AJKvW (ORCPT
+	id S1753573Ab3AJKwq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 05:52:46 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:40498 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753378Ab3AJKwp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 05:51:22 -0500
+	Thu, 10 Jan 2013 05:52:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <1357163240-23131-1-git-send-email-linux@prisktech.co.nz>
-References: <1357163240-23131-1-git-send-email-linux@prisktech.co.nz>
-Date: Thu, 10 Jan 2013 11:51:22 +0100
-Message-ID: <CACRpkdYwn0uc1Nk+RMcx_AaZ5o6k2ug1rAAJrJCGNb9J4MwWhw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: vt8500: memory cleanup missing
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CACRpkdYHFp=nd+7Kq3t7q_SZnybKN+enX=v++iDhq21_x7SEow@mail.gmail.com>
+References: <CAMuHMdWqb_OxBV=8K_NAN_rgC6Tq9URbwmHTu2LgojWjYxEJUA@mail.gmail.com>
+	<CACRpkdYHFp=nd+7Kq3t7q_SZnybKN+enX=v++iDhq21_x7SEow@mail.gmail.com>
+Date: Thu, 10 Jan 2013 11:52:44 +0100
+X-Google-Sender-Auth: nI6HeoBOk_QqbvLtuirckxl3vJ0
+Message-ID: <CAMuHMdV9tZZ94QuCcyYCwgZZN9du48vq-h7++1aVjPKZ79d-Qg@mail.gmail.com>
+Subject: Re: redefinition of devm_gpio_request
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 2, 2013 at 10:47 PM, Tony Prisk <linux@prisktech.co.nz> wrote:
+On Thu, Jan 10, 2013 at 10:46 AM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> On Sun, Dec 16, 2012 at 2:11 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> On current linus/HEAD, m68k allmodconfig gives:
+>> drivers/gpio/devres.c:52: error: redefinition of ‘devm_gpio_request’
+>> include/linux/gpio.h:99: error: previous definition of
+>> ‘devm_gpio_request’ was here
+>> drivers/gpio/devres.c:82: error: redefinition of ‘devm_gpio_request_one’
+>> include/linux/gpio.h:111: error: previous definition of
+>> ‘devm_gpio_request_one’ was here
+>> drivers/gpio/devres.c:114: error: redefinition of ‘devm_gpio_free’
+>> include/linux/gpio.h:129: error: previous definition of
+>> ‘devm_gpio_free’ was here
+>> make[5]: *** [drivers/gpio/devres.o] Error 1
+>>
+>> The !CONFIG_GENERIC_GPIO dummy definitions in include/linux/gpio.h conflict
+>> with the real ones in drivers/gpio/devres.c.
+>> Should devres.c really be compiled if !CONFIG_GENERIC_GPIO?
+>
+> I've looked at it but I just can't figure this one out :-(
+>
+> obj-$(CONFIG_GPIOLIB)           += gpiolib.o devres.o
+>
+> GPIOLIB selects GENERIC_GPIO.
+>
+> So this *should* not be compiled unless GENERIC_GPIO is also
+> selected.
 
-> This driver is missing a .remove callback, and the fail path on
-> probe is incomplete.
->
-> If an error occurs in vt8500_add_chips, gpio_base is not unmapped.
-> The driver is also ignoring the return value from this function so
-> if a chip fails to register it completes as successful.
->
-> Replaced pr_err with dev_err in vt8500_add_chips since the device is
-> available.
->
-> There is also no .remove callback defined. To allow removing the
-> registered chips, I have moved *vtchip to be a static global.
->
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+I guess it was caused by ssb/bcma selecting GPIOLIB, which got fixed in the
+mean time.
 
-Applied to fixes, thanks!
+Gr{oetje,eeting}s,
 
-Yours,
-Linus Walleij
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
