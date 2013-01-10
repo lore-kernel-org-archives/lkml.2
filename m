@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab3AJRJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 12:09:48 -0500
-Received: from 8bytes.org ([85.214.48.195]:56071 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751224Ab3AJRJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 12:09:47 -0500
-Date: Thu, 10 Jan 2013 18:09:43 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Joerg Roedel <joerg.roedel@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: Re: [PATCH] iommu: moving initialization earlier
-Message-ID: <20130110170941.GA2556@8bytes.org>
-References: <1357545112-17375-1-git-send-email-aik@ozlabs.ru>
+	id S1754476Ab3AJRL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 12:11:59 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:59572 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260Ab3AJRL5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 12:11:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357545112-17375-1-git-send-email-aik@ozlabs.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Jan 10 18:09:44 2013
-X-DSPAM-Confidence: 0.9991
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 50eef5d822971253774753
+In-Reply-To: <20130110170147.GC32223@redhat.com>
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
+	<201301081747.17853.trenn@suse.de>
+	<CAE9FiQW=gT86Eo0gwPHi5iFi4sg=1SHkBohBAo2KXdoB_Ouqvw@mail.gmail.com>
+	<1586060.uJlkOEQfVW@hammer82.arch.suse.de>
+	<20130110142643.GB32223@redhat.com>
+	<CAE9FiQUGHKqbGk_GNfDuinwd0AMDGKeno44KWCLw7hGZs5OaKQ@mail.gmail.com>
+	<20130110170147.GC32223@redhat.com>
+Date: Thu, 10 Jan 2013 09:11:55 -0800
+X-Google-Sender-Auth: vktIVprEvIA5pjm2bSanZdRr2QM
+Message-ID: <CAE9FiQXEJ-pYpo7rCg+DpYw9hAFTRz97gR1NgRHBheCxdt0+yw@mail.gmail.com>
+Subject: Re: [PATCH] Only reset e820 once, even with multiple memmap=exactmap params
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Thomas Renninger <trenn@suse.de>,
+        MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
+        tglx@linutronix.de, khalid@gonehiking.org, horms@verge.net.au
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 06:51:52PM +1100, Alexey Kardashevskiy wrote:
-> The iommu_init() initializes IOMMU internal structures and data
-> required for the IOMMU API as iommu_group_alloc().
-> It is registered as a subsys_initcall now.
-> 
-> One of the IOMMU users is going to be a PCI subsystem on POWER.
-> It discovers new IOMMU tables during the PCI scan so the logical
-> place to call iommu_group_alloc() is the moment when a new group
-> is discovered. However PCI scan is done from subsys_initcall hook
-> as IOMMU does so PCI hook can be (and is) called before the IOMMU one.
-> 
-> The patch moves IOMMU subsystem initialization one step earlier
-> to make sure that IOMMU is initialized before PCI scan begins.
-> 
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+On Thu, Jan 10, 2013 at 9:01 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Thu, Jan 10, 2013 at 08:53:18AM -0800, Yinghai Lu wrote:
+>> On Thu, Jan 10, 2013 at 6:26 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> >
+>> > This happens only in case of kdump and not kexec. In case of kdump
+>> > we want second kernel to use only selected memory areas.
+>> >
+>> > In fact this is one improvement area. Instead of using memmap= entries
+>> > in kdump case, we should probably modify the e820 map passed in
+>> > zero page and get rid of memmap= entries.
+>>
+>> then how the kdump kernel get saved_max_pfn?
+>>
+>
+> Oh, I forgot about that. May be we can pass saved_max_pfn on command line
+> instead of passing all memmap= entries.
 
-Applied, thanks.
+then we create another kernel version/kexec tools dependency.
 
-
+kexec tools need to check kernel version, to see if saved_max_pfn= is supported.
