@@ -1,345 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab3AJPiB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:38:01 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56706 "EHLO multi.imgtec.com"
+	id S1754785Ab3AJPie (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:38:34 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:52690 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754460Ab3AJPcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:32:53 -0500
+	id S1754450Ab3AJPcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:32:52 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, Rob Landley <rob@landley.net>,
-        "Al Viro" <viro@ZenIV.linux.org.uk>, <linux-doc@vger.kernel.org>
-Subject: [PATCH v3 29/44] metag: Basic documentation
-Date: Thu, 10 Jan 2013 15:30:57 +0000
-Message-ID: <1357831872-29451-30-git-send-email-james.hogan@imgtec.com>
+CC: James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH v3 33/44] metag: Stack unwinding
+Date: Thu, 10 Jan 2013 15:31:01 +0000
+Message-ID: <1357831872-29451-34-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_30
+X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add basic metag documentation. This includes an outline description of
-the ABIs (including syscall ABI) and calling conventions, similar to the
-one in Documentation/frv/.
+Add stack unwinding support for metag.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-doc@vger.kernel.org
 ---
- Documentation/00-INDEX              |    2 +
- Documentation/kernel-parameters.txt |    4 +
- Documentation/metag/00-INDEX        |    4 +
- Documentation/metag/kernel-ABI.txt  |  256 +++++++++++++++++++++++++++++++++++
- 4 files changed, 266 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/metag/00-INDEX
- create mode 100644 Documentation/metag/kernel-ABI.txt
+ arch/metag/include/asm/stacktrace.h |   20 ++++
+ arch/metag/kernel/stacktrace.c      |  187 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 207 insertions(+), 0 deletions(-)
+ create mode 100644 arch/metag/include/asm/stacktrace.h
+ create mode 100644 arch/metag/kernel/stacktrace.c
 
-diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-index 8afe64f..f61be4a 100644
---- a/Documentation/00-INDEX
-+++ b/Documentation/00-INDEX
-@@ -226,6 +226,8 @@ memory-hotplug.txt
- 	- Hotpluggable memory support, how to use and current status.
- memory.txt
- 	- info on typical Linux memory problems.
-+metag/
-+	- directory with info about Linux on Meta architecture.
- mips/
- 	- directory with info about Linux on MIPS architecture.
- mmc/
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 363e348..2e9bfb7 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -970,6 +970,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			       If specified, z/VM IUCV HVC accepts connections
- 			       from listed z/VM user IDs only.
- 
-+	hwthread_map=	[METAG] Comma-separated list of Linux cpu id to
-+			        hardware thread id mappings.
-+				Format: <cpu>:<hwthread>
-+
- 	keep_bootcon	[KNL]
- 			Do not unregister boot console at start. This is only
- 			useful for debugging when something happens in the window
-diff --git a/Documentation/metag/00-INDEX b/Documentation/metag/00-INDEX
+diff --git a/arch/metag/include/asm/stacktrace.h b/arch/metag/include/asm/stacktrace.h
 new file mode 100644
-index 0000000..db11c51
+index 0000000..2830a0f
 --- /dev/null
-+++ b/Documentation/metag/00-INDEX
-@@ -0,0 +1,4 @@
-+00-INDEX
-+	- this file
-+kernel-ABI.txt
-+	- Documents metag ABI details
-diff --git a/Documentation/metag/kernel-ABI.txt b/Documentation/metag/kernel-ABI.txt
++++ b/arch/metag/include/asm/stacktrace.h
+@@ -0,0 +1,20 @@
++#ifndef __ASM_STACKTRACE_H
++#define __ASM_STACKTRACE_H
++
++struct stackframe {
++	unsigned long fp;
++	unsigned long sp;
++	unsigned long lr;
++	unsigned long pc;
++};
++
++struct metag_frame {
++	unsigned long fp;
++	unsigned long lr;
++};
++
++extern int unwind_frame(struct stackframe *frame);
++extern void walk_stackframe(struct stackframe *frame,
++			    int (*fn)(struct stackframe *, void *), void *data);
++
++#endif	/* __ASM_STACKTRACE_H */
+diff --git a/arch/metag/kernel/stacktrace.c b/arch/metag/kernel/stacktrace.c
 new file mode 100644
-index 0000000..7b8dee8
+index 0000000..5510361
 --- /dev/null
-+++ b/Documentation/metag/kernel-ABI.txt
-@@ -0,0 +1,256 @@
-+			==========================
-+			KERNEL ABIS FOR METAG ARCH
-+			==========================
++++ b/arch/metag/kernel/stacktrace.c
+@@ -0,0 +1,187 @@
++#include <linux/export.h>
++#include <linux/sched.h>
++#include <linux/stacktrace.h>
 +
-+This document describes the Linux ABIs for the metag architecture, and has the
-+following sections:
++#include <asm/stacktrace.h>
 +
-+ (*) Outline of registers
-+ (*) Userland registers
-+ (*) Kernel registers
-+ (*) System call ABI
-+ (*) Calling conventions
++#if defined(CONFIG_FRAME_POINTER)
 +
++#ifdef CONFIG_KALLSYMS
++#include <linux/kallsyms.h>
++#include <linux/module.h>
 +
-+====================
-+OUTLINE OF REGISTERS
-+====================
++static unsigned long tbi_boing_addr;
++static unsigned long tbi_boing_size;
 +
-+The main Meta core registers are arranged in units:
++static void tbi_boing_init(void)
++{
++	/* We need to know where TBIBoingVec is and it's size */
++	unsigned long size;
++	unsigned long offset;
++	char modname[MODULE_NAME_LEN];
++	char name[KSYM_NAME_LEN];
++	tbi_boing_addr = kallsyms_lookup_name("___TBIBoingVec");
++	if (!tbi_boing_addr)
++		tbi_boing_addr = 1;
++	else if (!lookup_symbol_attrs(tbi_boing_addr, &size,
++				      &offset, modname, name))
++		tbi_boing_size = size;
++}
++#endif
 +
-+	UNIT	Type	DESCRIPTION	GP	EXT	PRIV	GLOBAL
-+	=======	=======	===============	=======	=======	=======	=======
-+	CT	Special	Control unit
-+	D0	General	Data unit 0	0-7	8-15	16-31	16-31
-+	D1	General	Data unit 1	0-7	8-15	16-31	16-31
-+	A0	General	Address unit 0	0-3	4-7	 8-15	 8-15
-+	A1	General	Address unit 1	0-3	4-7	 8-15	 8-15
-+	PC	Special	PC unit		0		 1
-+	PORT	Special	Ports
-+	TR	Special	Trigger unit			 0-7
-+	TT	Special	Trace unit			 0-5
-+	FX	General	FP unit			0-15
++#define ALIGN_DOWN(addr, size)  ((addr)&(~((size)-1)))
 +
-+GP registers form part of the main context.
++/*
++ * Unwind the current stack frame and store the new register values in the
++ * structure passed as argument. Unwinding is equivalent to a function return,
++ * hence the new PC value rather than LR should be used for backtrace.
++ */
++int notrace unwind_frame(struct stackframe *frame)
++{
++	struct metag_frame *fp = (struct metag_frame *)frame->fp;
++	unsigned long lr;
++	unsigned long fpnew;
 +
-+Extended context registers (EXT) may not be present on all hardware threads and
-+can be context switched if support is enabled and the appropriate bits are set
-+in e.g. the D0.8 register to indicate what extended state to preserve.
++	if (frame->fp & 0x7)
++		return -EINVAL;
 +
-+Global registers are shared between threads and are privilege protected.
++	fpnew = fp->fp;
++	lr = fp->lr - 4;
 +
-+See arch/metag/include/asm/metag_regs.h for definitions relating to core
-+registers and the fields and bits they contain. See the TRMs for further details
-+about special registers.
++#ifdef CONFIG_KALLSYMS
++	/* If we've reached TBIBoingVec then we're at an interrupt
++	 * entry point or a syscall entry point. The frame pointer
++	 * points to a pt_regs which can be used to continue tracing on
++	 * the other side of the boing.
++	 */
++	if (!tbi_boing_addr)
++		tbi_boing_init();
++	if (tbi_boing_size && lr >= tbi_boing_addr &&
++	    lr < tbi_boing_addr + tbi_boing_size) {
++		struct pt_regs *regs = (struct pt_regs *)fpnew;
++		if (user_mode(regs))
++			return -EINVAL;
++		fpnew = regs->ctx.AX[1].U0;
++		lr = regs->ctx.DX[4].U1;
++	}
++#endif
 +
-+Several special registers are preserved in the main context, these are the
-+interesting ones:
++	/* stack grows up, so frame pointers must decrease */
++	if (fpnew < (ALIGN_DOWN((unsigned long)fp, THREAD_SIZE) +
++		     sizeof(struct thread_info)) || fpnew >= (unsigned long)fp)
++		return -EINVAL;
 +
-+	REG	(ALIAS)		PURPOSE
-+	=======================	===============================================
-+	CT.1	(TXMODE)	Processor mode bits (particularly for DSP)
-+	CT.2	(TXSTATUS)	Condition flags and LSM_STEP (MGET/MSET step)
-+	CT.3	(TXRPT)		Branch repeat counter
-+	PC.0	(PC)		Program counter
++	/* restore the registers from the stack frame */
++	frame->fp = fpnew;
++	frame->pc = lr;
 +
-+Some of the general registers have special purposes in the ABI and therefore
-+have aliases:
++	return 0;
++}
++#else
++int notrace unwind_frame(struct stackframe *frame)
++{
++	struct metag_frame *sp = (struct metag_frame *)frame->sp;
 +
-+	D0 REG	(ALIAS)	PURPOSE		D1 REG	(ALIAS)	PURPOSE
-+	===============	===============	===============	=======================
-+	D0.0	(D0Re0)	32bit result	D1.0	(D1Re0)	Top half of 64bit result
-+	D0.1	(D0Ar6)	Argument 6	D1.1	(D1Ar5)	Argument 5
-+	D0.2	(D0Ar4)	Argument 4	D1.2	(D1Ar3)	Argument 3
-+	D0.3	(D0Ar2)	Argument 2	D1.3	(D1Ar1)	Argument 1
-+	D0.4	(D0FrT)	Frame temp	D1.4	(D1RtP)	Return pointer
-+	D0.5		Call preserved	D1.5		Call preserved
-+	D0.6		Call preserved	D1.6		Call preserved
-+	D0.7		Call preserved	D1.7		Call preserved
++	if (frame->sp & 0x7)
++		return -EINVAL;
 +
-+	A0 REG	(ALIAS)	PURPOSE		A1 REG	(ALIAS)	PURPOSE
-+	===============	===============	===============	=======================
-+	A0.0	(A0StP)	Stack pointer	A1.0	(A1GbP)	Global base pointer
-+	A0.1	(A0FrP)	Frame pointer	A1.1	(A1LbP)	Local base pointer
-+	A0.2				A1.2
-+	A0.3				A1.3
++	while (!kstack_end(sp)) {
++		unsigned long addr = sp->lr - 4;
++		sp--;
 +
++		if (__kernel_text_address(addr)) {
++			frame->sp = (unsigned long)sp;
++			frame->pc = addr;
++			return 0;
++		}
++	}
++	return -EINVAL;
++}
++#endif
 +
-+==================
-+USERLAND REGISTERS
-+==================
++void notrace walk_stackframe(struct stackframe *frame,
++		     int (*fn)(struct stackframe *, void *), void *data)
++{
++	while (1) {
++		int ret;
 +
-+All the general purpose D0, D1, A0, A1 registers are preserved when entering the
-+kernel (including asynchronous events such as interrupts and timer ticks) except
-+the following which have special purposes in the ABI:
++		if (fn(frame, data))
++			break;
++		ret = unwind_frame(frame);
++		if (ret < 0)
++			break;
++	}
++}
++EXPORT_SYMBOL(walk_stackframe);
 +
-+	REGISTERS	WHEN	STATUS		PURPOSE
-+	===============	=======	===============	===============================
-+	D0.8		DSP	Preserved	ECH, determines what extended
-+						DSP state to preserve.
-+	A0.0	(A0StP)	ALWAYS	Preserved	Stack >= A0StP may be clobbered
-+						at any time by the creation of a
-+						signal frame.
-+	A1.0	(A1GbP)	SMP	Clobbered	Used as temporary for loading
-+						kernel stack pointer and saving
-+						core context.
-+	A0.15		!SMP	Protected	Stores kernel stack pointer.
-+	A1.15		ALWAYS	Protected	Stores kernel base pointer.
++#ifdef CONFIG_STACKTRACE
++struct stack_trace_data {
++	struct stack_trace *trace;
++	unsigned int no_sched_functions;
++	unsigned int skip;
++};
 +
-+On UP A0.15 is used to store the kernel stack pointer for storing the userland
-+context. A0.15 is global between hardware threads though which means it cannot
-+be used on SMP for this purpose. Since no protected local registers are
-+available A1GbP is reserved for use as a temporary to allow a percpu stack
-+pointer to be loaded for storing the rest of the context.
++static int save_trace(struct stackframe *frame, void *d)
++{
++	struct stack_trace_data *data = d;
++	struct stack_trace *trace = data->trace;
++	unsigned long addr = frame->pc;
 +
++	if (data->no_sched_functions && in_sched_functions(addr))
++		return 0;
++	if (data->skip) {
++		data->skip--;
++		return 0;
++	}
 +
-+================
-+KERNEL REGISTERS
-+================
++	trace->entries[trace->nr_entries++] = addr;
 +
-+When in the kernel the following registers have special purposes in the ABI:
++	return trace->nr_entries >= trace->max_entries;
++}
 +
-+	REGISTERS	WHEN	STATUS		PURPOSE
-+	===============	=======	===============	===============================
-+	A0.0	(A0StP)	ALWAYS	Preserved	Stack >= A0StP may be clobbered
-+						at any time by the creation of
-+						an irq signal frame.
-+	A1.0	(A1GbP)	ALWAYS	Preserved	Reserved (kernel base pointer).
++void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
++{
++	struct stack_trace_data data;
++	struct stackframe frame;
 +
++	data.trace = trace;
++	data.skip = trace->skip;
 +
-+===============
-+SYSTEM CALL ABI
-+===============
++	if (tsk != current) {
++#ifdef CONFIG_SMP
++		/*
++		 * What guarantees do we have here that 'tsk' is not
++		 * running on another CPU?  For now, ignore it as we
++		 * can't guarantee we won't explode.
++		 */
++		if (trace->nr_entries < trace->max_entries)
++			trace->entries[trace->nr_entries++] = ULONG_MAX;
++		return;
++#else
++		data.no_sched_functions = 1;
++		frame.fp = thread_saved_fp(tsk);
++		frame.sp = thread_saved_sp(tsk);
++		frame.lr = 0;		/* recovered from the stack */
++		frame.pc = thread_saved_pc(tsk);
++#endif
++	} else {
++		register unsigned long current_sp asm ("A0StP");
 +
-+When a system call is made, the following registers are effective:
++		data.no_sched_functions = 0;
++		frame.fp = (unsigned long)__builtin_frame_address(0);
++		frame.sp = current_sp;
++		frame.lr = (unsigned long)__builtin_return_address(0);
++		frame.pc = (unsigned long)save_stack_trace_tsk;
++	}
 +
-+	REGISTERS	CALL			RETURN
-+	===============	=======================	===============================
-+	D0.0	(D0Re0)				Return value (or -errno)
-+	D1.0	(D1Re0)	System call number	Clobbered
-+	D0.1	(D0Ar6)	Syscall arg #6		Preserved
-+	D1.1	(D1Ar5)	Syscall arg #5		Preserved
-+	D0.2	(D0Ar4)	Syscall arg #4		Preserved
-+	D1.2	(D1Ar3)	Syscall arg #3		Preserved
-+	D0.3	(D0Ar2)	Syscall arg #2		Preserved
-+	D1.3	(D1Ar1)	Syscall arg #1		Preserved
++	walk_stackframe(&frame, save_trace, &data);
++	if (trace->nr_entries < trace->max_entries)
++		trace->entries[trace->nr_entries++] = ULONG_MAX;
++}
 +
-+Due to the limited number of argument registers and some system calls with badly
-+aligned 64-bit arguments, 64-bit values are always packed in consecutive
-+arguments, even if this is contrary to the normal calling conventions (where the
-+two halves would go in a matching pair of data registers).
-+
-+For example fadvise64_64 usually has the signature:
-+
-+	long sys_fadvise64_64(i32 fd, i64 offs, i64 len, i32 advice);
-+
-+But for metag fadvise64_64 is wrapped so that the 64-bit arguments are packed:
-+
-+	long sys_fadvise64_64_metag(i32 fd,      i32 offs_lo,
-+				    i32 offs_hi, i32 len_lo,
-+				    i32 len_hi,  i32 advice)
-+
-+So the arguments are packed in the registers like this:
-+
-+	D0 REG	(ALIAS)	VALUE		D1 REG	(ALIAS)	VALUE
-+	===============	===============	===============	=======================
-+	D0.1	(D0Ar6)	advice		D1.1	(D1Ar5)	hi(len)
-+	D0.2	(D0Ar4)	lo(len)		D1.2	(D1Ar3)	hi(offs)
-+	D0.3	(D0Ar2)	lo(offs)	D1.3	(D1Ar1)	fd
-+
-+
-+===================
-+CALLING CONVENTIONS
-+===================
-+
-+These calling conventions apply to both user and kernel code. The stack grows
-+from low addresses to high addresses in the metag ABI. The stack pointer (A0StP)
-+should always point to the next free address on the stack and should at all
-+times be 64-bit aligned. The following registers are effective at the point of a
-+call:
-+
-+	REGISTERS	CALL			RETURN
-+	===============	=======================	===============================
-+	D0.0	(D0Re0)				32bit return value
-+	D1.0	(D1Re0)				Upper half of 64bit return value
-+	D0.1	(D0Ar6)	32bit argument #6	Clobbered
-+	D1.1	(D1Ar5)	32bit argument #5	Clobbered
-+	D0.2	(D0Ar4)	32bit argument #4	Clobbered
-+	D1.2	(D1Ar3)	32bit argument #3	Clobbered
-+	D0.3	(D0Ar2)	32bit argument #2	Clobbered
-+	D1.3	(D1Ar1)	32bit argument #1	Clobbered
-+	D0.4	(D0FrT)				Clobbered
-+	D1.4	(D1RtP)	Return pointer		Clobbered
-+	D{0-1}.{5-7}				Preserved
-+	A0.0	(A0StP)	Stack pointer		Preserved
-+	A1.0	(A0GbP)				Preserved
-+	A0.1	(A0FrP)	Frame pointer		Preserved
-+	A1.1	(A0LbP)				Preserved
-+	A{0-1},{2-3}				Clobbered
-+
-+64-bit arguments are placed in matching pairs of registers (i.e. the same
-+register number in both D0 and D1 units), with the least significant half in D0
-+and the most significant half in D1, leaving a gap where necessary. Futher
-+arguments are stored on the stack in reverse order (earlier arguments at higher
-+addresses):
-+
-+	ADDRESS		0     1     2     3	4     5     6     7
-+	===============	===== ===== ===== =====	===== ===== ===== =====
-+	A0StP       -->
-+	A0StP-0x08	32bit argument #8	32bit argument #7
-+	A0StP-0x10	32bit argument #10	32bit argument #9
-+
-+Function prologues tend to look a bit like this:
-+
-+	/* If frame pointer in use, move it to frame temp register so it can be
-+	   easily pushed onto stack */
-+	MOV	D0FrT,A0FrP
-+
-+	/* If frame pointer in use, set it to stack pointer */
-+	ADD	A0FrP,A0StP,#0
-+
-+	/* Preserve D0FrT, D1RtP, D{0-1}.{5-7} on stack, incrementing A0StP */
-+	MSETL	[A0StP++],D0FrT,D0.5,D0.6,D0.7
-+
-+	/* Allocate some stack space for local variables */
-+	ADD	A0StP,A0StP,#0x10
-+
-+At this point the stack would look like this:
-+
-+	ADDRESS		0     1     2     3	4     5     6     7
-+	===============	===== ===== ===== =====	===== ===== ===== =====
-+	A0StP       -->
-+	A0StP-0x08
-+	A0StP-0x10
-+	A0StP-0x18	Old D0.7		Old D1.7
-+	A0StP-0x20	Old D0.6		Old D1.6
-+	A0StP-0x28	Old D0.5		Old D1.5
-+	A0FrP       -->	Old A0FrP (frame ptr)	Old D1RtP (return ptr)
-+	A0FrP-0x08	32bit argument #8	32bit argument #7
-+	A0FrP-0x10	32bit argument #10	32bit argument #9
-+
-+Function epilogues tend to differ depending on the use of a frame pointer. An
-+example of a frame pointer epilogue:
-+
-+	/* Restore D0FrT, D1RtP, D{0-1}.{5-7} from stack, incrementing A0FrP */
-+	MGETL	D0FrT,D0.5,D0.6,D0.7,[A0FrP++]
-+	/* Restore stack pointer to where frame pointer was before increment */
-+	SUB	A0StP,A0FrP,#0x20
-+	/* Restore frame pointer from frame temp */
-+	MOV	A0FrP,D0FrT
-+	/* Return to caller via restored return pointer */
-+	MOV	PC,D1RtP
-+
-+If the function hasn't touched the frame pointer, MGETL cannot be safely used
-+with A0StP as it always increments and that would expose the stack to clobbering
-+by interrupts (kernel) or signals (user). Therefore it's common to see the MGETL
-+split into separate GETL instructions:
-+
-+	/* Restore D0FrT, D1RtP, D{0-1}.{5-7} from stack */
-+	GETL	D0FrT,D1RtP,[A0StP+#-0x30]
-+	GETL	D0.5,D1.5,[A0StP+#-0x28]
-+	GETL	D0.6,D1.6,[A0StP+#-0x20]
-+	GETL	D0.7,D1.7,[A0StP+#-0x18]
-+	/* Restore stack pointer */
-+	SUB	A0StP,A0StP,#0x30
-+	/* Return to caller via restored return pointer */
-+	MOV	PC,D1RtP
++void save_stack_trace(struct stack_trace *trace)
++{
++	save_stack_trace_tsk(current, trace);
++}
++EXPORT_SYMBOL_GPL(save_stack_trace);
++#endif
 -- 
 1.7.7.6
 
