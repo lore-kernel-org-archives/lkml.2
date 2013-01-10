@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751260Ab3AJIUY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 03:20:24 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:43241 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab3AJIUX (ORCPT
+	id S1751376Ab3AJIVS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 03:21:18 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:51540 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab3AJIVR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 03:20:23 -0500
-Message-ID: <50EE798F.4080108@linux.vnet.ibm.com>
-Date: Thu, 10 Jan 2013 13:49:27 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 10 Jan 2013 03:21:17 -0500
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Alex Shi <alex.shi@intel.com>
-Subject: Re: [PATCH] sched: Get rid of unnecessary checks from select_idle_sibling
-References: <1357714256-24373-1-git-send-email-namhyung@kernel.org> <50ED286C.6070601@linux.vnet.ibm.com> <87obgxpoz6.fsf@sejong.aot.lge.com>
-In-Reply-To: <87obgxpoz6.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011008-2000-0000-0000-00000A8B8431
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1357773033-22910-1-git-send-email-tomas.winkler@intel.com>
+References: <1357773033-22910-1-git-send-email-tomas.winkler@intel.com>
+Date: Thu, 10 Jan 2013 09:21:16 +0100
+Message-ID: <CA+icZUUDqrnQkJ16TRfHdeVe26+L54DH6-4Tm=o83nDcA2WEQg@mail.gmail.com>
+Subject: Re: [char-misc-next] mei: drop the warning when cl is not initialized
+ during unlinking
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: gregkh@linuxfoundation.org, arnd@arndb.de, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 11:19 AM, Namhyung Kim wrote:
-> Hi Preeti,
-> 
-> On Wed, 09 Jan 2013 13:51:00 +0530, Preeti U. Murthy wrote:
->> On 01/09/2013 12:20 PM, Namhyung Kim wrote:
->>> From: Namhyung Kim <namhyung.kim@lge.com>
->>>
->>> AFAICS @target cpu of select_idle_sibling() is always either prev_cpu
->>> or this_cpu.  So no need to check it again and the conditionals can be
->>> consolidated.
-> [snip]
->> If NUMA_TTWU_BIAS or NUMA_TTWU_TO is true(it is false by
-> 
-> I can't find those bits in the code.  I've checked v3.8-rc2,
-> next-20130110, tip/master and tip/numa/core but there's nothing like
-> above.  Which tree are you saying?
-> 
-> 
->> default),cpu/prev_cpu can be changed to be a random node_cpu(the node
->> that 'this_cpu' is on). In which case even if the node cpu is idle,it
->> would not be a viable target,looks like.Maybe that is why
->> select_idle_sibling() makes the check if the target is prev_cpu/this cpu.
-> 
-> Looking into tip/numa/core, I can see that there's a code added for
-> CONFIG_NUMA_BALANCING.  But still, it seems nothing changed on a path
-> from select_task_rq_fair() to select_idle_sibling() - i.e. if the
-> select_idle_sibling called, the target would be either prev_cpu or this
-> cpu.  Am I missing something?
+On Thu, Jan 10, 2013 at 12:10 AM, Tomas Winkler <tomas.winkler@intel.com> wrote:
+> On systems where wd and amthif is not initialized
+> we will hit cl->dev == NULL. This condition is okay
+> so we don't need to be laud about it.
+>
+> Fixes the follwing warning during suspend
+> [  137.061985] WARNING: at drivers/misc/mei/client.c:315 mei_cl_unlink+0x86/0x90 [mei]()
+> [  137.061986] Hardware name: 530U3BI/530U4BI/530U4BH
+> [  137.062140] Modules linked in: snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel snd_hda_intel snd_hda_codec kvm arc4 iwldvm snd_hwdep i915 snd_pcm mac80211 ghash_clmulni_intel snd_page_alloc aesni_intel snd_seq_midi xts snd_seq_midi_event aes_x86_64 rfcomm snd_rawmidi parport_pc bnep lrw snd_seq uvcvideo i2c_algo_bit ppdev gf128mul iwlwifi snd_timer drm_kms_helper ablk_helper cryptd drm snd_seq_device videobuf2_vmalloc psmouse videobuf2_memops snd cfg80211 btusb videobuf2_core soundcore videodev lp bluetooth samsung_laptop wmi microcode mei serio_raw mac_hid video hid_generic lpc_ich parport usbhid hid r8169
+> [  137.062143] Pid: 2706, comm: kworker/u:15 Tainted: G      D W    3.8.0-rc2-next20130109-1-iniza-generic #1
+> [  137.062144] Call Trace:
+> [  137.062156]  [<ffffffff8105860f>] warn_slowpath_common+0x7f/0xc0
+> [  137.062159]  [<ffffffff8135b1ea>] ? ioread32+0x3a/0x40
+> [  137.062162]  [<ffffffff8105866a>] warn_slowpath_null+0x1a/0x20
+> [  137.062168]  [<ffffffffa0076be6>] mei_cl_unlink+0x86/0x90 [mei]
+> [  137.062173]  [<ffffffffa0071325>] mei_reset+0xc5/0x240 [mei]
+> [  137.062178]  [<ffffffffa0073703>] mei_pci_resume+0xa3/0x110 [mei]
+> [  137.062183]  [<ffffffff81379cae>] pci_pm_resume+0x7e/0xe0
+> [  137.062185]  [<ffffffff81379c30>] ? pci_pm_thaw+0x80/0x80
+> [  137.062189]  [<ffffffff8145a415>] dpm_run_callback.isra.6+0x25/0x50
+> [  137.062192]  [<ffffffff8145a6cf>] device_resume+0x9f/0x140
+> [  137.062194]  [<ffffffff8145a791>] async_resume+0x21/0x50
+> [  137.062200]  [<ffffffff810858b0>] async_run_entry_fn+0x90/0x1c0
+> [  137.062203]  [<ffffffff810778e5>] process_one_work+0x155/0x460
+> [  137.062207]  [<ffffffff81078578>] worker_thread+0x168/0x400
+> [  137.062210]  [<ffffffff81078410>] ? manage_workers+0x2b0/0x2b0
+> [  137.062214]  [<ffffffff8107d9f0>] kthread+0xc0/0xd0
+> [  137.062218]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
+> [  137.062222]  [<ffffffff816bac6c>] ret_from_fork+0x7c/0xb0
+> [  137.062228]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
+>
+> Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> ---
+>  drivers/misc/mei/client.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+> index d566dd8..82ffd48 100644
+> --- a/drivers/misc/mei/client.c
+> +++ b/drivers/misc/mei/client.c
+> @@ -312,8 +312,9 @@ int mei_cl_unlink(struct mei_cl *cl)
+>         if (!cl)
+>                 return 0;
+>
+> -       if (WARN_ON(!cl->dev))
+> -               return -EINVAL;
+> +       /* wd and amthif might not be initialzed */
 
-Hi Namhyung,
-Sorry about this.I did a git pull on the tip/master.You are right this
-piece of code is not there any more.So not an issue.
+Fix untested, but seen this small typo: initial*i*zed
 
-You can go ahead and add my Reviewed-by.I don't find any potential
-problems now.
+- Sedat -
 
-For your information however, the code piece which was earlier there, is
-given below which aimed to pull the tasks towards the node of the waking
-cpu,if NUMA_TTWU_BIAS is enabled.
-
-   if (sched_feat_numa(NUMA_TTWU_BIAS) && node != -1) {
-               /*
-                * For fork,exec find the idlest cpu in the home-node.
-                */
-               if (sd_flag & (SD_BALANCE_FORK|SD_BALANCE_EXEC)) {
-                       int node_cpu = numa_select_node_cpu(p, node);
-                       if (node_cpu < 0)
-                               goto find_sd;
-
-                       new_cpu = cpu = node_cpu;
-                       sd = per_cpu(sd_node, cpu);
-                       goto pick_idlest;
-               }
-
-               /*
-                * For wake, pretend we were running in the home-node.
-                */
-               if (cpu_to_node(prev_cpu) != node) {
-                       int node_cpu = numa_select_node_cpu(p, node);
-                       if (node_cpu < 0)
-                               goto find_sd;
-
-                       if (sched_feat_numa(NUMA_TTWU_TO))
-                               cpu = node_cpu;
-                       else
-                               prev_cpu = node_cpu;
-               }
-       }
-
-> 
-> Thanks,
-> Namhyung
-> 
-I apologise once again for the wrong feedback.
-
-Thank you
-
-Regards
-Preeti U Murthy
-
+> +       if (!cl->dev)
+> +               return 0;
+>
+>         dev = cl->dev;
+>
+> --
+> 1.7.4.4
+>
