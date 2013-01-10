@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab3AJQmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 11:42:45 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:53288 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752634Ab3AJQmo (ORCPT
+	id S1754882Ab3AJQnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 11:43:51 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27738 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3AJQnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 11:42:44 -0500
-Date: Thu, 10 Jan 2013 11:42:41 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RELEASE] Userspace RCU 0.7.6
-Message-ID: <20130110164241.GA5051@Krystal>
-References: <20130109184616.GA14968@Krystal> <20130110083247.591ad0ba@nehalam.linuxnetplumber.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130110083247.591ad0ba@nehalam.linuxnetplumber.net>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 10 Jan 2013 11:43:50 -0500
+X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=hgKcp-RnQ0YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=rC-twdHML7MA:10 a=D19gQVrFAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=ePcNwm83Ps8d97yFlQ4A:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357836229.5141.13.camel@gandalf.local.home>
+Subject: [PATCH][GIT PULL] tracing: Fix regression of trace_options file
+ setting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>
+Date: Thu, 10 Jan 2013 11:43:49 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Hemminger (shemminger@vyatta.com) wrote:
-> On Wed, 9 Jan 2013 13:46:17 -0500
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> 
-> > liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-> > data synchronization library provides read-side access which scales
-> > linearly with the number of cores. It does so by allowing multiples
-> > copies of a given data structure to live at the same time, and by
-> > monitoring the data structure accesses to detect grace periods after
-> > which memory reclamation is possible.
-> > 
-> > liburcu-cds provides efficient data structures based on RCU and
-> > lock-free algorithms. Those structures include hash tables, queues,
-> > stacks, and doubly-linked lists.
-> > 
-> > This is a bugfix release, mainly fixing handling of processes using
-> > call_rcu, then fork() without following exec(), and then continuing use
-> > of synchronize_rcu() or call_rcu() in the child process. A hang in
-> > synchronize_rcu() in the child could occur, which is fixed by this
-> > release.
-> > 
-> > Changelog:
-> > 2013-01-09 Userspace RCU 0.7.6
-> >         * Discourage use of pthread_atfork() for call_rcu handlers
-> >         * Fix call_rcu fork handling
-> >         * test: fork handling
-> >         * Fix TLS detection: test with linker, add --disable-compiler-tls
-> >         * Cleanup: cast pthread_self() return value to unsigned long
-> >         * Fallback mechanism not working on platform where TLS is unsupported
-> > 
-> > Project website: http://lttng.org/urcu
-> > Download link: http://lttng.org/files/urcu/
-> > 
-> 
-> Why is the git repository still at 0.7.4 and there is no tag for 0.7.6?
-> Am I looking at the right place?
->   $ git remote -v
-> origin	git://git.lttng.org/userspace-rcu.git (fetch)
 
-I tried doing this to confirm:
+Linus,
 
-git clone git://git.lttng.org/userspace-rcu.git
-cd userspace-rcu
-git tag -l
+I just hit this bug with the lastest kernel. A change that came in this
+merge window broke the writing to the trace_options file. It causes
+garbage to be read during the compare of option names, and breaks
+setting options via the trace_options file, although options can still
+be set via the options/<option> files.
 
-and v0.7.6 is there.
+Also, I'm not sure where Ingo is, but I have an old pull request with
+minor fixes. Feel free to pull that if you want too:
 
-Please note that this tag is in the stable-0.7 branch (not master).
+https://lkml.org/lkml/2013/1/7/208
 
-Please let me know if the problem persists for you after making sure you
-use the right branch.
+Please pull trace-3.8-rc2-regression-fix:
 
-Thanks,
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-3.8-rc2-regression-fix
 
-Mathieu
+Head SHA1: f1a67efdbc2c0acb43b2f844053320c38876776f
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+
+Steven Rostedt (1):
+      tracing: Fix regression of trace_options file setting
+
+----
+ kernel/trace/trace.c |    2 ++
+ 1 file changed, 2 insertions(+)
+---------------------------
+commit a8dd2176a8e988e3744e863ac39647a6f59fa900
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Wed Jan 9 20:54:17 2013 -0500
+
+    tracing: Fix regression of trace_options file setting
+    
+    The latest change to allow trace options to be set on the command
+    line also broke the trace_options file.
+    
+    The zeroing of the last byte of the option name that is echoed into
+    the trace_option file was removed with the consolidation of some
+    of the code. The compare between the option and what was written to
+    the trace_options file fails because the string holding the data
+    written doesn't terminate with a null character.
+    
+    A zero needs to be added to the end of the string copied from
+    user space.
+    
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e512567..1bbfa04 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2899,6 +2899,8 @@ tracing_trace_options_write(struct file *filp, const char __user *ubuf,
+ 	if (copy_from_user(&buf, ubuf, cnt))
+ 		return -EFAULT;
+ 
++	buf[cnt] = 0;
++
+ 	trace_set_options(buf);
+ 
+ 	*ppos += cnt;
+
+
