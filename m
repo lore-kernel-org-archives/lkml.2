@@ -1,114 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339Ab3AJARk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 19:17:40 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:54151 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932206Ab3AJARj (ORCPT
+	id S932395Ab3AJAS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 19:18:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36046 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932206Ab3AJASz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 19:17:39 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Ezequiel Garcia <elezegarcia@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Julia.Lawall@lip6.fr,
-        kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: Re: [PATCH 01/23] uvc: Replace memcpy with struct assignment
-Date: Thu, 10 Jan 2013 01:19:18 +0100
-Message-ID: <1615162.CJ0Ejj80il@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.6.11-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121227214937.6276e2a3@redhat.com>
-References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com> <CALF0-+VQKxu7_-=aJeW-FxmM4fdVX1nBE7AA5-0d9SRgRqqM1g@mail.gmail.com> <20121227214937.6276e2a3@redhat.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 9 Jan 2013 19:18:55 -0500
+Date: Wed, 9 Jan 2013 16:18:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] mm: prevent to add a page to swap if may_writepage
+ is unset
+Message-Id: <20130109161854.67412dcc.akpm@linux-foundation.org>
+In-Reply-To: <1357712474-27595-2-git-send-email-minchan@kernel.org>
+References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+	<1357712474-27595-2-git-send-email-minchan@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ezequiel,
+On Wed,  9 Jan 2013 15:21:13 +0900
+Minchan Kim <minchan@kernel.org> wrote:
 
-On Thursday 27 December 2012 21:49:37 Mauro Carvalho Chehab wrote:
-> Em Thu, 27 Dec 2012 18:12:46 -0300 Ezequiel Garcia escreveu:
-> > On Tue, Oct 23, 2012 at 4:57 PM, Ezequiel Garcia wrote:
-> > > This kind of memcpy() is error-prone. Its replacement with a struct
-> > > assignment is prefered because it's type-safe and much easier to read.
-> > > 
-> > > Found by coccinelle. Hand patched and reviewed.
-> > > Tested by compilation only.
-> > > 
-> > > A simplified version of the semantic match that finds this problem is as
-> > > follows: (http://coccinelle.lip6.fr/)
-> > > 
-> > > // <smpl>
-> > > @@
-> > > identifier struct_name;
-> > > struct struct_name to;
-> > > struct struct_name from;
-> > > expression E;
-> > > @@
-> > > -memcpy(&(to), &(from), E);
-> > > +to = from;
-> > > // </smpl>
-> > > 
-> > > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > > Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> > > Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
-> > > ---
-> > > 
-> > >  drivers/media/usb/uvc/uvc_v4l2.c |    6 +++---
-> > >  1 files changed, 3 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/media/usb/uvc/uvc_v4l2.c
-> > > b/drivers/media/usb/uvc/uvc_v4l2.c index f00db30..4fc8737 100644
-> > > --- a/drivers/media/usb/uvc/uvc_v4l2.c
-> > > +++ b/drivers/media/usb/uvc/uvc_v4l2.c
-> > > @@ -314,7 +314,7 @@ static int uvc_v4l2_set_format(struct uvc_streaming
-> > > *stream,
-> > >                 goto done;
-> > >         }
-> > > 
-> > > -       memcpy(&stream->ctrl, &probe, sizeof probe);
-> > > +       stream->ctrl = probe;
-> > > 
-> > >         stream->cur_format = format;
-> > >         stream->cur_frame = frame;
-> > > @@ -386,7 +386,7 @@ static int uvc_v4l2_set_streamparm(struct
-> > > uvc_streaming *stream,
-> > >                 return -EBUSY;
-> > >         }
-> > > 
-> > > -       memcpy(&probe, &stream->ctrl, sizeof probe);
-> > > +       probe = stream->ctrl;
-> > >         probe.dwFrameInterval =
-> > >                 uvc_try_frame_interval(stream->cur_frame, interval);
-> > > 
-> > > @@ -397,7 +397,7 @@ static int uvc_v4l2_set_streamparm(struct
-> > > uvc_streaming *stream,
-> > >                 return ret;
-> > >         }
-> > > 
-> > > -       memcpy(&stream->ctrl, &probe, sizeof probe);
-> > > +       stream->ctrl = probe;
-> > >         mutex_unlock(&stream->mutex);
-> > >         
-> > >         /* Return the actual frame period. */
-> > 
-> > It seems you've marked this one as "Changes requested" [1].
-> > However, Laurent didn't request any change,
-> > but just pointed out we missed one memcpy replacement candidate.
-> > 
-> > I believe it's safe to apply the patch (together with the other 20
-> > patches) and we can fix the missing spot in another patch.
+> Recently, Luigi reported there are lots of free swap space when
+> OOM happens. It's easily reproduced on zram-over-swap, where
+> many instance of memory hogs are running and laptop_mode is enabled.
 > 
-> The other patches got applied already. Well just do whatever Laurent asked
-> you and re-submit this one ;)
+> Luigi reported there was no problem when he disabled laptop_mode.
+> The problem when I investigate problem is following as.
+> 
+> try_to_free_pages disable may_writepage if laptop_mode is enabled.
+> shrink_page_list adds lots of anon pages in swap cache by
+> add_to_swap, which makes pages Dirty and rotate them to head of
+> inactive LRU without pageout. If it is repeated, inactive anon LRU
+> is full of Dirty and SwapCache pages.
+> 
+> In case of that, isolate_lru_pages fails because it try to isolate
+> clean page due to may_writepage == 0.
+> 
+> The may_writepage could be 1 only if total_scanned is higher than
+> writeback_threshold in do_try_to_free_pages but unfortunately,
+> VM can't isolate anon pages from inactive anon lru list by
+> above reason and we already reclaimed all file-backed pages.
+> So it ends up OOM killing.
+> 
+> This patch prevents to add a page to swap cache unnecessary when
+> may_writepage is unset so anoymous lru list isn't full of
+> Dirty/Swapcache page. So VM can isolate pages from anon lru list,
+> which ends up setting may_writepage to 1 and could swap out
+> anon lru pages. When OOM triggers, I confirmed swap space was full.
+> 
+> ...
+>
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -780,6 +780,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  		if (PageAnon(page) && !PageSwapCache(page)) {
+>  			if (!(sc->gfp_mask & __GFP_IO))
+>  				goto keep_locked;
+> +			if (!sc->may_writepage)
+> +				goto keep_locked;
+>  			if (!add_to_swap(page))
+>  				goto activate_locked;
+>  			may_enter_fs = 1;
 
-Could you please resubmit this patch with the missed memcpy replaced by a 
-struct assignment ? I'll then add it to my tree.
+I'm not really getting it, and the description is rather hard to follow :(
 
--- 
-Regards,
+We should be adding anon pages to swapcache even when laptop_mode is
+set.  And we should be writing them to swap as well, then reclaiming
+them.  The only thing laptop_mode shouild do is make the disk spin up
+less frequently - that doesn't mean "not at all"!
 
-Laurent Pinchart
+So something seems screwed up here and the patch looks like a
+heavy-handed workaround.  Why aren't these anon pages getting written
+out in laptop_mode?
+
 
