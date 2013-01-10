@@ -1,115 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab3AJP12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:27:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45516 "EHLO mx1.redhat.com"
+	id S1753961Ab3AJP2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:28:16 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44626 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753561Ab3AJP10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:27:26 -0500
-Message-ID: <50EEDDD9.2020007@redhat.com>
-Date: Thu, 10 Jan 2013 23:27:21 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751847Ab3AJP2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:28:15 -0500
+Date: Thu, 10 Jan 2013 16:28:13 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] NumaScale changes
+Message-ID: <20130110152813.GG23008@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Daniel J Blueman <daniel@numascale-asia.com>,
+	lkml <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Stefan Hajnoczi <stefanha@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Moore <pmoore@redhat.com>
-Subject: Re: [PATCH] tun: avoid owner checks on IFF_ATTACH_QUEUE
-References: <20130110113108.GF13451@redhat.com> <50EECB43.8020405@redhat.com> <20130110141939.GA30557@redhat.com> <50EECFC8.9020402@redhat.com> <20130110144138.GA30731@redhat.com> <50EED495.4040405@redhat.com> <20130110151037.GD30731@redhat.com>
-In-Reply-To: <20130110151037.GD30731@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 11:10 PM, Michael S. Tsirkin wrote:
-> On Thu, Jan 10, 2013 at 10:47:49PM +0800, Jason Wang wrote:
->> On 01/10/2013 10:41 PM, Michael S. Tsirkin wrote:
->>> On Thu, Jan 10, 2013 at 10:27:20PM +0800, Jason Wang wrote:
->>>> On 01/10/2013 10:19 PM, Michael S. Tsirkin wrote:
->>>>> On Thu, Jan 10, 2013 at 10:08:03PM +0800, Jason Wang wrote:
->>>>>> On 01/10/2013 07:31 PM, Michael S. Tsirkin wrote:
->>>>>>> At the moment, we check owner when we enable queue in tun.
->>>>>>> This seems redundant and will break some valid uses
->>>>>>> where fd is passed around: I think TUNSETOWNER is there
->>>>>>> to prevent others from attaching to a persistent device not
->>>>>>> owned by them. Here the fd is already attached,
->>>>>>> enabling/disabling queue is more like read/write.
->>>>>> It also change the number of queues of the tuntap, maybe we should limit
->>>>>> this.
->>>>> Number of active queues? Why does it matter?
->>>>> Max number of queues is already limited by SETIFF.
->>>> Yes the number of active(real) queues in the kernel net device and this
->>>> changing may introduce other events such uevent.
->>> How can it trigger a uevent?
->> netif_set_real_num_{tx|rx}_queues() will update the queue kobjects which
->> may trigger an uevent.
-> Look SETOWNER is a tool intended mostly for persistent taps,
-> where you give a specific user the rights to attach to
-> specific taps but not others.
+Hi guys,
 
-True.
-> The uevent issue is preventing a DOS by a uevent flood?
-> Then it applies to persistent and non persistent as one.
-> So if one cares about this one should use an LSM
-> or we can add a separate capability to limit this if we
-> care enough.
+those changes have been a bit longer in the works and were ready even
+before the merge window but it was better to hold them off after it and
+send them out then. They basically incorporate PCI domain numbers into
+AMD northbridge IDs, thus adding support for Numascale confederated
+systems.
 
-Ok.
->>>> With this patch, even
->>>> if a owner is set for tap, every user could change the number of real
->>>> queues which I don't think is not expected. Without this patch, we can
->>>> limit a user that just do read and write.
->>> In the end if you want very fine tuned security policy you have to
->>> use an LSM.
->>>
->>> Here we are talking about the expected usage without an LSM.
->>> There, enabling/disabling queues is just an optimization:
->>> if an application wants to process data from a single thread
->>> it's better off getting it through a single fd.
->>> Having to channel threading changes through a priveledged
->>> proxy would be very awkward.
->> Yes, but we have something similar like bridge-helper in qemu which
->> create devices through a privileged proxy.
-> This only happens on startup. Threading changes can happen
-> at any time.
+Please pull,
+thanks.
 
-Yes. So no objection from my side. Thanks for the explanation.
->>>>>> Note that if management layer does not call TUNSETOWNER, the check
->>>>>> is just a nop. So if management layer want to limit the behavior, it's
->>>>>> its duty to do this correctly.
->>>>> The point is that management limits tun to allow SETIFF from libvirt
->>>>> only, then passes the fds to qemu.
->>>> Yes, but looks like libvirt does not call TUNSETOWNER before passing it
->>>> to qemu, so we're ok even without this patch. And if libvirt want to do
->>>> this, it can just call TUNSETOWNER to the user of qemu.
->>> No, that would allow qemu to do SETIFF which we don't want.
->> True, I was wrong.
->>>>>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->>>>>>>
->>>>>>> ---
->>>>>>>
->>>>>>> Note: this is unrelated to Stefan's bugfix.
->>>>>>>
->>>>>>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->>>>>>> index fbd106e..78e3225 100644
->>>>>>> --- a/drivers/net/tun.c
->>>>>>> +++ b/drivers/net/tun.c
->>>>>>> @@ -1789,10 +1792,8 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
->>>>>>>  		tun = tfile->detached;
->>>>>>>  		if (!tun)
->>>>>>>  			ret = -EINVAL;
->>>>>>> -		else if (tun_not_capable(tun))
->>>>>>> -			ret = -EPERM;
->>>>>>>  		else
->>>>>>>  			ret = tun_attach(tun, file);
->>>>>>>  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
->>>>>>>  		tun = rcu_dereference_protected(tfile->tun,
->>>>>>>  						lockdep_rtnl_is_held());
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--
+The following changes since commit 9931faca02c604c22335f5a935a501bb2ace6e20:
 
+  Linux 3.8-rc3 (2013-01-09 18:59:55 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/numascale
+
+for you to fetch changes up to c7e5301a1b7c3f47af635a8b1b14480b81426025:
+
+  amd64_edac: Fix type usage in NB IDs and memory ranges (2013-01-10 16:18:00 +0100)
+
+----------------------------------------------------------------
+This patchset adds support for federated systems where multiple memory
+controllers can exist and see each other over multiple PCI domains. This
+basically means that AMD node ids can be more than 8 now and the code
+handling this is taught to incorporate PCI domain into those IDs.
+
+----------------------------------------------------------------
+Daniel J Blueman (4):
+      x86, AMD, NB: Add multi-domain support
+      x86, AMD, NB: Use u16 for northbridge IDs in amd_get_nb_id
+      amd64_edac: Fix PCI function lookup
+      amd64_edac: Fix type usage in NB IDs and memory ranges
+
+ arch/x86/include/asm/amd_nb.h    |  17 ++++++++++++++++
+ arch/x86/include/asm/processor.h |   2 +-
+ arch/x86/kernel/cpu/amd.c        |   4 ++--
+ drivers/edac/amd64_edac.c        | 109 ++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------------------------
+ drivers/edac/amd64_edac.h        |  12 +++--------
+ 5 files changed, 80 insertions(+), 64 deletions(-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
