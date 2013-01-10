@@ -1,650 +1,1304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3AJPdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:33:07 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:54492 "EHLO multi.imgtec.com"
+	id S1754608Ab3AJPdF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:33:05 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:52769 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753910Ab3AJPcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:32:54 -0500
+	id S1754440Ab3AJPcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:32:55 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
 CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v3 34/44] metag: Various other headers
-Date: Thu, 10 Jan 2013 15:31:02 +0000
-Message-ID: <1357831872-29451-35-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH v3 37/44] metag: Build infrastructure
+Date: Thu, 10 Jan 2013 15:31:05 +0000
+Message-ID: <1357831872-29451-38-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_33
+X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the remaining metag header files:
- - byteorder.h, swab.h (byte order and swapping)
- - barrier.h, cpu.h. hwthread.h, processor.h (hardware thread related)
- - bug.h, elf.h, gpio.h, linkage.h, resource.h (other)
+Add metag build infrastructure.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/metag/include/asm/barrier.h        |   85 +++++++++++++
- arch/metag/include/asm/bug.h            |   12 ++
- arch/metag/include/asm/cpu.h            |   14 ++
- arch/metag/include/asm/elf.h            |  128 +++++++++++++++++++
- arch/metag/include/asm/gpio.h           |    4 +
- arch/metag/include/asm/hwthread.h       |   40 ++++++
- arch/metag/include/asm/linkage.h        |    7 +
- arch/metag/include/asm/processor.h      |  202 +++++++++++++++++++++++++++++++
- arch/metag/include/uapi/asm/byteorder.h |    1 +
- arch/metag/include/uapi/asm/resource.h  |    7 +
- arch/metag/include/uapi/asm/swab.h      |   26 ++++
- 11 files changed, 526 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/barrier.h
- create mode 100644 arch/metag/include/asm/bug.h
- create mode 100644 arch/metag/include/asm/cpu.h
- create mode 100644 arch/metag/include/asm/elf.h
- create mode 100644 arch/metag/include/asm/gpio.h
- create mode 100644 arch/metag/include/asm/hwthread.h
- create mode 100644 arch/metag/include/asm/linkage.h
- create mode 100644 arch/metag/include/asm/processor.h
- create mode 100644 arch/metag/include/uapi/asm/byteorder.h
- create mode 100644 arch/metag/include/uapi/asm/resource.h
- create mode 100644 arch/metag/include/uapi/asm/swab.h
+ arch/metag/Kconfig                     |  275 ++++++++++++++++++++++++++++++++
+ arch/metag/Kconfig.debug               |   40 +++++
+ arch/metag/Kconfig.soc                 |   55 +++++++
+ arch/metag/Makefile                    |   87 ++++++++++
+ arch/metag/boot/Makefile               |   68 ++++++++
+ arch/metag/configs/meta1_defconfig     |   37 +++++
+ arch/metag/configs/meta2_defconfig     |   38 +++++
+ arch/metag/configs/meta2_smp_defconfig |   39 +++++
+ arch/metag/include/asm/Kbuild          |   55 +++++++
+ arch/metag/include/uapi/asm/Kbuild     |   13 ++
+ arch/metag/kernel/.gitignore           |    1 +
+ arch/metag/kernel/Makefile             |   36 ++++
+ arch/metag/kernel/asm-offsets.c        |   14 ++
+ arch/metag/kernel/metag_ksyms.c        |   75 +++++++++
+ arch/metag/kernel/vmlinux.lds.S        |   71 ++++++++
+ arch/metag/lib/Makefile                |   22 +++
+ arch/metag/mm/Kconfig                  |  153 ++++++++++++++++++
+ arch/metag/mm/Makefile                 |   19 +++
+ arch/metag/tbx/Makefile                |   21 +++
+ 19 files changed, 1119 insertions(+), 0 deletions(-)
+ create mode 100644 arch/metag/Kconfig
+ create mode 100644 arch/metag/Kconfig.debug
+ create mode 100644 arch/metag/Kconfig.soc
+ create mode 100644 arch/metag/Makefile
+ create mode 100644 arch/metag/boot/Makefile
+ create mode 100644 arch/metag/configs/meta1_defconfig
+ create mode 100644 arch/metag/configs/meta2_defconfig
+ create mode 100644 arch/metag/configs/meta2_smp_defconfig
+ create mode 100644 arch/metag/include/asm/Kbuild
+ create mode 100644 arch/metag/include/uapi/asm/Kbuild
+ create mode 100644 arch/metag/kernel/.gitignore
+ create mode 100644 arch/metag/kernel/Makefile
+ create mode 100644 arch/metag/kernel/asm-offsets.c
+ create mode 100644 arch/metag/kernel/metag_ksyms.c
+ create mode 100644 arch/metag/kernel/vmlinux.lds.S
+ create mode 100644 arch/metag/lib/Makefile
+ create mode 100644 arch/metag/mm/Kconfig
+ create mode 100644 arch/metag/mm/Makefile
+ create mode 100644 arch/metag/tbx/Makefile
 
-diff --git a/arch/metag/include/asm/barrier.h b/arch/metag/include/asm/barrier.h
+diff --git a/arch/metag/Kconfig b/arch/metag/Kconfig
 new file mode 100644
-index 0000000..c90bfc6
+index 0000000..a3e9d5b
 --- /dev/null
-+++ b/arch/metag/include/asm/barrier.h
-@@ -0,0 +1,85 @@
-+#ifndef _ASM_METAG_BARRIER_H
-+#define _ASM_METAG_BARRIER_H
++++ b/arch/metag/Kconfig
+@@ -0,0 +1,275 @@
++config SYMBOL_PREFIX
++	string
++	default "_"
 +
-+#include <asm/metag_mem.h>
++config METAG
++	def_bool y
++	select EMBEDDED
++	select GENERIC_ATOMIC64
++	select GENERIC_CLOCKEVENTS
++	select GENERIC_IRQ_SHOW
++	select GENERIC_SMP_IDLE_THREAD
++	select HAVE_64BIT_ALIGNED_ACCESS
++	select HAVE_ARCH_TRACEHOOK
++	select HAVE_DEBUG_KMEMLEAK
++	select HAVE_GENERIC_HARDIRQS
++	select HAVE_KERNEL_BZIP2
++	select HAVE_KERNEL_GZIP
++	select HAVE_KERNEL_LZO
++	select HAVE_KERNEL_XZ
++	select HAVE_MEMBLOCK
++	select HAVE_MEMBLOCK_NODE_MAP
++	select HAVE_MOD_ARCH_SPECIFIC
++	select HAVE_SYSCALL_TRACEPOINTS
++	select IRQ_DOMAIN
++	select MODULES_USE_ELF_RELA
++	select OF
++	select OF_EARLY_FLATTREE
++	select SPARSE_IRQ
 +
-+#define nop()		asm volatile ("NOP")
-+#define mb()		wmb()
-+#define rmb()		barrier()
++config ARCH_NO_VIRT_TO_BUS
++	def_bool y
 +
-+#ifdef CONFIG_METAG_META21
++config STACKTRACE_SUPPORT
++	def_bool y
 +
-+/* HTP and above have a system event to fence writes */
-+static inline void wr_fence(void)
-+{
-+	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_FENCE;
-+	barrier();
-+	*flushptr = 0;
-+}
++config LOCKDEP_SUPPORT
++	def_bool y
 +
-+#else /* CONFIG_METAG_META21 */
++config HAVE_LATENCYTOP_SUPPORT
++	def_bool y
 +
-+/*
-+ * ATP doesn't have system event to fence writes, so it is necessary to flush
-+ * the processor write queues as well as possibly the write combiner (depending
-+ * on the page being written).
-+ * To ensure the write queues are flushed we do 4 writes to a system event
-+ * register (in this case write combiner flush) which will also flush the write
-+ * combiner.
-+ */
-+static inline void wr_fence(void)
-+{
-+	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_COMBINE_FLUSH;
-+	barrier();
-+	*flushptr = 0;
-+	*flushptr = 0;
-+	*flushptr = 0;
-+	*flushptr = 0;
-+}
++config RWSEM_GENERIC_SPINLOCK
++	def_bool y
 +
-+#endif /* !CONFIG_METAG_META21 */
++config RWSEM_XCHGADD_ALGORITHM
++	bool
 +
-+static inline void wmb(void)
-+{
-+	/* flush writes through the write combiner */
-+	wr_fence();
-+}
++config GENERIC_HWEIGHT
++	def_bool y
 +
-+#define read_barrier_depends()  do { } while (0)
++config GENERIC_CALIBRATE_DELAY
++	def_bool y
 +
-+#ifndef CONFIG_SMP
-+#define fence()		do { } while (0)
-+#define smp_mb()        barrier()
-+#define smp_rmb()       barrier()
-+#define smp_wmb()       barrier()
-+#else
++config GENERIC_GPIO
++	def_bool n
 +
-+#ifdef CONFIG_METAG_SMP_WRITE_REORDERING
-+/*
-+ * Write to the atomic memory unlock system event register (command 0). This is
-+ * needed before a write to shared memory in a critical section, to prevent
-+ * external reordering of writes before the fence on other threads with writes
-+ * after the fence on this thread (and to prevent the ensuing cache-memory
-+ * incoherence). It is therefore ineffective if used after and on the same
-+ * thread as a write.
-+ */
-+static inline void fence(void)
-+{
-+	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_ATOMIC_UNLOCK;
-+	barrier();
-+	*flushptr = 0;
-+}
-+#define smp_mb()        fence()
-+#define smp_rmb()       fence()
-+#define smp_wmb()       barrier()
-+#else
-+#define fence()		do { } while (0)
-+#define smp_mb()        barrier()
-+#define smp_rmb()       barrier()
-+#define smp_wmb()       barrier()
-+#endif
-+#endif
-+#define smp_read_barrier_depends()     do { } while (0)
-+#define set_mb(var, value) do { var = value; smp_mb(); } while (0)
++config NO_IOPORT
++	def_bool y
 +
-+#endif /* _ASM_METAG_BARRIER_H */
-diff --git a/arch/metag/include/asm/bug.h b/arch/metag/include/asm/bug.h
++source "init/Kconfig"
++
++source "kernel/Kconfig.freezer"
++
++menu "Processor type and features"
++
++config MMU
++	def_bool y
++
++config STACK_GROWSUP
++	def_bool y
++
++config HOTPLUG_CPU
++	bool "Enable CPU hotplug support"
++	depends on SMP
++	help
++	  Say Y here to allow turning CPUs off and on. CPUs can be
++	  controlled through /sys/devices/system/cpu.
++
++	  Say N if you want to disable CPU hotplug.
++
++config HIGHMEM
++	bool "High Memory Support"
++	help
++	  The address space of Meta processors is only 4 Gigabytes large
++	  and it has to accommodate user address space, kernel address
++	  space as well as some memory mapped IO. That means that, if you
++	  have a large amount of physical memory and/or IO, not all of the
++	  memory can be "permanently mapped" by the kernel. The physical
++	  memory that is not permanently mapped is called "high memory".
++
++	  Depending on the selected kernel/user memory split, minimum
++	  vmalloc space and actual amount of RAM, you may not need this
++	  option which should result in a slightly faster kernel.
++
++	  If unsure, say n.
++
++source "arch/metag/mm/Kconfig"
++
++source "arch/metag/Kconfig.soc"
++
++config METAG_META12
++	bool
++	help
++	  Select this from the SoC config symbol to indicate that it contains a
++	  Meta 1.2 core.
++
++config METAG_META21
++	bool
++	help
++	  Select this from the SoC config symbol to indicate that it contains a
++	  Meta 2.1 core.
++
++config SMP
++	bool "Symmetric multi-processing support"
++	depends on METAG_META21
++	select USE_GENERIC_SMP_HELPERS
++	help
++	  This enables support for systems with more than one thread running
++	  Linux. If you have a system with only one thread running Linux,
++	  say N. Otherwise, say Y.
++
++config NR_CPUS
++	int "Maximum number of CPUs (2-4)" if SMP
++	range 2 4 if SMP
++	default "1" if !SMP
++	default "4" if SMP
++
++config METAG_SMP_WRITE_REORDERING
++	bool
++	help
++	  This attempts to prevent cache-memory incoherence due to external
++	  reordering of writes from different hardware threads when SMP is
++	  enabled. It adds fences (system event 0) to smp_mb and smp_rmb in an
++	  attempt to catch some of the cases, and also before writes to shared
++	  memory in LOCK1 protected atomics and spinlocks.
++	  This will not completely prevent cache incoherency on affected cores.
++
++config METAG_LNKGET_AROUND_CACHE
++	bool
++	depends on METAG_META21
++	help
++	  This indicates that the LNKGET/LNKSET instructions go around the
++	  cache, which requires some extra cache flushes when the memory needs
++	  to be accessed by normal GET/SET instructions too.
++
++choice
++	prompt "Atomicity primitive"
++	default METAG_ATOMICITY_LNKGET
++	help
++	  This option selects the mechanism for performing atomic operations.
++
++config METAG_ATOMICITY_IRQSOFF
++	depends on !SMP
++	bool "irqsoff"
++	help
++	  This option disables interrupts to achieve atomicity. This mechanism
++	  is not SMP-safe.
++
++config METAG_ATOMICITY_LNKGET
++	depends on METAG_META21
++	bool "lnkget/lnkset"
++	help
++	  This option uses the LNKGET and LNKSET instructions to achieve
++	  atomicity. LNKGET/LNKSET are load-link/store-conditional instructions.
++	  Choose this option if your system requires low latency.
++
++config METAG_ATOMICITY_LOCK1
++	depends on SMP
++	bool "lock1"
++	help
++	  This option uses the LOCK1 instruction for atomicity. This is mainly
++	  provided as a debugging aid if the lnkget/lnkset atomicity primitive
++	  isn't working properly.
++
++endchoice
++
++config METAG_FPU
++	bool "FPU Support"
++	depends on METAG_META21
++	default y
++	help
++	  This option allows processes to use FPU hardware available with this
++	  CPU. If this option is not enabled FPU registers will not be saved
++	  and restored on context-switch.
++
++	  If you plan on running programs which are compiled to use hard floats
++	  say Y here.
++
++config METAG_DSP
++	bool "DSP Support"
++	help
++	  This option allows processes to use DSP hardware available
++	  with this CPU. If this option is not enabled DSP registers
++	  will not be saved and restored on context-switch.
++
++	  If you plan on running DSP programs say Y here.
++
++config METAG_PERFCOUNTER_IRQS
++	bool "PerfCounters interrupt support"
++	depends on METAG_META21
++	help
++	  This option enables using interrupts to collect information from
++	  Performance Counters. This option is supported in new META21
++	  (starting from HTP265).
++
++	  When disabled, Performance Counters information will be collected
++	  based on Timer Interrupt.
++
++menu "Boot options"
++
++config METAG_BUILTIN_DTB
++	bool "Embed DTB in kernel image"
++	default y
++	help
++	  Embeds a device tree binary in the kernel image.
++
++config METAG_BUILTIN_DTB_NAME
++	string "Built in DTB"
++	depends on METAG_BUILTIN_DTB
++	help
++	  Set the name of the DTB to embed (leave blank to pick one
++	  automatically based on kernel configuration).
++
++config CMDLINE_BOOL
++	bool "Default bootloader kernel arguments"
++
++config CMDLINE
++	string "Kernel command line"
++	depends on CMDLINE_BOOL
++	help
++	  On some architectures there is currently no way for the boot loader
++	  to pass arguments to the kernel. For these architectures, you should
++	  supply some command-line options at build time by entering them
++	  here.
++
++config CMDLINE_FORCE
++	bool "Force default kernel command string"
++	depends on CMDLINE_BOOL
++	help
++	  Set this to have arguments from the default kernel command string
++	  override those passed by the boot loader.
++
++endmenu
++
++source "kernel/Kconfig.preempt"
++
++source kernel/Kconfig.hz
++
++endmenu
++
++menu "Power management options"
++
++source kernel/power/Kconfig
++
++endmenu
++
++menu "Executable file formats"
++
++source "fs/Kconfig.binfmt"
++
++endmenu
++
++source "net/Kconfig"
++
++source "drivers/Kconfig"
++
++source "fs/Kconfig"
++
++source "arch/metag/Kconfig.debug"
++
++source "security/Kconfig"
++
++source "crypto/Kconfig"
++
++source "lib/Kconfig"
+diff --git a/arch/metag/Kconfig.debug b/arch/metag/Kconfig.debug
 new file mode 100644
-index 0000000..d04b48c
+index 0000000..e45bbf6
 --- /dev/null
-+++ b/arch/metag/include/asm/bug.h
-@@ -0,0 +1,12 @@
-+#ifndef _ASM_METAG_BUG_H
-+#define _ASM_METAG_BUG_H
-+
-+#include <asm-generic/bug.h>
-+
-+struct pt_regs;
-+
-+extern const char *trap_name(int trapno);
-+extern void die(const char *str, struct pt_regs *regs, long err,
-+		unsigned long addr) __attribute__ ((noreturn));
-+
-+#endif
-diff --git a/arch/metag/include/asm/cpu.h b/arch/metag/include/asm/cpu.h
-new file mode 100644
-index 0000000..decf129
---- /dev/null
-+++ b/arch/metag/include/asm/cpu.h
-@@ -0,0 +1,14 @@
-+#ifndef _ASM_METAG_CPU_H
-+#define _ASM_METAG_CPU_H
-+
-+#include <linux/percpu.h>
-+
-+struct cpuinfo_metag {
-+	struct cpu cpu;
-+#ifdef CONFIG_SMP
-+	unsigned long loops_per_jiffy;
-+#endif
-+};
-+
-+DECLARE_PER_CPU(struct cpuinfo_metag, cpu_data);
-+#endif /* _ASM_METAG_CPU_H */
-diff --git a/arch/metag/include/asm/elf.h b/arch/metag/include/asm/elf.h
-new file mode 100644
-index 0000000..d63b9d0
---- /dev/null
-+++ b/arch/metag/include/asm/elf.h
-@@ -0,0 +1,128 @@
-+#ifndef __ASM_METAG_ELF_H
-+#define __ASM_METAG_ELF_H
-+
-+#define EM_METAG      174
-+
-+/* Meta relocations */
-+#define R_METAG_HIADDR16                 0
-+#define R_METAG_LOADDR16                 1
-+#define R_METAG_ADDR32                   2
-+#define R_METAG_NONE                     3
-+#define R_METAG_RELBRANCH                4
-+#define R_METAG_GETSETOFF                5
-+
-+/* Backward compatability */
-+#define R_METAG_REG32OP1                 6
-+#define R_METAG_REG32OP2                 7
-+#define R_METAG_REG32OP3                 8
-+#define R_METAG_REG16OP1                 9
-+#define R_METAG_REG16OP2                10
-+#define R_METAG_REG16OP3                11
-+#define R_METAG_REG32OP4                12
-+
-+#define R_METAG_HIOG                    13
-+#define R_METAG_LOOG                    14
-+
-+/* GNU */
-+#define R_METAG_GNU_VTINHERIT           30
-+#define R_METAG_GNU_VTENTRY             31
-+
-+/* PIC relocations */
-+#define R_METAG_HI16_GOTOFF             32
-+#define R_METAG_LO16_GOTOFF             33
-+#define R_METAG_GETSET_GOTOFF           34
-+#define R_METAG_GETSET_GOT              35
-+#define R_METAG_HI16_GOTPC              36
-+#define R_METAG_LO16_GOTPC              37
-+#define R_METAG_HI16_PLT                38
-+#define R_METAG_LO16_PLT                39
-+#define R_METAG_RELBRANCH_PLT           40
-+#define R_METAG_GOTOFF                  41
-+#define R_METAG_PLT                     42
-+#define R_METAG_COPY                    43
-+#define R_METAG_JMP_SLOT                44
-+#define R_METAG_RELATIVE                45
-+#define R_METAG_GLOB_DAT                46
-+
-+/*
-+ * ELF register definitions.
-+ */
-+
-+#include <asm/page.h>
-+#include <asm/processor.h>
-+#include <asm/ptrace.h>
-+#include <asm/user.h>
-+
-+typedef unsigned long elf_greg_t;
-+
-+#define ELF_NGREG (sizeof(struct user_gp_regs) / sizeof(elf_greg_t))
-+typedef elf_greg_t elf_gregset_t[ELF_NGREG];
-+
-+typedef unsigned long elf_fpregset_t;
-+
-+/*
-+ * This is used to ensure we don't load something for the wrong architecture.
-+ */
-+#define elf_check_arch(x) ((x)->e_machine == EM_METAG)
-+
-+/*
-+ * These are used to set parameters in the core dumps.
-+ */
-+#define ELF_CLASS	ELFCLASS32
-+#define ELF_DATA	ELFDATA2LSB
-+#define ELF_ARCH	EM_METAG
-+
-+#define ELF_PLAT_INIT(_r, load_addr)	\
-+	do { _r->ctx.AX[0].U0 = 0; } while (0)
-+
-+#define USE_ELF_CORE_DUMP
-+#define CORE_DUMP_USE_REGSET
-+#define ELF_EXEC_PAGESIZE	PAGE_SIZE
-+
-+/* This is the location that an ET_DYN program is loaded if exec'ed.  Typical
-+   use of this is to invoke "./ld.so someprog" to test out a new version of
-+   the loader.  We need to make sure that it is out of the way of the program
-+   that it will "exec", and that there is sufficient room for the brk.  */
-+
-+#define ELF_ET_DYN_BASE         0x08000000UL
-+
-+#define ELF_CORE_COPY_REGS(_dest, _regs)			\
-+	memcpy((char *)&_dest, (char *)_regs, sizeof(struct pt_regs));
-+
-+/* This yields a mask that user programs can use to figure out what
-+   instruction set this cpu supports.  */
-+
-+#define ELF_HWCAP	(0)
-+
-+/* This yields a string that ld.so will use to load implementation
-+   specific libraries for optimization.  This is more specific in
-+   intent than poking at uname or /proc/cpuinfo.  */
-+
-+#define ELF_PLATFORM  (NULL)
-+
-+#define SET_PERSONALITY(ex) \
-+	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
-+
-+#define STACK_RND_MASK (0)
-+
-+#ifdef CONFIG_METAG_USER_TCM
-+
-+struct elf32_phdr;
-+struct file;
-+
-+unsigned long __metag_elf_map(struct file *filep, unsigned long addr,
-+			      struct elf32_phdr *eppnt, int prot, int type,
-+			      unsigned long total_size);
-+
-+static inline unsigned long metag_elf_map(struct file *filep,
-+					  unsigned long addr,
-+					  struct elf32_phdr *eppnt, int prot,
-+					  int type, unsigned long total_size)
-+{
-+	return __metag_elf_map(filep, addr, eppnt, prot, type, total_size);
-+}
-+#define elf_map metag_elf_map
-+
-+#endif
-+
-+#endif
-diff --git a/arch/metag/include/asm/gpio.h b/arch/metag/include/asm/gpio.h
-new file mode 100644
-index 0000000..b3799d8
---- /dev/null
-+++ b/arch/metag/include/asm/gpio.h
-@@ -0,0 +1,4 @@
-+#ifndef __LINUX_GPIO_H
-+#warning Include linux/gpio.h instead of asm/gpio.h
-+#include <linux/gpio.h>
-+#endif
-diff --git a/arch/metag/include/asm/hwthread.h b/arch/metag/include/asm/hwthread.h
-new file mode 100644
-index 0000000..8f97866
---- /dev/null
-+++ b/arch/metag/include/asm/hwthread.h
++++ b/arch/metag/Kconfig.debug
 @@ -0,0 +1,40 @@
-+/*
-+ * Copyright (C) 2008 Imagination Technologies
-+ */
-+#ifndef __METAG_HWTHREAD_H
-+#define __METAG_HWTHREAD_H
++menu "Kernel hacking"
 +
-+#include <linux/bug.h>
-+#include <linux/io.h>
++config TRACE_IRQFLAGS_SUPPORT
++	bool
++	default y
 +
-+#include <asm/metag_mem.h>
++source "lib/Kconfig.debug"
 +
-+#define BAD_HWTHREAD_ID		(0xFFU)
-+#define BAD_CPU_ID		(0xFFU)
++config DEBUG_STACKOVERFLOW
++	bool "Check for stack overflows"
++	depends on DEBUG_KERNEL
++	help
++	  This option will cause messages to be printed if free stack space
++	  drops below a certain limit.
 +
-+extern u8 cpu_2_hwthread_id[];
-+extern u8 hwthread_id_2_cpu[];
++config 4KSTACKS
++	bool "Use 4Kb for kernel stacks instead of 8Kb"
++	depends on DEBUG_KERNEL
++	help
++	  If you say Y here the kernel will use a 4Kb stacksize for the
++	  kernel stack attached to each process/thread. This facilitates
++	  running more threads on a system and also reduces the pressure
++	  on the VM subsystem for higher order allocations. This option
++	  will also use IRQ stacks to compensate for the reduced stackspace.
 +
-+/*
-+ * Each hardware thread's Control Unit registers are memory-mapped
-+ * and can therefore be accessed by any other hardware thread.
-+ *
-+ * This helper function returns the memory address where "thread"'s
-+ * register "regnum" is mapped.
-+ */
-+static inline
-+void __iomem *__CU_addr(unsigned int thread, unsigned int regnum)
-+{
-+	unsigned int base, thread_offset, thread_regnum;
++config METAG_FUNCTION_TRACE
++	bool "Output Meta real-time trace data for function entry/exit"
++	help
++	  If you say Y here the kernel will use the Meta hardware trace
++	  unit to output information about function entry and exit that
++	  can be used by a debugger for profiling and call-graphs.
 +
-+	WARN_ON(thread == BAD_HWTHREAD_ID);
++config METAG_POISON_CATCH_BUFFERS
++	bool "Poison catch buffer contents on kernel entry"
++	help
++	  If you say Y here the kernel will write poison data to the
++	  catch buffer registers on kernel entry. This will make any
++	  problem with catch buffer handling much more apparent.
 +
-+	base = T0UCTREG0;	/* Control unit base */
-+
-+	thread_offset = TnUCTRX_STRIDE * thread;
-+	thread_regnum = TXUCTREGn_STRIDE * regnum;
-+
-+	return (void __iomem *)(base + thread_offset + thread_regnum);
-+}
-+
-+#endif /* __METAG_HWTHREAD_H */
-diff --git a/arch/metag/include/asm/linkage.h b/arch/metag/include/asm/linkage.h
++endmenu
+diff --git a/arch/metag/Kconfig.soc b/arch/metag/Kconfig.soc
 new file mode 100644
-index 0000000..73bf25b
+index 0000000..ec079cf
 --- /dev/null
-+++ b/arch/metag/include/asm/linkage.h
-@@ -0,0 +1,7 @@
-+#ifndef __ASM_LINKAGE_H
-+#define __ASM_LINKAGE_H
++++ b/arch/metag/Kconfig.soc
+@@ -0,0 +1,55 @@
++choice
++	prompt "SoC Type"
++	default META21_FPGA
 +
-+#define __ALIGN .p2align 2
-+#define __ALIGN_STR ".p2align 2"
++config META12_FPGA
++	bool "Meta 1.2 FPGA"
++	select METAG_META12
++	help
++	  This is a Meta 1.2 FPGA bitstream, just a bare CPU.
 +
-+#endif
-diff --git a/arch/metag/include/asm/processor.h b/arch/metag/include/asm/processor.h
++config META21_FPGA
++	bool "Meta 2.1 FPGA"
++	select METAG_META21
++	help
++	  This is a Meta 2.1 FPGA bitstream, just a bare CPU.
++
++endchoice
++
++menu "SoC configuration"
++
++if METAG_META21
++
++# Meta 2.x specific options
++
++config METAG_META21_MMU
++	bool "Meta 2.x MMU mode"
++	default y
++	help
++	  Use the Meta 2.x MMU in extended mode.
++
++config METAG_UNALIGNED
++	bool "Meta 2.x unaligned access checking"
++	default y
++	help
++	  All memory accesses will be checked for alignment and an exception
++	  raised on unaligned accesses. This feature does cost performance
++	  but without it there will be no notification of this type of error.
++
++config METAG_USER_TCM
++	bool "Meta on-chip memory support for userland"
++	select GENERIC_ALLOCATOR
++	default y
++	help
++	  Allow the on-chip memories of Meta SoCs to be used by user
++	  applications.
++
++endif
++
++config METAG_HALT_ON_PANIC
++	bool "Halt the core on panic"
++	help
++	  Halt the core when a panic occurs. This is useful when running
++	  pre-production silicon or in an FPGA environment.
++
++endmenu
+diff --git a/arch/metag/Makefile b/arch/metag/Makefile
 new file mode 100644
-index 0000000..b7e2528
+index 0000000..d455140
 --- /dev/null
-+++ b/arch/metag/include/asm/processor.h
-@@ -0,0 +1,202 @@
-+/*
-+ * Copyright (C) 2005,2006,2007,2008 Imagination Technologies
-+ */
++++ b/arch/metag/Makefile
+@@ -0,0 +1,87 @@
++#
++# metag/Makefile
++#
++# This file is included by the global makefile so that you can add your own
++# architecture-specific flags and dependencies. Remember to do have actions
++# for "archclean" cleaning up for this architecture.
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++# Copyright (C) 1994 by Linus Torvalds
++#               2007,2008,2012 by Imagination Technologies Ltd.
++#
 +
-+#ifndef __ASM_METAG_PROCESSOR_H
-+#define __ASM_METAG_PROCESSOR_H
++LDFLAGS					:=
++OBJCOPYFLAGS				:= -O binary -R .note -R .comment -S
 +
-+#include <linux/atomic.h>
++checkflags-$(CONFIG_METAG_META12)	+= -DMETAC_1_2
++checkflags-$(CONFIG_METAG_META21)	+= -DMETAC_2_1
++CHECKFLAGS				+= -D__metag__ $(checkflags-y)
 +
-+#include <asm/page.h>
-+#include <asm/ptrace.h>
-+#include <asm/metag_regs.h>
++KBUILD_DEFCONFIG			:= meta2_defconfig
 +
-+/*
-+ * Default implementation of macro that returns current
-+ * instruction pointer ("program counter").
-+ */
-+#define current_text_addr() ({ __label__ _l; _l: &&_l; })
++sflags-$(CONFIG_METAG_META12)		+= -mmetac=1.2
++ifeq ($(CONFIG_METAG_META12),y)
++# Only use TBI API 1.4 if DSP is enabled for META12 cores
++sflags-$(CONFIG_METAG_DSP)		+= -DTBI_1_4
++endif
++sflags-$(CONFIG_METAG_META21)		+= -mmetac=2.1 -DTBI_1_4
 +
-+/* The task stops where the kernel starts */
-+#define TASK_SIZE	PAGE_OFFSET
-+/* Add an extra page of padding at the top of the stack for the guard page. */
-+#define STACK_TOP	(TASK_SIZE - PAGE_SIZE)
-+#define STACK_TOP_MAX	STACK_TOP
++cflags-$(CONFIG_METAG_FUNCTION_TRACE)	+= -mhwtrace-leaf -mhwtrace-retpc
++cflags-$(CONFIG_METAG_META21)		+= -mextensions=bex
 +
-+/* This decides where the kernel will search for a free chunk of vm
-+ * space during mmap's.
-+ */
-+#define TASK_UNMAPPED_BASE	META_MEMORY_BASE
++KBUILD_CFLAGS				+= -pipe
++KBUILD_CFLAGS				+= -ffunction-sections
 +
-+typedef struct {
-+	unsigned long seg;
-+} mm_segment_t;
++KBUILD_CFLAGS				+= $(sflags-y) $(cflags-y)
++KBUILD_AFLAGS				+= $(sflags-y)
 +
-+#ifdef CONFIG_METAG_FPU
-+struct meta_fpu_context {
-+	TBICTXEXTFPU fpstate;
-+	union {
-+		struct {
-+			TBICTXEXTBB4 fx8_15;
-+			TBICTXEXTFPACC fpacc;
-+		} fx8_15;
-+		struct {
-+			TBICTXEXTFPACC fpacc;
-+			TBICTXEXTBB4 unused;
-+		} nofx8_15;
-+	} extfpstate;
-+	bool needs_restore;
-+};
-+#else
-+struct meta_fpu_context {};
-+#endif
++LDFLAGS_vmlinux				:= $(ldflags-y)
 +
-+#ifdef CONFIG_METAG_DSP
-+struct meta_ext_context {
-+	struct {
-+		TBIEXTCTX ctx;
-+		TBICTXEXTBB8 bb8;
-+		TBIDUAL ax[TBICTXEXTAXX_BYTES / sizeof(TBIDUAL)];
-+		TBICTXEXTHL2 hl2;
-+		TBICTXEXTTDPR ext;
-+		TBICTXEXTRP6 rp;
-+	} regs;
++head-y					:= arch/metag/kernel/head.o
 +
-+	/* DSPRAM A and B save areas. */
-+	void *ram[2];
++core-y					+= arch/metag/boot/dtb/
++core-y					+= arch/metag/kernel/
++core-y					+= arch/metag/mm/
 +
-+	/* ECH encoded size of DSPRAM save areas. */
-+	unsigned int ram_sz[2];
-+};
-+#else
-+struct meta_ext_context {};
-+#endif
++libs-y					+= arch/metag/lib/
++libs-y					+= arch/metag/tbx/
 +
-+struct thread_struct {
-+	PTBICTX kernel_context;
-+	/* A copy of the user process Sig.SaveMask. */
-+	unsigned int user_flags;
-+	struct meta_fpu_context *fpu_context;
-+	void __user *tls_ptr;
-+	unsigned short int_depth;
-+	unsigned short txdefr_failure;
-+	struct meta_ext_context *dsp_context;
-+};
++boot					:= arch/metag/boot
 +
-+#define INIT_THREAD  { \
-+	NULL,			/* kernel_context */	\
-+	0,			/* user_flags */	\
-+	NULL,			/* fpu_context */	\
-+	NULL,			/* tls_ptr */		\
-+	1,			/* int_depth - we start in kernel */	\
-+	0,			/* txdefr_failure */	\
-+	NULL,			/* dsp_context */	\
-+}
++boot_targets				+= uImage
++boot_targets				+= uImage.gz
++boot_targets				+= uImage.bz2
++boot_targets				+= uImage.xz
++boot_targets				+= uImage.lzo
++boot_targets				+= uImage.bin
++boot_targets				+= vmlinux.bin
 +
-+/* Needed to make #define as we are referencing 'current', that is not visible
-+ * yet.
-+ *
-+ * Stack layout is as below.
++PHONY					+= $(boot_targets)
 +
-+      argc            argument counter (integer)
-+      argv[0]         program name (pointer)
-+      argv[1...N]     program args (pointers)
-+      argv[argc-1]    end of args (integer)
-+      NULL
-+      env[0...N]      environment variables (pointers)
-+      NULL
++all: vmlinux.bin
 +
-+ */
-+#define start_thread(regs, pc, usp) do {				   \
-+	unsigned int *argc = (unsigned int *) bprm->exec;		   \
-+	set_fs(USER_DS);						   \
-+	current->thread.int_depth = 1;					   \
-+	/* Force this process down to user land */			   \
-+	regs->ctx.SaveMask = TBICTX_PRIV_BIT;				   \
-+	regs->ctx.CurrPC = pc;						   \
-+	regs->ctx.AX[0].U0 = usp;					   \
-+	regs->ctx.DX[3].U1 = *((int *)argc);			/* argc */ \
-+	regs->ctx.DX[3].U0 = (int)((int *)argc + 1);		/* argv */ \
-+	regs->ctx.DX[2].U1 = (int)((int *)argc +			   \
-+				   regs->ctx.DX[3].U1 + 2);	/* envp */ \
-+	regs->ctx.DX[2].U0 = 0;				   /* rtld_fini */ \
-+} while (0)
++$(boot_targets): vmlinux
++	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
 +
-+/* Forward declaration, a strange C thing */
-+struct task_struct;
++%.dtb %.dtb.S %.dtb.o:
++	$(Q)$(MAKE) $(build)=$(boot)/dtb $(boot)/dtb/$@
 +
-+/* Free all resources held by a thread. */
-+static inline void release_thread(struct task_struct *dead_task)
-+{
-+}
++dtbs:
++	$(Q)$(MAKE) $(build)=$(boot)/dtb $(boot)/dtb/$@
 +
-+#define copy_segments(tsk, mm)		do { } while (0)
-+#define release_segments(mm)		do { } while (0)
++archclean:
++	$(Q)$(MAKE) $(clean)=$(boot)
 +
-+extern void exit_thread(void);
-+
-+/*
-+ * Return saved PC of a blocked thread.
-+ */
-+#define	thread_saved_pc(tsk)	\
-+	((unsigned long)(tsk)->thread.kernel_context->CurrPC)
-+#define thread_saved_sp(tsk)	\
-+	((unsigned long)(tsk)->thread.kernel_context->AX[0].U0)
-+#define thread_saved_fp(tsk)	\
-+	((unsigned long)(tsk)->thread.kernel_context->AX[1].U0)
-+
-+unsigned long get_wchan(struct task_struct *p);
-+
-+#define	KSTK_EIP(tsk)	((tsk)->thread.kernel_context->CurrPC)
-+#define	KSTK_ESP(tsk)	((tsk)->thread.kernel_context->AX[0].U0)
-+
-+#define user_stack_pointer(regs)        ((regs)->ctx.AX[0].U0)
-+
-+#define cpu_relax()     barrier()
-+
-+extern void setup_txprivext(void);
-+
-+static inline unsigned int hard_processor_id(void)
-+{
-+	unsigned int id;
-+
-+	asm volatile ("MOV	%0, TXENABLE\n"
-+		      "AND	%0, %0, %1\n"
-+		      "LSR	%0, %0, %2\n"
-+		      : "=&d" (id)
-+		      : "I" (TXENABLE_THREAD_BITS),
-+			"K" (TXENABLE_THREAD_S)
-+		      );
-+
-+	return id;
-+}
-+
-+#define OP3_EXIT	0
-+
-+#define HALT_OK		0
-+#define HALT_PANIC	-1
-+
-+/*
-+ * Halt (stop) the hardware thread. This instruction sequence is the
-+ * standard way to cause a Meta hardware thread to exit. The exit code
-+ * is pushed onto the stack which is interpreted by the debug adapter.
-+ */
-+static inline void hard_processor_halt(int exit_code)
-+{
-+	asm volatile ("MOV	D1Ar1, %0\n"
-+		      "MOV	D0Ar6, %1\n"
-+		      "MSETL	[A0StP],D0Ar6,D0Ar4,D0Ar2\n"
-+		      "1:\n"
-+		      "SWITCH	#0xC30006\n"
-+		      "B		1b\n"
-+		      : : "r" (exit_code), "K" (OP3_EXIT));
-+}
-+
-+/* Set these hooks to call SoC specific code to restart/halt/power off. */
-+extern void (*soc_restart)(char *cmd);
-+extern void (*soc_halt)(void);
-+
-+extern void show_trace(struct task_struct *tsk, unsigned long *sp,
-+		       struct pt_regs *regs);
-+
-+#endif
-diff --git a/arch/metag/include/uapi/asm/byteorder.h b/arch/metag/include/uapi/asm/byteorder.h
++define archhelp
++  echo  '* vmlinux.bin	- Binary kernel image (arch/$(ARCH)/boot/vmlinux.bin)'
++  @echo '  uImage  	- Alias to bootable U-Boot image'
++  @echo '  uImage.bin	- Kernel-only image for U-Boot (bin)'
++  @echo '  uImage.gz	- Kernel-only image for U-Boot (gzip)'
++  @echo '  uImage.bz2	- Kernel-only image for U-Boot (bzip2)'
++  @echo '  uImage.xz	- Kernel-only image for U-Boot (xz)'
++  @echo '  uImage.lzo	- Kernel-only image for U-Boot (lzo)'
++  @echo '  dtbs		- Build device tree blobs for enabled boards'
++endef
+diff --git a/arch/metag/boot/Makefile b/arch/metag/boot/Makefile
 new file mode 100644
-index 0000000..9558416
+index 0000000..5a1f88c
 --- /dev/null
-+++ b/arch/metag/include/uapi/asm/byteorder.h
++++ b/arch/metag/boot/Makefile
+@@ -0,0 +1,68 @@
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++# Copyright (C) 2007,2012  Imagination Technologies Ltd.
++#
++
++suffix-y := bin
++suffix-$(CONFIG_KERNEL_GZIP)	:= gz
++suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
++suffix-$(CONFIG_KERNEL_XZ)	:= xz
++suffix-$(CONFIG_KERNEL_LZO)	:= lzo
++
++targets += vmlinux.bin
++targets += uImage
++targets += uImage.gz
++targets += uImage.bz2
++targets += uImage.xz
++targets += uImage.lzo
++targets += uImage.bin
++
++extra-y += vmlinux.bin
++extra-y += vmlinux.bin.gz
++extra-y += vmlinux.bin.bz2
++extra-y += vmlinux.bin.xz
++extra-y += vmlinux.bin.lzo
++
++UIMAGE_LOADADDR = $(CONFIG_PAGE_OFFSET)
++
++ifeq ($(CONFIG_FUNCTION_TRACER),y)
++orig_cflags := $(KBUILD_CFLAGS)
++KBUILD_CFLAGS = $(subst -pg, , $(orig_cflags))
++endif
++
++$(obj)/vmlinux.bin: vmlinux FORCE
++	$(call if_changed,objcopy)
++
++$(obj)/vmlinux.bin.gz: $(obj)/vmlinux.bin FORCE
++	$(call if_changed,gzip)
++
++$(obj)/vmlinux.bin.bz2: $(obj)/vmlinux.bin FORCE
++	$(call if_changed,bzip2)
++
++$(obj)/vmlinux.bin.xz: $(obj)/vmlinux.bin FORCE
++	$(call if_changed,xzkern)
++
++$(obj)/vmlinux.bin.lzo: $(obj)/vmlinux.bin FORCE
++	$(call if_changed,lzo)
++
++$(obj)/uImage.gz: $(obj)/vmlinux.bin.gz FORCE
++	$(call if_changed,uimage,gzip)
++
++$(obj)/uImage.bz2: $(obj)/vmlinux.bin.bz2 FORCE
++	$(call if_changed,uimage,bzip2)
++
++$(obj)/uImage.xz: $(obj)/vmlinux.bin.xz FORCE
++	$(call if_changed,uimage,xz)
++
++$(obj)/uImage.lzo: $(obj)/vmlinux.bin.lzo FORCE
++	$(call if_changed,uimage,lzo)
++
++$(obj)/uImage.bin: $(obj)/vmlinux.bin FORCE
++	$(call if_changed,uimage,none)
++
++$(obj)/uImage: $(obj)/uImage.$(suffix-y)
++	@ln -sf $(notdir $<) $@
++	@echo '  Image $@ is ready'
+diff --git a/arch/metag/configs/meta1_defconfig b/arch/metag/configs/meta1_defconfig
+new file mode 100644
+index 0000000..28b5d63
+--- /dev/null
++++ b/arch/metag/configs/meta1_defconfig
+@@ -0,0 +1,37 @@
++# CONFIG_LOCALVERSION_AUTO is not set
++# CONFIG_SWAP is not set
++CONFIG_LOG_BUF_SHIFT=13
++CONFIG_SYSFS_DEPRECATED=y
++CONFIG_SYSFS_DEPRECATED_V2=y
++CONFIG_KALLSYMS_ALL=y
++# CONFIG_ELF_CORE is not set
++CONFIG_SLAB=y
++# CONFIG_BLK_DEV_BSG is not set
++CONFIG_PARTITION_ADVANCED=y
++# CONFIG_MSDOS_PARTITION is not set
++# CONFIG_IOSCHED_DEADLINE is not set
++# CONFIG_IOSCHED_CFQ is not set
++CONFIG_FLATMEM_MANUAL=y
++CONFIG_META12_FPGA=y
++CONFIG_HZ_100=y
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++# CONFIG_STANDALONE is not set
++# CONFIG_PREVENT_FIRMWARE_BUILD is not set
++# CONFIG_FW_LOADER is not set
++CONFIG_BLK_DEV_RAM=y
++CONFIG_BLK_DEV_RAM_COUNT=1
++CONFIG_BLK_DEV_RAM_SIZE=16384
++# CONFIG_INPUT is not set
++# CONFIG_SERIO is not set
++# CONFIG_VT is not set
++# CONFIG_LEGACY_PTYS is not set
++# CONFIG_DEVKMEM is not set
++# CONFIG_HW_RANDOM is not set
++# CONFIG_HWMON is not set
++# CONFIG_USB_SUPPORT is not set
++# CONFIG_DNOTIFY is not set
++CONFIG_TMPFS=y
++# CONFIG_MISC_FILESYSTEMS is not set
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_DEBUG_INFO=y
+diff --git a/arch/metag/configs/meta2_defconfig b/arch/metag/configs/meta2_defconfig
+new file mode 100644
+index 0000000..6c96f17
+--- /dev/null
++++ b/arch/metag/configs/meta2_defconfig
+@@ -0,0 +1,38 @@
++# CONFIG_LOCALVERSION_AUTO is not set
++# CONFIG_SWAP is not set
++CONFIG_SYSVIPC=y
++CONFIG_LOG_BUF_SHIFT=13
++CONFIG_SYSFS_DEPRECATED=y
++CONFIG_SYSFS_DEPRECATED_V2=y
++CONFIG_KALLSYMS_ALL=y
++# CONFIG_ELF_CORE is not set
++CONFIG_SLAB=y
++# CONFIG_BLK_DEV_BSG is not set
++CONFIG_PARTITION_ADVANCED=y
++# CONFIG_MSDOS_PARTITION is not set
++# CONFIG_IOSCHED_DEADLINE is not set
++# CONFIG_IOSCHED_CFQ is not set
++CONFIG_METAG_L2C=y
++CONFIG_FLATMEM_MANUAL=y
++CONFIG_METAG_HALT_ON_PANIC=y
++CONFIG_HZ_100=y
++CONFIG_DEVTMPFS=y
++# CONFIG_STANDALONE is not set
++# CONFIG_PREVENT_FIRMWARE_BUILD is not set
++# CONFIG_FW_LOADER is not set
++CONFIG_BLK_DEV_RAM=y
++CONFIG_BLK_DEV_RAM_COUNT=1
++CONFIG_BLK_DEV_RAM_SIZE=16384
++# CONFIG_INPUT is not set
++# CONFIG_SERIO is not set
++# CONFIG_VT is not set
++# CONFIG_LEGACY_PTYS is not set
++# CONFIG_DEVKMEM is not set
++# CONFIG_HW_RANDOM is not set
++# CONFIG_HWMON is not set
++# CONFIG_USB_SUPPORT is not set
++# CONFIG_DNOTIFY is not set
++CONFIG_TMPFS=y
++# CONFIG_MISC_FILESYSTEMS is not set
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_DEBUG_INFO=y
+diff --git a/arch/metag/configs/meta2_smp_defconfig b/arch/metag/configs/meta2_smp_defconfig
+new file mode 100644
+index 0000000..c5c7ace
+--- /dev/null
++++ b/arch/metag/configs/meta2_smp_defconfig
+@@ -0,0 +1,39 @@
++# CONFIG_LOCALVERSION_AUTO is not set
++# CONFIG_SWAP is not set
++CONFIG_SYSVIPC=y
++CONFIG_LOG_BUF_SHIFT=13
++CONFIG_SYSFS_DEPRECATED=y
++CONFIG_SYSFS_DEPRECATED_V2=y
++CONFIG_KALLSYMS_ALL=y
++# CONFIG_ELF_CORE is not set
++CONFIG_SLAB=y
++# CONFIG_BLK_DEV_BSG is not set
++CONFIG_PARTITION_ADVANCED=y
++# CONFIG_MSDOS_PARTITION is not set
++# CONFIG_IOSCHED_DEADLINE is not set
++# CONFIG_IOSCHED_CFQ is not set
++CONFIG_METAG_L2C=y
++CONFIG_FLATMEM_MANUAL=y
++CONFIG_METAG_HALT_ON_PANIC=y
++CONFIG_SMP=y
++CONFIG_HZ_100=y
++CONFIG_DEVTMPFS=y
++# CONFIG_STANDALONE is not set
++# CONFIG_PREVENT_FIRMWARE_BUILD is not set
++# CONFIG_FW_LOADER is not set
++CONFIG_BLK_DEV_RAM=y
++CONFIG_BLK_DEV_RAM_COUNT=1
++CONFIG_BLK_DEV_RAM_SIZE=16384
++# CONFIG_INPUT is not set
++# CONFIG_SERIO is not set
++# CONFIG_VT is not set
++# CONFIG_LEGACY_PTYS is not set
++# CONFIG_DEVKMEM is not set
++# CONFIG_HW_RANDOM is not set
++# CONFIG_HWMON is not set
++# CONFIG_USB_SUPPORT is not set
++# CONFIG_DNOTIFY is not set
++CONFIG_TMPFS=y
++# CONFIG_MISC_FILESYSTEMS is not set
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_DEBUG_INFO=y
+diff --git a/arch/metag/include/asm/Kbuild b/arch/metag/include/asm/Kbuild
+new file mode 100644
+index 0000000..3a13981
+--- /dev/null
++++ b/arch/metag/include/asm/Kbuild
+@@ -0,0 +1,55 @@
++generic-y += auxvec.h
++generic-y += bitsperlong.h
++generic-y += bugs.h
++generic-y += clkdev.h
++generic-y += cputime.h
++generic-y += current.h
++generic-y += device.h
++generic-y += dma.h
++generic-y += emergency-restart.h
++generic-y += errno.h
++generic-y += exec.h
++generic-y += fb.h
++generic-y += fcntl.h
++generic-y += ftrace.h
++generic-y += futex.h
++generic-y += hardirq.h
++generic-y += hw_irq.h
++generic-y += ioctl.h
++generic-y += ioctls.h
++generic-y += ipcbuf.h
++generic-y += irq_regs.h
++generic-y += kdebug.h
++generic-y += kmap_types.h
++generic-y += kvm_para.h
++generic-y += local.h
++generic-y += local64.h
++generic-y += msgbuf.h
++generic-y += mutex.h
++generic-y += param.h
++generic-y += pci.h
++generic-y += percpu.h
++generic-y += poll.h
++generic-y += posix_types.h
++generic-y += scatterlist.h
++generic-y += sections.h
++generic-y += sembuf.h
++generic-y += serial.h
++generic-y += shmbuf.h
++generic-y += shmparam.h
++generic-y += signal.h
++generic-y += socket.h
++generic-y += sockios.h
++generic-y += stat.h
++generic-y += statfs.h
++generic-y += switch_to.h
++generic-y += termbits.h
++generic-y += termios.h
++generic-y += timex.h
++generic-y += trace_clock.h
++generic-y += types.h
++generic-y += ucontext.h
++generic-y += unaligned.h
++generic-y += user.h
++generic-y += vga.h
++generic-y += xor.h
+diff --git a/arch/metag/include/uapi/asm/Kbuild b/arch/metag/include/uapi/asm/Kbuild
+new file mode 100644
+index 0000000..876c71f
+--- /dev/null
++++ b/arch/metag/include/uapi/asm/Kbuild
+@@ -0,0 +1,13 @@
++# UAPI Header export list
++include include/uapi/asm-generic/Kbuild.asm
++
++header-y += byteorder.h
++header-y += ptrace.h
++header-y += resource.h
++header-y += sigcontext.h
++header-y += siginfo.h
++header-y += swab.h
++header-y += unistd.h
++
++generic-y += mman.h
++generic-y += setup.h
+diff --git a/arch/metag/kernel/.gitignore b/arch/metag/kernel/.gitignore
+new file mode 100644
+index 0000000..c5f676c
+--- /dev/null
++++ b/arch/metag/kernel/.gitignore
 @@ -0,0 +1 @@
-+#include <linux/byteorder/little_endian.h>
-diff --git a/arch/metag/include/uapi/asm/resource.h b/arch/metag/include/uapi/asm/resource.h
++vmlinux.lds
+diff --git a/arch/metag/kernel/Makefile b/arch/metag/kernel/Makefile
 new file mode 100644
-index 0000000..526d23c
+index 0000000..e985d0c
 --- /dev/null
-+++ b/arch/metag/include/uapi/asm/resource.h
-@@ -0,0 +1,7 @@
-+#ifndef _UAPI_METAG_RESOURCE_H
-+#define _UAPI_METAG_RESOURCE_H
++++ b/arch/metag/kernel/Makefile
+@@ -0,0 +1,36 @@
++#
++# Makefile for the Linux/Meta kernel.
++#
 +
-+#define _STK_LIM_MAX    (1 << 28)
-+#include <asm-generic/resource.h>
++extra-y	+= head.o
++extra-y	+= vmlinux.lds
 +
-+#endif /* _UAPI_METAG_RESOURCE_H */
-diff --git a/arch/metag/include/uapi/asm/swab.h b/arch/metag/include/uapi/asm/swab.h
++obj-y	+= cachepart.o
++obj-y	+= clock.o
++obj-y	+= core_reg.o
++obj-y	+= devtree.o
++obj-y	+= dma.o
++obj-y	+= irq.o
++obj-y	+= kick.o
++obj-y	+= machines.o
++obj-y	+= process.o
++obj-y	+= ptrace.o
++obj-y	+= setup.o
++obj-y	+= signal.o
++obj-y	+= stacktrace.o
++obj-y	+= sys_metag.o
++obj-y	+= tbiunexp.o
++obj-y	+= time.o
++obj-y	+= topology.o
++obj-y	+= traps.o
++obj-y	+= user_gateway.o
++
++obj-$(CONFIG_METAG_COREMEM)		+= coremem.o
++obj-$(CONFIG_DYNAMIC_FTRACE)		+= ftrace.o
++obj-$(CONFIG_FUNCTION_TRACER)		+= ftrace_stub.o
++obj-$(CONFIG_MODULES)			+= metag_ksyms.o
++obj-$(CONFIG_MODULES)			+= module.o
++obj-$(CONFIG_PERF_EVENTS)		+= perf_callchain.o
++obj-$(CONFIG_SMP)			+= smp.o
++obj-$(CONFIG_METAG_SUSPEND_MEM)		+= suspend.o
++obj-$(CONFIG_METAG_USER_TCM)		+= tcm.o
+diff --git a/arch/metag/kernel/asm-offsets.c b/arch/metag/kernel/asm-offsets.c
 new file mode 100644
-index 0000000..1076b3a
+index 0000000..bfc9205
 --- /dev/null
-+++ b/arch/metag/include/uapi/asm/swab.h
-@@ -0,0 +1,26 @@
-+#ifndef __ASM_METAG_SWAB_H
-+#define __ASM_METAG_SWAB_H
++++ b/arch/metag/kernel/asm-offsets.c
+@@ -0,0 +1,14 @@
++/*
++ * This program is used to generate definitions needed by
++ * assembly language modules.
++ *
++ */
 +
-+#include <linux/compiler.h>
-+#include <linux/types.h>
-+#include <asm-generic/swab.h>
++#include <linux/kbuild.h>
++#include <linux/thread_info.h>
 +
-+static inline __attribute_const__ __u16 __arch_swab16(__u16 x)
++int main(void)
 +{
-+	return __builtin_metag_bswaps(x);
++	DEFINE(THREAD_INFO_SIZE, sizeof(struct thread_info));
++	return 0;
 +}
-+#define __arch_swab16 __arch_swab16
+diff --git a/arch/metag/kernel/metag_ksyms.c b/arch/metag/kernel/metag_ksyms.c
+new file mode 100644
+index 0000000..c73ebd3
+--- /dev/null
++++ b/arch/metag/kernel/metag_ksyms.c
+@@ -0,0 +1,75 @@
++#include <linux/export.h>
++#include <linux/linkage.h>
++#include <linux/string.h>
++#include <linux/mm.h>
++#include <linux/user.h>
++#include <linux/interrupt.h>
++#include <linux/hardirq.h>
 +
-+static inline __attribute_const__ __u32 __arch_swab32(__u32 x)
++#include <asm/setup.h>
++#include <asm/checksum.h>
++#include <asm/uaccess.h>
++#include <asm/traps.h>
++#include <asm/tbx.h>
++
++/* uaccess symbols */
++EXPORT_SYMBOL(__copy_user_zeroing);
++EXPORT_SYMBOL(__copy_user);
++EXPORT_SYMBOL(__get_user_asm_b);
++EXPORT_SYMBOL(__get_user_asm_w);
++EXPORT_SYMBOL(__get_user_asm_d);
++EXPORT_SYMBOL(__put_user_asm_b);
++EXPORT_SYMBOL(__put_user_asm_w);
++EXPORT_SYMBOL(__put_user_asm_d);
++EXPORT_SYMBOL(__put_user_asm_l);
++EXPORT_SYMBOL(__strncpy_from_user);
++EXPORT_SYMBOL(strnlen_user);
++EXPORT_SYMBOL(__do_clear_user);
++
++EXPORT_SYMBOL(pTBI_get);
++EXPORT_SYMBOL(meta_memoffset);
++EXPORT_SYMBOL(kick_register_func);
++EXPORT_SYMBOL(kick_unregister_func);
++#ifdef CONFIG_SMP
++EXPORT_SYMBOL(get_trigger_mask);
++#else
++EXPORT_SYMBOL(global_trigger_mask);
++#endif
++
++EXPORT_SYMBOL(empty_zero_page);
++
++EXPORT_SYMBOL(pfn_base);
++#ifdef CONFIG_FLATMEM
++/* needed for the pfn_valid macro */
++EXPORT_SYMBOL(max_pfn);
++EXPORT_SYMBOL(min_low_pfn);
++#endif
++
++/* TBI symbols */
++EXPORT_SYMBOL(__TBI);
++EXPORT_SYMBOL(__TBIFindSeg);
++EXPORT_SYMBOL(__TBIPoll);
++EXPORT_SYMBOL(__TBITimeStamp);
++
++#define DECLARE_EXPORT(name) extern void name(void); EXPORT_SYMBOL(name)
++
++/* libgcc functions */
++DECLARE_EXPORT(__ashldi3);
++DECLARE_EXPORT(__ashrdi3);
++DECLARE_EXPORT(__lshrdi3);
++DECLARE_EXPORT(__udivsi3);
++DECLARE_EXPORT(__divsi3);
++DECLARE_EXPORT(__umodsi3);
++DECLARE_EXPORT(__modsi3);
++DECLARE_EXPORT(__muldi3);
++DECLARE_EXPORT(__cmpdi2);
++DECLARE_EXPORT(__ucmpdi2);
++
++/* Maths functions */
++EXPORT_SYMBOL(div_u64);
++EXPORT_SYMBOL(div_s64);
++
++/* String functions */
++EXPORT_SYMBOL(memcpy);
++EXPORT_SYMBOL(memset);
++EXPORT_SYMBOL(memmove);
+diff --git a/arch/metag/kernel/vmlinux.lds.S b/arch/metag/kernel/vmlinux.lds.S
+new file mode 100644
+index 0000000..e12055e
+--- /dev/null
++++ b/arch/metag/kernel/vmlinux.lds.S
+@@ -0,0 +1,71 @@
++/* ld script to make Meta Linux kernel */
++
++#include <asm/thread_info.h>
++#include <asm/page.h>
++#include <asm/cache.h>
++
++#include <asm-generic/vmlinux.lds.h>
++
++OUTPUT_FORMAT("elf32-metag", "elf32-metag", "elf32-metag")
++OUTPUT_ARCH(metag)
++ENTRY(__start)
++
++_jiffies = _jiffies_64;
++SECTIONS
 +{
-+	return __builtin_metag_bswap(x);
-+}
-+#define __arch_swab32 __arch_swab32
++  . = CONFIG_PAGE_OFFSET;
++  _text = .;
++  __text = .;
++  __stext = .;
++  HEAD_TEXT_SECTION
++  .text : {
++	TEXT_TEXT
++	SCHED_TEXT
++	LOCK_TEXT
++	KPROBES_TEXT
++	IRQENTRY_TEXT
++	*(.text.*)
++	*(.gnu.warning)
++	}
 +
-+static inline __attribute_const__ __u64 __arch_swab64(__u64 x)
-+{
-+	return __builtin_metag_bswapll(x);
-+}
-+#define __arch_swab64 __arch_swab64
++  __etext = .;			/* End of text section */
 +
-+#endif /* __ASM_METAG_SWAB_H */
++  __sdata = .;
++  RO_DATA_SECTION(PAGE_SIZE)
++  RW_DATA_SECTION(L1_CACHE_BYTES, PAGE_SIZE, THREAD_SIZE)
++  __edata = .;			/* End of data section */
++
++  EXCEPTION_TABLE(16)
++  NOTES
++
++  . = ALIGN(PAGE_SIZE);		/* Init code and data */
++  ___init_begin = .;
++  INIT_TEXT_SECTION(PAGE_SIZE)
++  INIT_DATA_SECTION(16)
++
++  .init.arch.info : {
++	  ___arch_info_begin = .;
++	  *(.arch.info.init)
++	  ___arch_info_end = .;
++  }
++
++  PERCPU_SECTION(L1_CACHE_BYTES)
++
++  ___init_end = .;
++
++  BSS_SECTION(0, PAGE_SIZE, 0)
++
++  __end = .;
++
++  . = ALIGN(PAGE_SIZE);
++  __heap_start = .;
++
++  DWARF_DEBUG
++
++  /* When something in the kernel is NOT compiled as a module, the
++   * module cleanup code and data are put into these segments.  Both
++   * can then be thrown away, as cleanup code is never called unless
++   * it's a module.
++   */
++  DISCARDS
++}
+diff --git a/arch/metag/lib/Makefile b/arch/metag/lib/Makefile
+new file mode 100644
+index 0000000..a41d24e
+--- /dev/null
++++ b/arch/metag/lib/Makefile
+@@ -0,0 +1,22 @@
++#
++# Makefile for Meta-specific library files.
++#
++
++lib-y += usercopy.o
++lib-y += copy_page.o
++lib-y += clear_page.o
++lib-y += memcpy.o
++lib-y += memmove.o
++lib-y += memset.o
++lib-y += delay.o
++lib-y += div64.o
++lib-y += muldi3.o
++lib-y += ashrdi3.o
++lib-y += ashldi3.o
++lib-y += lshrdi3.o
++lib-y += divsi3.o
++lib-y += modsi3.o
++lib-y += cmpdi2.o
++lib-y += ucmpdi2.o
++lib-y += ip_fast_csum.o
++lib-y += checksum.o
+diff --git a/arch/metag/mm/Kconfig b/arch/metag/mm/Kconfig
+new file mode 100644
+index 0000000..cd7f2f2
+--- /dev/null
++++ b/arch/metag/mm/Kconfig
+@@ -0,0 +1,153 @@
++menu "Memory management options"
++
++config PAGE_OFFSET
++	hex "Kernel page offset address"
++	default "0x40000000"
++	help
++	  This option allows you to set the virtual address at which the
++	  kernel will be mapped to.
++endmenu
++
++config KERNEL_4M_PAGES
++	bool "Map kernel with 4MB pages"
++	depends on METAG_META21_MMU
++	default y
++	help
++	  Map the kernel with large pages to reduce TLB pressure.
++
++choice
++	prompt "User page size"
++	default PAGE_SIZE_4K
++
++config PAGE_SIZE_4K
++	bool "4kB"
++	help
++	  This is the default page size used by all Meta cores.
++
++config PAGE_SIZE_8K
++	bool "8kB"
++	depends on METAG_META21_MMU
++	help
++	  This enables 8kB pages as supported by Meta 2.x and later MMUs.
++
++config PAGE_SIZE_16K
++	bool "16kB"
++	depends on METAG_META21_MMU
++	help
++	  This enables 16kB pages as supported by Meta 2.x and later MMUs.
++
++endchoice
++
++config NUMA
++	bool "Non Uniform Memory Access (NUMA) Support"
++	help
++	  Some Meta systems have MMU-mappable on-chip memories with
++	  lower latencies than main memory. This enables support for
++	  these blocks by binding them to nodes and allowing
++	  memory policies to be used for prioritizing and controlling
++	  allocation behaviour.
++
++config FORCE_MAX_ZONEORDER
++	int "Maximum zone order"
++	range 10 32
++	default "10"
++	help
++	  The kernel memory allocator divides physically contiguous memory
++	  blocks into "zones", where each zone is a power of two number of
++	  pages.  This option selects the largest power of two that the kernel
++	  keeps in the memory allocator.  If you need to allocate very large
++	  blocks of physically contiguous memory, then you may need to
++	  increase this value.
++
++	  This config option is actually maximum order plus one. For example,
++	  a value of 11 means that the largest free memory block is 2^10 pages.
++
++	  The page size is not necessarily 4KB.  Keep this in mind
++	  when choosing a value for this option.
++
++config METAG_L2C
++	bool "Level 2 Cache Support"
++	depends on METAG_META21
++	help
++	  Press y here to enable support for the Meta Level 2 (L2) cache. This
++	  will enable the cache at start up if it hasn't already been enabled
++	  by the bootloader.
++
++	  If the bootloader enables the L2 you must press y here to ensure the
++	  kernel takes the appropriate actions to keep the cache coherent.
++
++config NODES_SHIFT
++	int
++	default "1"
++	depends on NEED_MULTIPLE_NODES
++
++config ARCH_FLATMEM_ENABLE
++	def_bool y
++	depends on !NUMA
++
++config ARCH_SPARSEMEM_ENABLE
++	def_bool y
++	select SPARSEMEM_STATIC
++
++config ARCH_SPARSEMEM_DEFAULT
++	def_bool y
++
++config MAX_ACTIVE_REGIONS
++	int
++	default "2" if SPARSEMEM
++	default "1"
++
++config ARCH_POPULATES_NODE_MAP
++	def_bool y
++
++config ARCH_SELECT_MEMORY_MODEL
++	def_bool y
++
++config SYS_SUPPORTS_HUGETLBFS
++	def_bool y
++	depends on METAG_META21_MMU
++
++choice
++	prompt "HugeTLB page size"
++	depends on METAG_META21_MMU && HUGETLB_PAGE
++	default HUGETLB_PAGE_SIZE_1M
++
++config HUGETLB_PAGE_SIZE_8K
++	bool "8kB"
++	depends on PAGE_SIZE_4K
++
++config HUGETLB_PAGE_SIZE_16K
++	bool "16kB"
++	depends on PAGE_SIZE_4K || PAGE_SIZE_8K
++
++config HUGETLB_PAGE_SIZE_32K
++	bool "32kB"
++
++config HUGETLB_PAGE_SIZE_64K
++	bool "64kB"
++
++config HUGETLB_PAGE_SIZE_128K
++	bool "128kB"
++
++config HUGETLB_PAGE_SIZE_256K
++	bool "256kB"
++
++config HUGETLB_PAGE_SIZE_512K
++	bool "512kB"
++
++config HUGETLB_PAGE_SIZE_1M
++	bool "1MB"
++
++config HUGETLB_PAGE_SIZE_2M
++	bool "2MB"
++
++config HUGETLB_PAGE_SIZE_4M
++	bool "4MB"
++
++endchoice
++
++config METAG_COREMEM
++	bool
++	default y if SUSPEND
++
++source "mm/Kconfig"
+diff --git a/arch/metag/mm/Makefile b/arch/metag/mm/Makefile
+new file mode 100644
+index 0000000..9943311
+--- /dev/null
++++ b/arch/metag/mm/Makefile
+@@ -0,0 +1,19 @@
++#
++# Makefile for the linux Meta-specific parts of the memory manager.
++#
++
++obj-y				+= cache.o
++obj-y				+= extable.o
++obj-y				+= fault.o
++obj-y				+= init.o
++obj-y				+= ioremap.o
++obj-y				+= maccess.o
++
++mmu-y				:= mmu-meta1.o
++mmu-$(CONFIG_METAG_META21_MMU)	:= mmu-meta2.o
++obj-y				+= $(mmu-y)
++
++obj-$(CONFIG_HIGHMEM)		+= highmem.o
++obj-$(CONFIG_HUGETLB_PAGE)	+= hugetlbpage.o
++obj-$(CONFIG_METAG_L2C)		+= l2cache.o
++obj-$(CONFIG_NUMA)		+= numa.o
+diff --git a/arch/metag/tbx/Makefile b/arch/metag/tbx/Makefile
+new file mode 100644
+index 0000000..e994239
+--- /dev/null
++++ b/arch/metag/tbx/Makefile
+@@ -0,0 +1,21 @@
++#
++# Makefile for TBX library files..
++#
++
++asflags-y		+= -mmetac=2.1 -Wa,-mfpu=metac21 -mdsp
++asflags-$(CONFIG_SMP)	+= -DTBX_PERCPU_SP_SAVE
++
++ccflags-y		+= -mmetac=2.1
++
++lib-y			+= tbicore.o
++lib-y			+= tbictx.o
++lib-y			+= tbidefr.o
++lib-y			+= tbilogf.o
++lib-y			+= tbipcx.o
++lib-y			+= tbiroot.o
++lib-y			+= tbisoft.o
++lib-y			+= tbistring.o
++lib-y			+= tbitimer.o
++
++lib-$(CONFIG_METAG_DSP)	+= tbidspram.o
++lib-$(CONFIG_METAG_FPU)	+= tbictxfpu.o
 -- 
 1.7.7.6
 
