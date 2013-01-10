@@ -1,150 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab3AJA4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 19:56:16 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:43030 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225Ab3AJA4P convert rfc822-to-8bit (ORCPT
+	id S932527Ab3AJA6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 19:58:01 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:56761 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932225Ab3AJA6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 19:56:15 -0500
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <CAMOw1v6Jk7adSeppunBe0GaW3w3MREU0_hW68_Fbh2599jctkg@mail.gmail.com>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
- <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
- <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
- <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au>
- <CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
- <87ipa8o4mn.fsf@rustcorp.com.au> <CAKgNAkiVxUiqJ1pYNq3wW_yQxcyhqntUzcEWscFOhJ3GaVn1aQ@mail.gmail.com>
- <87sj97hs5e.fsf@rustcorp.com.au> <CAHO5Pa29_=3HNLG-qtULZ2fmkgPJ6JCZ0LTv9m=UowfvFufhMw@mail.gmail.com>
- <87fw2j5dlj.fsf@rustcorp.com.au> <CAKgNAkggu9+AuMRqTFeNy9sJVCMcZVRZx43t=svF=gm+P4DnuQ@mail.gmail.com>
- <CAMOw1v6Jk7adSeppunBe0GaW3w3MREU0_hW68_Fbh2599jctkg@mail.gmail.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 10 Jan 2013 01:55:53 +0100
-Message-ID: <CAKgNAkijYdrEWRwtAmSJF2X7_u0DoXiXsfVmGYnn+X9z1sQpjQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        jonathon@jonmasters.org, linux-man@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Jan 2013 19:58:00 -0500
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH] MAINTAINERS: mm: add additional include files to listing
+Date: Wed,  9 Jan 2013 16:12:25 -0800
+Message-Id: <1357776745-10392-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.0.3
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011000-2876-0000-0000-000003EAA247
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 6:29 PM, Lucas De Marchi
-<lucas.demarchi@profusion.mobi> wrote:
-> On Sun, Jan 6, 2013 at 4:59 PM, Michael Kerrisk (man-pages)
-> <mtk.manpages@gmail.com> wrote:
->> Hi Rusty, (and Lucas, and Kees)
->>
->> On Thu, Jan 3, 2013 at 1:12 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>> Michael Kerrisk <mtk.manpages@gmail.com> writes:
->>>> Hi Rusty,
->>>
->>> Hi Michael,
->>>
->>>> The description here is rather thin. Could you supply a sentence or
->>>> two for each of MODULE_INIT_IGNORE_MODVERSIONS and
->>>> MODULE_INIT_IGNORE_VERMAGIC that would be suitable for the manual
->>>> page?
->>>>
->>>> Thanks,
->>>
->>> There are one or two safety checks built into a module, which are
->>> checked to match the kernel on module load.  The first is a "vermagic"
->>> string containing the kernel version number and prominent features (such
->>> as CPU type).  If the module was built with CONFIG_MODVERSIONS set, a
->>> version hash is recorded for each symbol the module uses based on the
->>> types it refers to: in this case, the kernel version number within the
->>> "vermagic" string is ignored, as the symbol version hashes are assumed
->>> to be sufficiently reliable.
->>>
->>> Using the MODULE_INIT_IGNORE_VERMAGIC flag indicates that the vermagic
->>> is to be ignored, and the MODULE_INIT_IGNORE_MODVERSIONS flag indicates
->>> that the version hashes are to be ignored.  If the kernel is built to
->>> permit such forced loading (ie. CONFIG_MODULE_FORCE_LOAD is set) then
->>> loading will continue, otherwise it will fail with ENOEXEC as expected
->>> for malformed modules.
->>>
->>> Hope that is more usable?
->>
->> Yes, that helps. I did some reworking of that text. Hopefully, I did
->> not introduce any errors.
->>
->> Below is the text that is proposed to document finit_module() in the
->> man pages. I'd appreciate any review (Kees, Lucas, Rusty?)
->>
->> Thanks,
->>
->> Michael
->>
->>    finit_module()
->>        The finit_module() system call is like init_module(), but reads
->>        the module to be loaded from the file  descriptor  fd.   It  is
->>        useful  when  the authenticity of a kernel module can be deter‐
->>        mined from its location in the file system; in cases where that
->>        is  possible,  the  overhead  of using cryptographically signed
->>        modules to determine  the  authenticity  of  a  module  can  be
->>        avoided.  The param_values argument is as for init_module().
->>
->>        The  flags  argument  modifies the operation of finit_module().
->>        It is a bit mask value created by ORing together zero  or  more
->>        of the following flags:
->>
->>        MODULE_INIT_IGNORE_MODVERSIONS
->>               Ignore symbol version hashes.
->>
->>        MODULE_INIT_IGNORE_VERMAGIC
->>               Ignore kernel version magic.
->>
->>        There are some safety checks built into a module to ensure that
->>        it matches the kernel against which it is loaded.  These checks
->>        are  recorded  when  the  module is built and verified when the
->>        module is loaded.   First,  the  module  records  a  "vermagic"
->>        string  containing the kernel version number and prominent fea‐
->>        tures (such as the CPU type).  Second, if the module was  built
->>        with  the  CONFIG_MODVERSIONS  configuration  option enabled, a
->>        version hash is recorded for each symbol the module uses.  This
->>        hash  is  based  on the types of the arguments and return value
->>        for the function named by the symbol.  In this case, the kernel
->>        version  number within the "vermagic" string is ignored, as the
->>        symbol version hashes are assumed to be sufficiently reliable.
->>
->>        Using the MODULE_INIT_IGNORE_VERMAGIC flag indicates  that  the
->>        "vermagic"   string   is   to   be   ignored,   and   the  MOD‐
->>        ULE_INIT_IGNORE_MODVERSIONS flag indicates that the symbol ver‐
->>        sion  hashes are to be ignored.  If the kernel is built to per‐
->>        mit  forced  loading   (i.e.,   configured   with   CONFIG_MOD‐
->>        ULE_FORCE_LOAD),  then loading will continue, otherwise it will
->>        fail with ENOEXEC as expected for malformed modules.
->> ...
->>    ERRORS
->> ...
->>        The following errors may additionally occur for finit_module():
->>
->>        EBADF  The file referred to by fd is not opened for reading.
->>
->>        EFBIG  The file referred to by fd is too large.
->>
->>        EINVAL flags is invalid.
->>
->>        ENOEXEC
->>               fd does not refer to an open file.
->>
->>
->
->
-> Looks good to me.
+Add gfp.h, mmzone.h, memory_hotplug.h & vmalloc.h to the "MEMORY
+MANAGMENT" section so scripts/get_maintainer.pl can do a better job of
+making recommendations.
 
-Thanks for looking it over, Lucas.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ MAINTAINERS | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-Cheers,
-
-Michael
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 915564e..e77ef28 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5003,6 +5003,10 @@ L:	linux-mm@kvack.org
+ W:	http://www.linux-mm.org
+ S:	Maintained
+ F:	include/linux/mm.h
++F:	include/linux/gfp.h
++F:	include/linux/mmzone.h
++F:	include/linux/memory_hotplug.h
++F:	include/linux/vmalloc.h
+ F:	mm/
+ 
+ MEMORY RESOURCE CONTROLLER
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+1.8.0.3
+
