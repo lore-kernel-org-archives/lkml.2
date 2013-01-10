@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab3AJIyu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 03:54:50 -0500
-Received: from mga03.intel.com ([143.182.124.21]:19640 "EHLO mga03.intel.com"
+	id S1753998Ab3AJIzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 03:55:08 -0500
+Received: from mga01.intel.com ([192.55.52.88]:34624 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753740Ab3AJIxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 03:53:24 -0500
+	id S1753456Ab3AJIxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 03:53:23 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="189673602"
+   d="scan'208";a="272163883"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
         spear-devel <spear-devel@list.st.com>
-Subject: [PATCHv2 10/11] dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
-Date: Thu, 10 Jan 2013 10:53:05 +0200
-Message-Id: <1357807986-4026-11-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv2 08/11] dw_dmac: store direction in the custom channel structure
+Date: Thu, 10 Jan 2013 10:53:03 +0200
+Message-Id: <1357807986-4026-9-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357807986-4026-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1357807986-4026-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -23,110 +23,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same information could be extracted from the struct dma_chan.
-The patch introduces helper function dwc_get_data_width() as well.
+Currently the direction value comes from the generic slave configuration
+structure and explicitly as a preparation function parameter. The first one is
+kinda obsoleted. Thus, we have to store the value passed to the preparation
+function somewhere in our structures to be able to use it later. The best
+candidate to provide the storage is a custom channel structure. Until now we
+still keep and check the direction field of the slave config structure as well.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/dma/dw_dmac.c      |   27 ++++++++++++++++++++-------
- drivers/dma/dw_dmac_regs.h |    3 ---
- 2 files changed, 20 insertions(+), 10 deletions(-)
+ drivers/dma/dw_dmac.c      |   12 ++++++++++--
+ drivers/dma/dw_dmac_regs.h |   14 ++++++++------
+ 2 files changed, 18 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index c87d8ab..f9d37ec 100644
+index e5540278..a2c5a60 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -73,6 +73,22 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
-  */
- #define NR_DESCS_PER_CHANNEL	64
+@@ -178,9 +178,9 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
+ 		cfghi = dws->cfg_hi;
+ 		cfglo |= dws->cfg_lo & ~DWC_CFGL_CH_PRIOR_MASK;
+ 	} else {
+-		if (dwc->dma_sconfig.direction == DMA_MEM_TO_DEV)
++		if (dwc->direction == DMA_MEM_TO_DEV)
+ 			cfghi = DWC_CFGH_DST_PER(dwc->dma_sconfig.slave_id);
+-		else if (dwc->dma_sconfig.direction == DMA_DEV_TO_MEM)
++		else if (dwc->direction == DMA_DEV_TO_MEM)
+ 			cfghi = DWC_CFGH_SRC_PER(dwc->dma_sconfig.slave_id);
+ 	}
  
-+#define SRC_MASTER	0
-+#define DST_MASTER	1
+@@ -721,6 +721,8 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+ 		return NULL;
+ 	}
+ 
++	dwc->direction = DMA_MEM_TO_MEM;
 +
-+static inline unsigned int dwc_get_data_width(struct dma_chan *chan, int master)
-+{
-+	struct dw_dma *dw = to_dw_dma(chan->device);
-+	struct dw_dma_slave *dws = chan->private;
+ 	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
+ 					 dwc->dw->data_width[dwc_get_dms(dws)]);
+ 
+@@ -805,6 +807,8 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 	if (unlikely(!dws || !sg_len))
+ 		return NULL;
+ 
++	dwc->direction = direction;
 +
-+	if (master == SRC_MASTER)
-+		return dw->data_width[dwc_get_sms(dws)];
-+	else if (master == DST_MASTER)
-+		return dw->data_width[dwc_get_dms(dws)];
+ 	prev = first = NULL;
+ 
+ 	switch (direction) {
+@@ -981,6 +985,7 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+ 		return -EINVAL;
+ 
+ 	memcpy(&dwc->dma_sconfig, sconfig, sizeof(*sconfig));
++	dwc->direction = sconfig->direction;
+ 
+ 	convert_burst(&dwc->dma_sconfig.src_maxburst);
+ 	convert_burst(&dwc->dma_sconfig.dst_maxburst);
+@@ -1358,6 +1363,8 @@ struct dw_cyclic_desc *dw_dma_cyclic_prep(struct dma_chan *chan,
+ 	if (unlikely(!is_slave_direction(direction)))
+ 		goto out_err;
+ 
++	dwc->direction = direction;
 +
-+	return 0;
-+}
-+
- /*----------------------------------------------------------------------*/
- 
- /*
-@@ -701,7 +717,6 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		size_t len, unsigned long flags)
- {
- 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
--	struct dw_dma_slave	*dws = chan->private;
- 	struct dw_desc		*desc;
- 	struct dw_desc		*first;
- 	struct dw_desc		*prev;
-@@ -724,8 +739,8 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 
- 	dwc->direction = DMA_MEM_TO_MEM;
- 
--	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
--					 dwc->dw->data_width[dwc_get_dms(dws)]);
-+	data_width = min_t(unsigned int, dwc_get_data_width(chan, SRC_MASTER),
-+			   dwc_get_data_width(chan, DST_MASTER));
- 
- 	src_width = dst_width = min_t(unsigned int, data_width,
- 				      dwc_fast_fls(src | dest | len));
-@@ -790,7 +805,6 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 		unsigned long flags, void *context)
- {
- 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
--	struct dw_dma_slave	*dws = chan->private;
- 	struct dma_slave_config	*sconfig = &dwc->dma_sconfig;
- 	struct dw_desc		*prev;
- 	struct dw_desc		*first;
-@@ -824,7 +838,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_M2P) :
- 			DWC_CTLL_FC(DW_DMA_FC_D_M2P);
- 
--		data_width = dwc->dw->data_width[dwc_get_sms(dws)];
-+		data_width = dwc_get_data_width(chan, SRC_MASTER);
- 
- 		for_each_sg(sgl, sg, sg_len, i) {
- 			struct dw_desc	*desc;
-@@ -887,7 +901,7 @@ slave_sg_todev_fill_desc:
- 		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_P2M) :
- 			DWC_CTLL_FC(DW_DMA_FC_D_P2M);
- 
--		data_width = dwc->dw->data_width[dwc_get_dms(dws)];
-+		data_width = dwc_get_data_width(chan, DST_MASTER);
- 
- 		for_each_sg(sgl, sg, sg_len, i) {
- 			struct dw_desc	*desc;
-@@ -1739,7 +1753,6 @@ static int dw_probe(struct platform_device *pdev)
- 
+ 	if (direction == DMA_MEM_TO_DEV)
+ 		reg_width = __ffs(sconfig->dst_addr_width);
+ 	else
+@@ -1732,6 +1739,7 @@ static int dw_probe(struct platform_device *pdev)
  		channel_clear_bit(dw, CH_EN, dwc->mask);
  
--		dwc->dw = dw;
- 		dwc->direction = DMA_TRANS_NONE;
+ 		dwc->dw = dw;
++		dwc->direction = DMA_TRANS_NONE;
  
  		/* hardware configuration */
+ 		if (autocfg) {
 diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index f9532c2..577f2dd 100644
+index 8881e9b..f9532c2 100644
 --- a/drivers/dma/dw_dmac_regs.h
 +++ b/drivers/dma/dw_dmac_regs.h
-@@ -214,9 +214,6 @@ struct dw_dma_chan {
+@@ -9,6 +9,7 @@
+  * published by the Free Software Foundation.
+  */
  
- 	/* configuration passed via DMA_SLAVE_CONFIG */
- 	struct dma_slave_config dma_sconfig;
--
--	/* backlink to dw_dma */
--	struct dw_dma		*dw;
++#include <linux/dmaengine.h>
+ #include <linux/dw_dmac.h>
+ 
+ #define DW_DMA_MAX_NR_CHANNELS	8
+@@ -184,12 +185,13 @@ enum dw_dmac_flags {
  };
  
- static inline struct dw_dma_chan_regs __iomem *
+ struct dw_dma_chan {
+-	struct dma_chan		chan;
+-	void __iomem		*ch_regs;
+-	u8			mask;
+-	u8			priority;
+-	bool			paused;
+-	bool			initialized;
++	struct dma_chan			chan;
++	void __iomem			*ch_regs;
++	u8				mask;
++	u8				priority;
++	enum dma_transfer_direction	direction;
++	bool				paused;
++	bool				initialized;
+ 
+ 	/* software emulation of the LLP transfers */
+ 	struct list_head	*tx_list;
 -- 
 1.7.10.4
 
