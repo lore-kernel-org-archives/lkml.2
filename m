@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927Ab3AJOXB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 09:23:01 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43882 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab3AJOXA (ORCPT
+	id S1752571Ab3AJO1G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 09:27:06 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:38669 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab3AJO1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 09:23:00 -0500
-Date: Thu, 10 Jan 2013 14:22:45 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] hardlockup: detect hard lockups without NMIs using
-	secondary cpus
-Message-ID: <20130110142245.GE19944@n2100.arm.linux.org.uk>
-References: <1357783059-13923-1-git-send-email-ccross@android.com> <20130110140215.GP88797@redhat.com>
+	Thu, 10 Jan 2013 09:27:04 -0500
+Date: Thu, 10 Jan 2013 06:27:38 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+Cc: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: Re: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
+Message-ID: <20130110142738.GA15787@kroah.com>
+References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
+ <1357542806-20449-8-git-send-email-durgadoss.r@intel.com>
+ <20130107192414.GC4465@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB59257F01@BGSMSX101.gar.corp.intel.com>
+ <20130109170023.GA7068@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB59258F12@BGSMSX101.gar.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130110140215.GP88797@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB59258F12@BGSMSX101.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 09:02:15AM -0500, Don Zickus wrote:
-> On Wed, Jan 09, 2013 at 05:57:39PM -0800, Colin Cross wrote:
-> > Emulate NMIs on systems where they are not available by using timer
-> > interrupts on other cpus.  Each cpu will use its softlockup hrtimer
-> > to check that the next cpu is processing hrtimer interrupts by
-> > verifying that a counter is increasing.
-> > 
-> > This patch is useful on systems where the hardlockup detector is not
-> > available due to a lack of NMIs, for example most ARM SoCs.
+On Thu, Jan 10, 2013 at 12:43:16PM +0000, R, Durgadoss wrote:
+> Hi Greg,
 > 
-> I have seen other cpus, like Sparc I think, create a 'virtual NMI' by
-> reserving an IRQ line as 'special' (can not be masked).  Not sure if that
-> is something worth looking at here (or even possible).
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Wednesday, January 09, 2013 10:30 PM
+> > To: R, Durgadoss
+> > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > eduardo.valentin@ti.com; hongbo.zhang@linaro.org; wni@nvidia.com
+> > Subject: Re: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
+> > 
+> > On Wed, Jan 09, 2013 at 09:12:29AM +0000, R, Durgadoss wrote:
+> > > Hi Greg,
+> > >
+> > > > -----Original Message-----
+> > > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > > Sent: Tuesday, January 08, 2013 12:54 AM
+> > > > To: R, Durgadoss
+> > > > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > > > eduardo.valentin@ti.com; hongbo.zhang@linaro.org; wni@nvidia.com
+> > > > Subject: Re: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
+> > > >
+> > > > On Mon, Jan 07, 2013 at 12:43:24PM +0530, Durgadoss R wrote:
+> > > > > This patch makes MAX_SENSORS_PER_ZONE and
+> > > > > MAX_CDEVS_PER_ZONE values configurable. The
+> > > > > default value is 1, and range is 1-12.
+> > > >
+> > > > Why would we ever want to change this?  Why make this configurable at
+> > > > all, how is a distro supposed to set this value?
+> > > >
+> > > > Shouldn't it be specified from the driver itself?
+> > >
+> > > These are platform level parameters, that can differ for various platforms.
+> > > (Mostly due to board design and thermistor layouts). Stand-alone thermal
+> > > sensor drivers are not (need not be) aware of these values.
+> > 
+> > Ok, and how does anyone know how to set them properly?
+> > 
+> > > That's why these values are made configurable.
+> > 
+> > Pushing work onto other people, without telling them what they need to
+> > do, isn't nice.  Please, either make it auto-configurable, or don't make
+> > it configurable at all.  As it is, this is useless for a distro, or any
+> > "normal" user, right?
+> 
+> These values are for OEM's to configure according to their platform design.
+> So, not making them configurable won't be good IMHO.
 
-No it isn't, because that assumes that things like spin_lock_irqsave()
-won't mask that interrupt.  We don't have the facility to do that.
+Ok, but you are guaranteeing that the same kernel can not work on
+multiple platforms, which is something that people have been working
+very hard to solve.
+
+So again, please make this a platform data field, or autoconfigurable,
+and not a kernel build time configuration option, that isn't acceptable
+anymore.
+
+thanks,
+
+greg k-h
