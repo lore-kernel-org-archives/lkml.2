@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932661Ab3AJEM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 23:12:58 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45054 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757791Ab3AJEM4 convert rfc822-to-8bit (ORCPT
+	id S932721Ab3AJENZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 23:13:25 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:53784 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443Ab3AJENY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 23:12:56 -0500
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "tony@atomide.com" <tony@atomide.com>, "paul@pwsan.com" <paul@pwsan.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-Subject: RE: [PATCH 3/7] pwm: pwm-tiehrpwm: Update the clock handling of
- pwm-tiehrpwm driver
-Thread-Topic: [PATCH 3/7] pwm: pwm-tiehrpwm: Update the clock handling of
- pwm-tiehrpwm driver
-Thread-Index: AQHN6OyYhnEnPV6atEm/na5feiNykJg1rumAgAFY3DA=
-Date: Thu, 10 Jan 2013 04:11:42 +0000
-Deferred-Delivery: Thu, 10 Jan 2013 04:11:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3EA5A510@DBDE01.ent.ti.com>
-References: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
- <1357133094-30806-4-git-send-email-avinashphilip@ti.com>
- <20130102133843.GA4414@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20130102133843.GA4414@avionic-0098.adnet.avionic-design.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 9 Jan 2013 23:13:24 -0500
+Message-ID: <1357791191.5841.8.camel@marge.simpson.net>
+Subject: Re: kernel BUG at kernel/sched_rt.c:493!
+From: Mike Galbraith <bitbucket@online.de>
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org
+Date: Thu, 10 Jan 2013 05:13:11 +0100
+In-Reply-To: <20130108150153.GA2219@BohrerMBP.rgmadvisors.com>
+References: <20130105174632.GB19226@u1004.rgmadvisors.com>
+	 <20130107175818.GA3411@BohrerMBP.rgmadvisors.com>
+	 <20130107230218.GB3411@BohrerMBP.rgmadvisors.com>
+	 <20130108143605.GB5594@home.goodmis.org>
+	 <20130108150153.GA2219@BohrerMBP.rgmadvisors.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:vpxlZjpsLXYy2H2FuP7G5EHMjfYBPKcpe4AYCDW2P0d
+ a7Ri1zkxYJueNeVGhohElA1a8pz6xOr6k7TQOEC4xbK0i6TnFl
+ lOQ8xUbtZkep2DmLZ2DWDdSC4v5zacI38Urz1PVVoMzUxkAaWa
+ CEIftCMQDE5Bgt2uzMK7roX9UYZp/ZtklzM7OdKId81sLg0pR4
+ B7rIm2UF/6bS4ePKxkru9nh9Qpu++eFoAW6gw6E+9LmrAGqFQL
+ 1TPhEj4Al30IKKwQM9Qvfq7jwxYIspAAAhjYzvAXHkmprSrciG
+ dA3uFXyF3MTaz/5oT469fnVrFWdbdriS/ukT1sfrHllEh2o5rk
+ RyRl1WMZLyEw/6s5nQtd3PoCSbpphMcGBt1hm6iF0GUUwi16/R
+ XYwavXxftSKQA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 02, 2013 at 19:08:43, Thierry Reding wrote:
-> On Wed, Jan 02, 2013 at 06:54:50PM +0530, Philip Avinash wrote:
-> > The clock framework has changed and it's now better to invoke
-> > clock_prepare_enable() and clk_disable_unprepare() rather than the
-> > legacy clk_enable() and clk_disable() calls. This patch converts the
-> > pwm-tiehrpwm driver to the new framework.
+On Tue, 2013-01-08 at 09:01 -0600, Shawn Bohrer wrote: 
+> On Tue, Jan 08, 2013 at 09:36:05AM -0500, Steven Rostedt wrote:
+> > > 
+> > > I've also managed to reproduce this on 3.8.0-rc2 so it appears the bug
+> > > is still present in the latest kernel.
 > > 
-> > Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> > Cc: Thierry Reding <thierry.reding@avionic-design.de>
-> > ---
-> > In 3.8-rc1, common clock frame work support added to AM335x.
+> > Shawn,
 > > 
-> >  drivers/pwm/pwm-tiehrpwm.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
-> > index 72a6dd4..af6f162 100644
-> > --- a/drivers/pwm/pwm-tiehrpwm.c
-> > +++ b/drivers/pwm/pwm-tiehrpwm.c
-> > @@ -341,7 +341,7 @@ static int ehrpwm_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-> >  	configure_polarity(pc, pwm->hwpwm);
-> >  
-> >  	/* Enable TBCLK before enabling PWM device */
-> > -	clk_enable(pc->tbclk);
-> > +	clk_prepare_enable(pc->tbclk);
+> > Can you send me your .config file.
 > 
-> I apparently didn't catch this before, but maybe it would be useful to
-> check the return value here to make sure we only proceed if the clock
-> can actually be enabled.
+> I've attached the 3.8.0-rc2 config that I used to reproduce this in an
+> 8 core kvm image.  Let me know if you need anything else.
 
-Ok I will check return value & make it return status of pwm_enable().
-I will send it as individual patch in next series. I am waiting for
-reviews / acceptance of HWMOD and clock tree node patches.
+I tried beating on my little Q6600 with no success.  I even tried
+setting the entire box rt, GUI and all, nada.
 
-Thanks
-Avinash
+Hm, maybe re-installing systemd..
 
-> 
-> Thierry
-> 
+-Mike
 
