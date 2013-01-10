@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab3AJSmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 13:42:12 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:29887 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab3AJSmH (ORCPT
+	id S1755488Ab3AJSoW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 13:44:22 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:50348 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754756Ab3AJSoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 13:42:07 -0500
-X-AuditID: cbfec7f5-b7fd76d000007247-4f-50ef0b7c6cf0
-From: Rafal Krypa <r.krypa@samsung.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Rafal Krypa <r.krypa@samsung.com>
-Subject: [PATCHv2] Smack: add support for modification of existing rules
-Date: Thu, 10 Jan 2013 19:41:59 +0100
-Message-id: <1357843320-11883-1-git-send-email-r.krypa@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOJMWRmVeSWpSXmKPExsVy+t/xy7o13O8DDG4cVrRY2LaExeLyrjls
-	Fh96HrE5MHt83iQXwBjFZZOSmpNZllqkb5fAlXH302HmggNsFS+f7GJuYFzK2sXIySEhYCKx
-	+dx0ZghbTOLCvfVsXYxcHEICSxkl1j87yQ7h9DFJnHpwHayKTUBdYun8XjYQW0RAR2Lfnudg
-	RcwC7YwSc48+YQFJCAt4SHydeBxsBYuAqsSN+d/AGngFnCVWzmpkg1inKNH9bALbBEbuBYwM
-	qxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFCPPt1B+PSY1aHGAU4GJV4eDV93wUIsSaWFVfm
-	HmKU4GBWEuFtWQAU4k1JrKxKLcqPLyrNSS0+xMjEwSnVwDj7bvLP2bnijut9kuccamR3VSxd
-	nH3z5U2XebmPVVvjqxf/OtWbcPbD94W6E29meV4RLstMfvLbMeSJsundhPkLDNk+TTtzeckk
-	o+r4/Vt3nPtWX/ixeHJDZMX7+6tkv2lzGrIkuwYJXuTTSS9ZkM8/bclu/vXSJxqvvAxn+9HM
-	FBP8yiNN77ISS3FGoqEWc1FxIgAxI8BvygEAAA==
+	Thu, 10 Jan 2013 13:44:21 -0500
+Message-ID: <1357843473.6075.8.camel@gitbox>
+Subject: Re: [PATCH] gpio: vt8500: Export dedicated GPIO before
+ multifunction pins.
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linux.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com
+Date: Fri, 11 Jan 2013 07:44:33 +1300
+In-Reply-To: <CACRpkdagdO3_6DmKYaCwmx4Jju=E_uy86_QqdKLA3+VK7JNPjg@mail.gmail.com>
+References: <1356899374-9395-1-git-send-email-linux@prisktech.co.nz>
+	 <CACRpkdagdO3_6DmKYaCwmx4Jju=E_uy86_QqdKLA3+VK7JNPjg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch introduces in-place modification of Smack rules.
-Until now Smack supported only overwriting of existing rules.
-To change permitted access for a given subject and object, user had
-to read list of rules to get current accesses, modify it and write
-modified rule back to kernel. This way was inefficient, non-atomic
-and unnecessarily difficult.
-New interface is intended to ease such modifications.
+On Thu, 2013-01-10 at 11:49 +0100, Linus Walleij wrote:
+> On Sun, Dec 30, 2012 at 9:29 PM, Tony Prisk <linux@prisktech.co.nz> wrote:
+> 
+> > The vendor does not provide numbering for gpio pins. Vendor source
+> > exports dedicated gpio pins first, followed by multifunction pins.
+> > As this is what end users expect, this patch changes vt8500 and wm8505
+> > to do the same.
+> >
+> > Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> 
+> So how many existing userspace applications does this patch
+> break? Has this system been widely deployed so a kernel
+> upgrade will cause problems for people?
+> 
+> But applied anyway, unless someone screams about it real
+> soon now. That seems to be the only way to get people to tell
+> us about their use cases.
+> 
+> Could you consider adding names to the exported GPIO pins
+> on the vt8500 series please? Then userspace can atleast
+> try to locate the right pin.
+> 
+> Yours,
+> Linus Walleij
 
-Changes in v2:
-- dropped patches for smackfs seq list operations
-- changed modification approach to simple integer assignment
+In terms of userspace apps, my best guess would be 'I dunno'. This was
+requested by the only end-user to ask a question since mainline support
+was added - He couldn't find the external GPIO's in the 200+ that were
+listed.
 
-Rafal Krypa (1):
-  Smack: add support for modification of existing rules
+This also makes all the platforms the same now - external GPIO's are now
+exported first (0..x) which is better in the long term for userspace.
 
- Documentation/security/Smack.txt |   11 ++
- security/smack/smackfs.c         |  249 ++++++++++++++++++++++++++------------
- 2 files changed, 181 insertions(+), 79 deletions(-)
+The names is a bit of a problem, but I will try my best. We have limited
+datasheets etc from the vendor, so knowing what things do is a bit of a
+mystery sometimes.
 
--- 
-1.7.10.4
+Regards
+Tony P
 
