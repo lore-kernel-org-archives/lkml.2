@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab3AJCAP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 21:00:15 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:6780 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932106Ab3AJCAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 21:00:13 -0500
-X-IronPort-AV: E=Sophos;i="4.84,441,1355068800"; 
-   d="scan'208";a="6554366"
-Message-ID: <50EE1B82.4090601@cn.fujitsu.com>
-Date: Thu, 10 Jan 2013 09:38:10 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>, akpm@linux-foundation.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v5 01/14] memory-hotplug: try to offline the memory twice
- to avoid dependence
-References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com> <50D96543.6010903@parallels.com> <50DFD7F7.5090408@cn.fujitsu.com> <50ED8834.1090804@parallels.com>
-In-Reply-To: <50ED8834.1090804@parallels.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/10 09:38:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/10 09:38:32,
-	Serialize complete at 2013/01/10 09:38:32
+	id S932704Ab3AJCDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 21:03:19 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:53083 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757821Ab3AJCDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 21:03:17 -0500
+Message-ID: <1357783407.28830.2.camel@gitbox>
+Subject: Re: [PATCH 1/4] arm: vt8500: Add support for Wondermedia
+ WM8750/WM8850
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>,
+        vt8500-wm8505-linux-kernel@googlegroups.com, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 10 Jan 2013 15:03:27 +1300
+In-Reply-To: <201301092127.05804.arnd@arndb.de>
+References: <1356650452-16559-1-git-send-email-linux@prisktech.co.nz>
+	 <CAOesGMj6XTuW9tPqYnawPvO-wJBd7s5M5xTfdvQcmEioHw=Pnw@mail.gmail.com>
+	 <1357758570.27076.8.camel@gitbox> <201301092127.05804.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Glauber,
+On Wed, 2013-01-09 at 21:27 +0000, Arnd Bergmann wrote:
+> On Wednesday 09 January 2013, Tony Prisk wrote:
+> > I'm quite happy to send a pull request if that's what you prefer.
+> > 
+> > Generally people have just taken the patches straight from email, so
+> > everytime I've done a pull-request I get a reply back saying the patches
+> > have already been applied.
+> > 
+> > Is there some 'rule' around pull-requests vs emailed patches?
+> 
+> Generally, pull requests tend to be less work for us, so I prefer
+> them. In particular, when you add a tag description or a signed
+> tag, that gives automatically puts  nice text into the merge
+> changeset.
+> 
+> > Should patches in pull-requests have Ack'd lines already?
+> 
+> Yes.
+> 
+> 	Arnd
 
-On 01/09/2013 11:09 PM, Glauber Costa wrote:
->>
->> We try to make all page_cgroup allocations local to the node they are describing
->> now. If the memory is the first memory onlined in this node, we will allocate
->> it from the other node.
->>
->> For example, node1 has 4 memory blocks: 8-11, and we online it from 8 to 11
->> 1. memory block 8, page_cgroup allocations are in the other nodes
->> 2. memory block 9, page_cgroup allocations are in memory block 8
->>
->> So we should offline memory block 9 first. But we don't know in which order
->> the user online the memory block.
->>
->> I think we can modify memcg like this:
->> allocate the memory from the memory block they are describing
->>
->> I am not sure it is OK to do so.
->
-> I don't see a reason why not.
+This is what I thought - and the reason I haven't sent a pull-request
+for the patch's - I haven't had any Ack's :)
 
-I'm not sure, but if we do this, we could bring in a fragment for each
-memory block (a memory section, 128MB, right?). Is this a problem when
-we use large page (such as 1GB page) ?
-
-Even if not, will these fragments make any bad effects ?
-
-Thank. :)
-
->
-> You would have to tweak a bit the lookup function for page_cgroup, but
-> assuming you will always have the pfns and limits, it should be easy to do.
->
-> I think the only tricky part is that today we have a single
-> node_page_cgroup, and we would of course have to have one per memory
-> block. My assumption is that the number of memory blocks is limited and
-> likely not very big. So even a static array would do.
->
-> Kamezawa, do you have any input in here?
->
+Regards
+Tony P
 
