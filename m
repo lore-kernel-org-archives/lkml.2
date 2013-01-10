@@ -1,175 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab3AJTDF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 14:03:05 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:54553 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab3AJTCi (ORCPT
+	id S1755790Ab3AJTDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 14:03:43 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:60876 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755725Ab3AJTDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 14:02:38 -0500
-From: Matt Porter <mporter@ti.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>, Chris Ball <cjb@laptop.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: [PATCH v2 3/3] mmc: davinci: get SG segment limits with dma_get_channel_caps()
-Date: Thu, 10 Jan 2013 14:07:06 -0500
-Message-Id: <1357844826-30746-4-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1357844826-30746-1-git-send-email-mporter@ti.com>
-References: <1357844826-30746-1-git-send-email-mporter@ti.com>
+	Thu, 10 Jan 2013 14:03:40 -0500
+Date: Thu, 10 Jan 2013 20:03:27 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
+Message-ID: <20130110190327.GA23110@avionic-0098.adnet.avionic-design.de>
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
+ <20130109231758.GA27065@obsidianresearch.com>
+ <20130110071937.GG15212@avionic-0098.adnet.avionic-design.de>
+ <201301100917.19577.arnd@arndb.de>
+ <20130110102544.GA5546@avionic-0098.adnet.avionic-design.de>
+ <20130110182007.GA28004@obsidianresearch.com>
+ <20130110185505.GA22944@avionic-0098.adnet.avionic-design.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Disposition: inline
+In-Reply-To: <20130110185505.GA22944@avionic-0098.adnet.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:LKzhKXAPsUoE3+GWqjhaXwBaxRJpRDLUhF8BqodysnD
+ s5DqRT4eWXgQHABKl2uz/+Rzz2mhA+676tgBab4u8Sai9RSHUV
+ wEYECoTE5swPP55Ba6xy+5dZOnq+GfC+SYJcIsKNwblEp3eWUC
+ Vgr0vFBJyHXmfZ85bIccZAaWr2yR6172owRE71f20NWlVi7M8W
+ XOPAlvwmvk8gEe5RVC5zDxERHTkktaWgbvfl1BNYLoVejo4/O5
+ TVeKbFJNEKgnwbMtsRuSRqSWmjPnsTe+bFzeo5obud3LZN7kie
+ xuP4KuU2TJWLdIfzeo3vSU3y5An33nLmR61F3aDfOPN4X1SrBt
+ ahXjzKsN9z1iviJ98iNy6Xy0RtUaPwb2RkYzuuihxYwDCs10/z
+ CWySn8TbGQ2VD6Obkagj1jbEq1cp4KR+20=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the hardcoded values used to set max_segs/max_seg_size with
-a dma_get_channel_caps() query to the dmaengine driver.
 
-Signed-off-by: Matt Porter <mporter@ti.com>
----
- drivers/mmc/host/davinci_mmc.c            |   66 +++++++++--------------------
- include/linux/platform_data/mmc-davinci.h |    3 --
- 2 files changed, 21 insertions(+), 48 deletions(-)
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
-index 2063677..17e186d 100644
---- a/drivers/mmc/host/davinci_mmc.c
-+++ b/drivers/mmc/host/davinci_mmc.c
-@@ -144,18 +144,6 @@
- /* MMCSD Init clock in Hz in opendrain mode */
- #define MMCSD_INIT_CLOCK		200000
- 
--/*
-- * One scatterlist dma "segment" is at most MAX_CCNT rw_threshold units,
-- * and we handle up to MAX_NR_SG segments.  MMC_BLOCK_BOUNCE kicks in only
-- * for drivers with max_segs == 1, making the segments bigger (64KB)
-- * than the page or two that's otherwise typical. nr_sg (passed from
-- * platform data) == 16 gives at least the same throughput boost, using
-- * EDMA transfer linkage instead of spending CPU time copying pages.
-- */
--#define MAX_CCNT	((1 << 16) - 1)
--
--#define MAX_NR_SG	16
--
- static unsigned rw_threshold = 32;
- module_param(rw_threshold, uint, S_IRUGO);
- MODULE_PARM_DESC(rw_threshold,
-@@ -216,8 +204,6 @@ struct mmc_davinci_host {
- 	u8 version;
- 	/* for ns in one cycle calculation */
- 	unsigned ns_in_one_cycle;
--	/* Number of sg segments */
--	u8 nr_sg;
- #ifdef CONFIG_CPU_FREQ
- 	struct notifier_block	freq_transition;
- #endif
-@@ -421,16 +407,7 @@ static int mmc_davinci_send_dma_request(struct mmc_davinci_host *host,
- 	int ret = 0;
- 
- 	if (host->data_dir == DAVINCI_MMC_DATADIR_WRITE) {
--		struct dma_slave_config dma_tx_conf = {
--			.direction = DMA_MEM_TO_DEV,
--			.dst_addr = host->mem_res->start + DAVINCI_MMCDXR,
--			.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
--			.dst_maxburst =
--				rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
--		};
- 		chan = host->dma_tx;
--		dmaengine_slave_config(host->dma_tx, &dma_tx_conf);
--
- 		desc = dmaengine_prep_slave_sg(host->dma_tx,
- 				data->sg,
- 				host->sg_len,
-@@ -443,16 +420,7 @@ static int mmc_davinci_send_dma_request(struct mmc_davinci_host *host,
- 			goto out;
- 		}
- 	} else {
--		struct dma_slave_config dma_rx_conf = {
--			.direction = DMA_DEV_TO_MEM,
--			.src_addr = host->mem_res->start + DAVINCI_MMCDRR,
--			.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
--			.src_maxburst =
--				rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
--		};
- 		chan = host->dma_rx;
--		dmaengine_slave_config(host->dma_rx, &dma_rx_conf);
--
- 		desc = dmaengine_prep_slave_sg(host->dma_rx,
- 				data->sg,
- 				host->sg_len,
-@@ -1165,6 +1133,7 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 	struct resource *r, *mem = NULL;
- 	int ret = 0, irq = 0;
- 	size_t mem_size;
-+	struct dmaengine_chan_caps *dma_chan_caps;
- 
- 	/* REVISIT:  when we're fully converted, fail if pdata is NULL */
- 
-@@ -1214,12 +1183,6 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 
- 	init_mmcsd_host(host);
- 
--	if (pdata->nr_sg)
--		host->nr_sg = pdata->nr_sg - 1;
--
--	if (host->nr_sg > MAX_NR_SG || !host->nr_sg)
--		host->nr_sg = MAX_NR_SG;
--
- 	host->use_dma = use_dma;
- 	host->mmc_irq = irq;
- 	host->sdio_irq = platform_get_irq(pdev, 1);
-@@ -1248,14 +1211,27 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 		mmc->caps |= pdata->caps;
- 	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
- 
--	/* With no iommu coalescing pages, each phys_seg is a hw_seg.
--	 * Each hw_seg uses one EDMA parameter RAM slot, always one
--	 * channel and then usually some linked slots.
--	 */
--	mmc->max_segs		= MAX_NR_SG;
-+	{
-+		struct dma_slave_config dma_txrx_conf = {
-+			.src_addr = host->mem_res->start + DAVINCI_MMCDRR,
-+			.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
-+			.src_maxburst =
-+				rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
-+			.dst_addr = host->mem_res->start + DAVINCI_MMCDXR,
-+			.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
-+			.dst_maxburst =
-+				rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
-+		};
-+		dmaengine_slave_config(host->dma_tx, &dma_txrx_conf);
-+		dmaengine_slave_config(host->dma_rx, &dma_txrx_conf);
-+	}
- 
--	/* EDMA limit per hw segment (one or two MBytes) */
--	mmc->max_seg_size	= MAX_CCNT * rw_threshold;
-+	/* Just check one channel for the DMA SG limits */
-+	dma_chan_caps = dma_get_channel_caps(host->dma_tx, DMA_MEM_TO_DEV);
-+	if (dma_chan_caps) {
-+		mmc->max_segs = dma_chan_caps->seg_nr;
-+		mmc->max_seg_size = dma_chan_caps->seg_len;
-+	}
- 
- 	/* MMC/SD controller limits for multiblock requests */
- 	mmc->max_blk_size	= 4095;  /* BLEN is 12 bits */
-diff --git a/include/linux/platform_data/mmc-davinci.h b/include/linux/platform_data/mmc-davinci.h
-index 5ba6b22..6910209 100644
---- a/include/linux/platform_data/mmc-davinci.h
-+++ b/include/linux/platform_data/mmc-davinci.h
-@@ -25,9 +25,6 @@ struct davinci_mmc_config {
- 
- 	/* Version of the MMC/SD controller */
- 	u8	version;
--
--	/* Number of sg segments */
--	u8	nr_sg;
- };
- void davinci_setup_mmc(int module, struct davinci_mmc_config *config);
- 
--- 
-1.7.9.5
+On Thu, Jan 10, 2013 at 07:55:05PM +0100, Thierry Reding wrote:
+> On Thu, Jan 10, 2013 at 11:20:07AM -0700, Jason Gunthorpe wrote:
+> > On Thu, Jan 10, 2013 at 11:25:44AM +0100, Thierry Reding wrote:
+> > > On Thu, Jan 10, 2013 at 09:17:19AM +0000, Arnd Bergmann wrote:
+> > > > On Thursday 10 January 2013, Thierry Reding wrote:
+> > > > > On Wed, Jan 09, 2013 at 04:17:58PM -0700, Jason Gunthorpe wrote:
+> > > > > > On Wed, Jan 09, 2013 at 04:12:31PM -0700, Stephen Warren wrote:
+> > > > > > You could decrease the size of the mapping to only span the bus
+> > > > > > numbers that are configured for use via DT.
+> > > > >=20
+> > > > > That won't work, unfortunately. The mapping is such that the bus =
+number
+> > > > > is not encoded in the uppermost bits, the extended register numbe=
+r is.
+> > > > > So the only thing that we could do is decrease the size of the ex=
+tended
+> > > > > register space for *all* devices.
+> > > >=20
+> > > > But you could still a method to map 16 separate areas per bus, each=
+ 65536
+> > > > bytes long, which results in 1MB per bus. That is probably ok, since
+> > > > very few systems have more than a handful of buses in practice.
+> > > >=20
+> > > > In theory, doing static mappings on a per-page base would let you
+> > > > do 16 devices at a time, but it's probably worth doing at this fine
+> > > > granularity.
+> > >=20
+> > > I don't understand how this would help. The encoding is like this:
+> > >=20
+> > > 	[27:24] extended register number
+> > > 	[23:16] bus number
+> > > 	[15:11] device number
+> > > 	[10: 8] function number
+> > > 	[ 7: 0] register number
+> > >=20
+> > > So it doesn't matter whether I use separate areas per bus or not. As
+> > > soon as the whole extended configuration space needs to be accessed a
+> > > whopping 28 bits (256 MiB) are required.
+> >=20
+> > You'd piece a mapping together, each bus requires 16 64k mappings, a
+> > simple 2d array of busnr*16 of pointers would do the trick. A more
+> > clever solution would be to allocate contiguous virtual memory and
+> > split that up..
+>=20
+> Oh, I see. I'm not very familiar with the internals of remapping, so
+> I'll need to do some more reading. Thanks for the hints.
 
+I forgot to ask. What's the advantage of having a contiguous virtual
+memory area and splitting it up versus remapping each chunk separately?
+
+Thierry
+
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ7xB/AAoJEN0jrNd/PrOhZpEP+we1xAuIrMAjE1b8jylJ+sbZ
+aWhd6eAMZOhhfC42ZimjnbE1foHY3LSVmqjYO+U9jKLw8TdwlmVzqXmkOmtekP/+
+tjwgymJO2TG7cOV4Au3uwhV5EsAOqynLNgDCOwkyZwAvVo+efiiKZKv+ePOHhCcu
+ZXCFJ7cMGdcvaXJfs8zEORTimvsfrqnPw+2GU28UdL2fQ18k1iOg/UQI0TdJvnRA
+TZMi55OYKWSrHb5H9QrP7UuDU8XYDK83BXl3U5jAJ6arYRCSIgByMZo63PVtSrp6
+22wY6ky4Zy20vRs1ji66NT/VxvcDWKdMTmf5z+wuyY6U1Skq2V14JCrlvuffH4jh
+AK8bJpeVqNmh2ccJlHXv08cq68wmXMv+OPoOz7dRlBD6AjcxhlGABZTU3rpAt49y
+ujf24T45sEDNKcPcKXlTjjL77P9L41k+VHSPSdKlIuAyFeRxl+2cwy61aneNV0qX
+Lk8FmpROusRGg4GFjhOHIz0HxmdkiauEawDp0crFnjwqq6zIgvCtt7M7D5Hz/F/x
+PCvCGNGe8akhCfgIXh3JIKYHERxWx2FRtfFjj+2ZG3zL7RR79ET4oQHTHCFH3TIF
+E6YdbRZ9eBitvmykZpiLkr7XSKMVEpTmk7tfJWQDBtJ4HVHivDSnn0+MkNgJcCdv
+3QhfUnzAiOpBqZnjmy/M
+=xrPE
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
