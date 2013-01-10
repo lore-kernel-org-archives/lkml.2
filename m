@@ -1,173 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab3AJSQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 13:16:26 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:45098 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777Ab3AJSQY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 13:16:24 -0500
-Message-ID: <50EF056B.4040803@linux.vnet.ibm.com>
-Date: Fri, 11 Jan 2013 02:16:11 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 5/5] KVM: x86: improve reexecute_instruction
-References: <50EBBE54.1040007@linux.vnet.ibm.com> <50EBBEEC.2060100@linux.vnet.ibm.com> <20130110173036.GB24703@amt.cnet>
-In-Reply-To: <20130110173036.GB24703@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011018-9574-0000-0000-0000061FCB79
+	id S1755630Ab3AJSQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 13:16:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29730 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755603Ab3AJSQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 13:16:43 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+In-Reply-To: <8057.1357834335@warthog.procyon.org.uk>
+References: <8057.1357834335@warthog.procyon.org.uk> <CAGXu5jJtuorV9GcetPA+v9K4p-jX4oacaDPrJ3j+RTM+eK5kFA@mail.gmail.com> <24937.1357218319@warthog.procyon.org.uk>
+From: David Howells <dhowells@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: dhowells@redhat.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Pull "Load keys from signed PE binaries" branch into linux-next
+Date: Thu, 10 Jan 2013 18:16:40 +0000
+Message-ID: <1656.1357841800@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2013 01:30 AM, Marcelo Tosatti wrote:
-> On Tue, Jan 08, 2013 at 02:38:36PM +0800, Xiao Guangrong wrote:
->> The current reexecute_instruction can not well detect the failed instruction
->> emulation. It allows guest to retry all the instructions except it accesses
->> on error pfn
->>
->> For example, some cases are nested-write-protect - if the page we want to
->> write is used as PDE but it chains to itself. Under this case, we should
->> stop the emulation and report the case to userspace
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/include/asm/kvm_host.h |    7 +++++++
->>  arch/x86/kvm/paging_tmpl.h      |   27 ++++++++++++++++++++-------
->>  arch/x86/kvm/x86.c              |    8 +++++++-
->>  3 files changed, 34 insertions(+), 8 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
->> index c431b33..d6ab8d2 100644
->> --- a/arch/x86/include/asm/kvm_host.h
->> +++ b/arch/x86/include/asm/kvm_host.h
->> @@ -502,6 +502,13 @@ struct kvm_vcpu_arch {
->>  		u64 msr_val;
->>  		struct gfn_to_hva_cache data;
->>  	} pv_eoi;
->> +
->> +	/*
->> +	 * Indicate whether the access faults on its page table in guest
->> +	 * which is set when fix page fault and used to detect unhandeable
->> +	 * instruction.
->> +	 */
->> +	bool write_fault_to_shadow_pgtable;
->>  };
->>
->>  struct kvm_lpage_info {
->> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
->> index 67b390d..df50560 100644
->> --- a/arch/x86/kvm/paging_tmpl.h
->> +++ b/arch/x86/kvm/paging_tmpl.h
->> @@ -497,26 +497,34 @@ out_gpte_changed:
->>   * created when kvm establishes shadow page table that stop kvm using large
->>   * page size. Do it early can avoid unnecessary #PF and emulation.
->>   *
->> + * @write_fault_to_shadow_pgtable will return true if the fault gfn is
->> + * currently used as its page table.
->> + *
->>   * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
->>   * since the PDPT is always shadowed, that means, we can not use large page
->>   * size to map the gfn which is used as PDPT.
->>   */
->>  static bool
->>  FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
->> -			      struct guest_walker *walker, int user_fault)
->> +			      struct guest_walker *walker, int user_fault,
->> +			      bool *write_fault_to_shadow_pgtable)
->>  {
->>  	int level;
->>  	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
->> +	bool self_changed = false;
->>
->>  	if (!(walker->pte_access & ACC_WRITE_MASK ||
->>  	      (!is_write_protection(vcpu) && !user_fault)))
->>  		return false;
->>
->> -	for (level = walker->level; level <= walker->max_level; level++)
->> -		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
->> -			return true;
->> +	for (level = walker->level; level <= walker->max_level; level++) {
->> +		gfn_t gfn = walker->gfn ^ walker->table_gfn[level - 1];
->> +
->> +		self_changed |= !(gfn & mask);
->> +		*write_fault_to_shadow_pgtable |= !gfn;
->> +	}
->>
->> -	return false;
->> +	return self_changed;
->>  }
->>
->>  /*
->> @@ -544,7 +552,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
->>  	int level = PT_PAGE_TABLE_LEVEL;
->>  	int force_pt_level;
->>  	unsigned long mmu_seq;
->> -	bool map_writable;
->> +	bool map_writable, is_self_change_mapping;
->>
->>  	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
->>
->> @@ -572,9 +580,14 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
->>  		return 0;
->>  	}
->>
->> +	vcpu->arch.write_fault_to_shadow_pgtable = false;
->> +
->> +	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu,
->> +	      &walker, user_fault, &vcpu->arch.write_fault_to_shadow_pgtable);
->> +
->>  	if (walker.level >= PT_DIRECTORY_LEVEL)
->>  		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
->> -		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
->> +		   || is_self_change_mapping;
->>  	else
->>  		force_pt_level = 1;
->>  	if (!force_pt_level) {
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index 6f13e03..2957012 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -4810,7 +4810,13 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t cr2)
->>  	 * guest to let CPU execute the instruction.
->>  	 */
->>  	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
->> -	return true;
->> +
->> +	/*
->> +	 * If the access faults on its page table, it can not
->> +	 * be fixed by unprotecting shadow page and it should
->> +	 * be reported to userspace.
->> +	 */
->> +	return !vcpu->arch.write_fault_to_shadow_pgtable;
->>  }
->>
->>  static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
+
+> > More of my paranoia for array access here. :)
+>
+> I've added this at the top of pkc7_digest():
 > 
-> Also should make sure vcpu->arch.write_fault_to_shadow_pgtable is never
-> reused. Say, clean when exiting x86_emulate_instruction?
+> 	if (pkcs7->sig.pkey_hash_algo > PKEY_HASH__LAST ||
+> 	    pkey_hash_algo_name[pkcs7->sig.pkey_hash_algo])
 
-Yes, it is more clear.
+There should be a '!' here.
 
-But i am thinking if it is really needed because 'cr2' is only valid when it
-is called on page fault path, vcpu->arch.write_fault_to_shadow_pgtable is reset
-at the beginning of page-fault path.
+> 		return -ENOPKG;
 
-For other paths, cr2 is always 0 which is always 'NULL' pointer and not mapped
-on guest, reexecute_instruction will always return true:
-
-		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
-
-		/*
-		 * If the mapping is invalid in guest, let cpu retry
-		 * it to generate fault.
-		 */
-		if (gpa == UNMAPPED_GVA)
-			return true;
-
+David
