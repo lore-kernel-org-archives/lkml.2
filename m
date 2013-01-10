@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab3AJKJJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 05:09:09 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:58409 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab3AJKJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 05:09:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 0/4] gpio: introduce descriptor-based interface
-Date: Thu, 10 Jan 2013 10:08:44 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <201301091046.13020.arnd@arndb.de> <2270940.DTxEYMZtED@percival>
-In-Reply-To: <2270940.DTxEYMZtED@percival>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753043Ab3AJKMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 05:12:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38925 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753141Ab3AJKMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 05:12:19 -0500
+Subject: Re: [PATCH V5 26/30] gfs2: Convert aio_read/write ops to
+ read/write_iter
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        cluster-devel@redhat.com
+In-Reply-To: <1357761525-22718-27-git-send-email-dave.kleikamp@oracle.com>
+References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
+	 <1357761525-22718-27-git-send-email-dave.kleikamp@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 10 Jan 2013 10:10:55 +0000
+Message-ID: <1357812655.2760.9.camel@menhir>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301101008.45091.arnd@arndb.de>
-X-Provags-ID: V02:K0:LyEpwV2KD1CuT4gg83xwYz7lsObQ7nTtmnxOVPznVuT
- ziq7qSW9X6LxUXzxP9zzhEnxVY7AHqVsSFEWg80RboHMtp3908
- 7+vj2rsNM6q2BLTdmbwDh+DGeQr9Qfa2+Pxcnc3a9uSCJhHYhx
- M66MKkJOUdE1JCOrgatzIOzMIY7o6Lkzk2yctvIwgNKc8EX/Pv
- MDMrN2xNdu0Xk+fKG1dCK6EF11BKmnVT8vfk48gGUKhtsNceXt
- QfR7oqboaNnPkbHjTEDk9uwfgSogujYSR4/rRgNqniaX4ZlgLo
- irV4zrstoB8OoqCx4suFY5ueSt8nwHy9MwrayqefIdN3P+foZ/
- 601QK7ID26CLDCz3t2aM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 January 2013, Alex Courbot wrote:
-> On Wednesday 09 January 2013 18:46:12 Arnd Bergmann wrote:
-> > 
-> > Only legacy users did this. Initially there was only the header file,
-> > with the API declared but several different implementations of it.
-> > gpiolib was introduced later to reduce code duplication and allow having
-> > multiple implementations in the same kernel.
+Hi,
+
+On Wed, 2013-01-09 at 13:58 -0600, Dave Kleikamp wrote:
+> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+> Cc: Steven Whitehouse <swhiteho@redhat.com>
+> Cc: cluster-devel@redhat.com
+> ---
+>  fs/gfs2/file.c | 21 ++++++++++-----------
+>  1 file changed, 10 insertions(+), 11 deletions(-)
 > 
-> Does the following sound reasonable?
-> 1) Make sure every target that uses GENERIC_GPIO also implements its drivers 
-> using gpiolib, convert the (hopefully) few ones that don't to use gpiolib
-> 2) Make GENERIC_GPIO require GPIOLIB or just merge both options into a single 
-> one
-> 3) Turn gpio into a full subsystem (like pinctrl)
-> 
-> This should make things less blurry and easier to maintain (less header files, 
-> only one interface, etc.) GPIO controllers would also be better integrated 
-> into the driver model.
+> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+> index 991ab2d..63af1a6 100644
+> --- a/fs/gfs2/file.c
+> +++ b/fs/gfs2/file.c
+> @@ -655,10 +655,9 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+>  }
+>  
+>  /**
+> - * gfs2_file_aio_write - Perform a write to a file
+> + * gfs2_file_write_iter - Perform a write to a file
+>   * @iocb: The io context
+> - * @iov: The data to write
+> - * @nr_segs: Number of @iov segments
+> + * @iter: The data to write
+>   * @pos: The file position
+>   *
+>   * We have to do a lock/unlock here to refresh the inode size for
+> @@ -668,11 +667,11 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+>   *
+>   */
+>  
+> -static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+> -				   unsigned long nr_segs, loff_t pos)
+> +static ssize_t gfs2_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
+> +				    loff_t pos)
+>  {
+>  	struct file *file = iocb->ki_filp;
+> -	size_t writesize = iov_length(iov, nr_segs);
+> +	size_t writesize = iov_iter_count(iter);
 
-Yes, I think that would be good.
+Hmm, I had a vague memory that we'd agreed to call this iov_iter_length
+rather than iov_iter_count in order to keep the existing naming and to
+make it sound more like what it is (the length of the data) as opposed
+to the number of individual buffers to be written.
 
-I've tried to find platforms that don't yet use GPIOLIB and fortunately
-there are very few left:
+Not that it is desperately important, but just to flag it up in case it
+got forgotten at some stage,
 
-I found two that provide the generic gpio interfaces when gpiolib
-is disabled, but use gpiolib otherwise for the same hardware,
-arch/m68k/include/asm/mcfgpio.h and arch/blackfin/include/asm/gpio.h.
-I would assume that we can simply remove the non-gpiolib shortcut
-here at cost of a small overhead.
+Steve.
 
-Then there are a bunch that use gpiolib but have a nontrivial
-implementation of gpio_get_value and other functions. I'm not sure
-if these are a problematic with your code.
 
-> > Regarding the integration of pinctrl with gpio,
-> > I was thinking in the past that we could make pinctrl provide everything
-> > that gpiolib does, and have a generic gpiolib driver on top of pinctrl
-> > so that platforms don't need to implement both interfaces but only need
-> > to provide a pure pinctrl driver. Not sure if this makes any sense.
-> 
-> That would work if all GPIOs were connected to a ball, but how about GPIO 
-> expanders that are external to the chip? They have no use for pinctrl AFAICT. 
-> On the other hand, maybe we can have one pinctrl-gpio driver for those chips 
-> where pinctrl alone can emulate all the functionality of a GPIO controller. 
-> Maybe such a driver exists already?
-
-I don't think we have that yet, but it would be another option: rather
-than putting a generic gpiolib driver on top of pinctrl, we could have
-pinctrl support for all gpios that go through gpiolib, and move device
-drivers over to use pinctrl as the way to manage gpios rather than the
-classic gpio drivers. That would be a larger change though, and require
-that we pull in the pinctrl subsystem on a lot of machines that don't
-need it today.
-
-	Arnd
