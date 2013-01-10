@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab3AJLOH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 06:14:07 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:50703 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab3AJLOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 06:14:05 -0500
-Date: Thu, 10 Jan 2013 11:14:03 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Zheng Liu <gnehzuil.liu@gmail.com>
-Subject: Re: [v2] fadvise: perform WILLNEED readahead asynchronously
-Message-ID: <20130110111403.GA730@dcvr.yhbt.net>
-References: <20121225022251.GA25992@dcvr.yhbt.net>
- <50EE8B6B.1050204@gmail.com>
+	id S1753723Ab3AJLPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 06:15:54 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:37243 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab3AJLPx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 06:15:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EE8B6B.1050204@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1357493688-25061-3-git-send-email-gregory.clement@free-electrons.com>
+References: <1357493688-25061-1-git-send-email-gregory.clement@free-electrons.com>
+	<1357493688-25061-3-git-send-email-gregory.clement@free-electrons.com>
+Date: Thu, 10 Jan 2013 12:15:53 +0100
+Message-ID: <CACRpkdYu63TZDpHrGkg0cdqFCrVH1PiNFX8FcrxB9S_Vk9r=kg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] gpio: pca953x: add support for pca9505
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
+        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com> wrote:
-> Hello,
-> 
-> Il 25/12/2012 03:22, Eric Wong ha scritto:
-> > Any other (Free Software) applications that might benefit from
-> > lower FADV_WILLNEED latency?
-> 
-> Not with fadvise but with madvise. Libreoffice / Openoffice.org have
-> this comment:
-> 
-> // On Linux, madvise(..., MADV_WILLNEED) appears to have the undesirable
-> // effect of not returning until the data has actually been paged in, so
-> // that its net effect would typically be to slow down the process
-> // (which could start processing at the beginning of the data while the
-> // OS simultaneously pages in the rest); on other platforms, it remains
-> // to be evaluated whether madvise or equivalent is available and
-> // actually useful:
-> 
-> See:
-> http://cgit.freedesktop.org/libreoffice/core/tree/sal/osl/unx/file.cxx#n1213
-> 
-> May the same approach be extended to madvise MADV_WILLNEED?
+On Sun, Jan 6, 2013 at 6:34 PM, Gregory CLEMENT
+<gregory.clement@free-electrons.com> wrote:
 
-Definitely yes, it should be easy.  This project low-priority for me at
-the moment, if you or anybody else wants to take a stab at it,
-please do :)
+> Now that pca953x driver can handle GPIO expanders with more than 32
+> bits this patch adds the support for the pca9505 which cam with 40
+> GPIOs.
+>
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+
+Applied, thanks.
+
+Yours,
+Linus Walleij
