@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab3AJKAg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 05:00:36 -0500
-Received: from 94.43.138.210.xn.2iij.net ([210.138.43.94]:33506 "EHLO
-	mail.st-paulia.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751114Ab3AJKAf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 05:00:35 -0500
-Message-ID: <50EE9141.6020805@linux-ipv6.org>
-Date: Thu, 10 Jan 2013 19:00:33 +0900
-From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Organization: USAGI Project
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752187Ab3AJKCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 05:02:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59591 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751331Ab3AJKCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 05:02:12 -0500
+From: Oliver Neukum <oneukum@suse.de>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: USB autosuspend vs. URB submission
+Date: Thu, 10 Jan 2013 11:02:11 +0100
+Message-ID: <5203913.6Ij3EG26lC@linux-5eaq.site>
+Organization: SUSE
+User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CACVXFVNUJ8i5hOX8oqcBn1rO=KmHQU3WMBVBh9HF=BfJw1QcPw@mail.gmail.com>
+References: <20130107204220.GB12363@hansolo.jdub.homelinux.org> <2664900.viczl5BYBS@avalon> <CACVXFVNUJ8i5hOX8oqcBn1rO=KmHQU3WMBVBh9HF=BfJw1QcPw@mail.gmail.com>
 MIME-Version: 1.0
-To: Romain KUNTZ <r.kuntz@ipflavors.com>,
-        "davem@davemloft.net" <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Andreas Hofmeister <andi@collax.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Subject: Re: [PATCH 1/1] ipv6: fix the noflags test in addrconf_get_prefix_route
-References: <470C14E4-2866-4C55-89A3-D6751E1587C4@ipflavors.com>
-In-Reply-To: <470C14E4-2866-4C55-89A3-D6751E1587C4@ipflavors.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Romain KUNTZ wrote:
-> From e7ece201c35615c44a3cfdc10ee28ad5a5878f41 Mon Sep 17 00:00:00 2001
-> From: Romain Kuntz <r.kuntz@ipflavors.com>
-> Date: Wed, 9 Jan 2013 15:02:26 +0100
-> Subject: [PATCH 1/1] ipv6: fix the noflags test in addrconf_get_prefix_route
-> 
-> The tests on the flags in addrconf_get_prefix_route() does no make
-> much sense: the 'noflags' parameter contains the set of flags that
-> must not match with the route flags, so the test must be done
-> against 'noflags', and not against 'flags'.
-> 
-> Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
-> ---
->  net/ipv6/addrconf.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-> index 408cac4a..29ba4ff 100644
-> --- a/net/ipv6/addrconf.c
-> +++ b/net/ipv6/addrconf.c
-> @@ -1877,7 +1877,7 @@ static struct rt6_info *addrconf_get_prefix_route(const struct in6_addr *pfx,
->  			continue;
->  		if ((rt->rt6i_flags & flags) != flags)
->  			continue;
-> -		if ((noflags != 0) && ((rt->rt6i_flags & flags) != 0))
-> +		if ((rt->rt6i_flags & noflags) != 0)
->  			continue;
->  		dst_hold(&rt->dst);
->  		break;
-> 
+On Thursday 10 January 2013 13:13:58 Ming Lei wrote:
+> IMO, there is a minor fault in the error handling path of
+> uvc_status_start() inside uvc_v4l2_open(), and the 'users' count
+> should have been decreased before usb_autopm_put_interface().
+> In theory, the warning can be triggered when the device is
+> opened just between usb_autopm_put_interface() and
+> atomic_dec(&stream->dev->users), but I don't think it is
+> the cause of the report.
 
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Hi,
 
---yoshfuji
+the analysis is sound. Good catch. As the fix is trivial, I am making
+a quick patch.
+
+	Regards
+		Oliver
+
