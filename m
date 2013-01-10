@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab3AJO12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 09:27:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15431 "EHLO mx1.redhat.com"
+	id S1753470Ab3AJO1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 09:27:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61614 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033Ab3AJO10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 09:27:26 -0500
-Message-ID: <50EECFC8.9020402@redhat.com>
-Date: Thu, 10 Jan 2013 22:27:20 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1750827Ab3AJO1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 09:27:50 -0500
+Date: Thu, 10 Jan 2013 09:26:43 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
+        tglx@linutronix.de, khalid@gonehiking.org, horms@verge.net.au
+Subject: Re: [PATCH] Only reset e820 once, even with multiple memmap=exactmap
+ params
+Message-ID: <20130110142643.GB32223@redhat.com>
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
+ <201301081747.17853.trenn@suse.de>
+ <CAE9FiQW=gT86Eo0gwPHi5iFi4sg=1SHkBohBAo2KXdoB_Ouqvw@mail.gmail.com>
+ <1586060.uJlkOEQfVW@hammer82.arch.suse.de>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Stefan Hajnoczi <stefanha@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Moore <pmoore@redhat.com>
-Subject: Re: [PATCH] tun: avoid owner checks on IFF_ATTACH_QUEUE
-References: <20130110113108.GF13451@redhat.com> <50EECB43.8020405@redhat.com> <20130110141939.GA30557@redhat.com>
-In-Reply-To: <20130110141939.GA30557@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1586060.uJlkOEQfVW@hammer82.arch.suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 10:19 PM, Michael S. Tsirkin wrote:
-> On Thu, Jan 10, 2013 at 10:08:03PM +0800, Jason Wang wrote:
->> On 01/10/2013 07:31 PM, Michael S. Tsirkin wrote:
->>> At the moment, we check owner when we enable queue in tun.
->>> This seems redundant and will break some valid uses
->>> where fd is passed around: I think TUNSETOWNER is there
->>> to prevent others from attaching to a persistent device not
->>> owned by them. Here the fd is already attached,
->>> enabling/disabling queue is more like read/write.
->> It also change the number of queues of the tuntap, maybe we should limit
->> this.
-> Number of active queues? Why does it matter?
-> Max number of queues is already limited by SETIFF.
+On Thu, Jan 10, 2013 at 04:21:49AM +0100, Thomas Renninger wrote:
+> On Tuesday, January 08, 2013 09:19:18 AM Yinghai Lu wrote:
+> ...
+> > 
+> > that exactmap logic still have problem:
+> > We need to check exactmap at first, aka need to scan the whole comand line
+> > to see if exactmap is there at first and reset e820 tables then handle
+> > other memmap opt.
+> > 
+> > Also please update your patch after
+> > 
+> > tip/x86/mm2
+> > 
+> > I have one patch that process memmap= with "," there.
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commitdiff;h=9710f58
+> > 1bb4c35589ac046b0cfc0deb7f369fc85
+> > 
+> > We could put exactmap scanning in new parse_memmap_opt.
+> 
+> I still do not understand why:
+> 
+> Kexec (kexec/firmware_memmap.c) is setting up the e820 map from:
+> /sys/firmware/memmap/*
 
-Yes the number of active(real) queues in the kernel net device and this
-changing may introduce other events such uevent. With this patch, even
-if a owner is set for tap, every user could change the number of real
-queues which I don't think is not expected. Without this patch, we can
-limit a user that just do read and write.
->
->> Note that if management layer does not call TUNSETOWNER, the check
->> is just a nop. So if management layer want to limit the behavior, it's
->> its duty to do this correctly.
-> The point is that management limits tun to allow SETIFF from libvirt
-> only, then passes the fds to qemu.
+Kexe reads it from /sys/firmware/memmap/* because that's supposed to
+be e820 map as passed by BIOS. And if user has specified some
+command line options like mem=X, /sys/firmware/memmap/* is not truncated
+but one exported using /proc/iomem is truncated accordingly.
 
-Yes, but looks like libvirt does not call TUNSETOWNER before passing it
-to qemu, so we're ok even without this patch. And if libvirt want to do
-this, it can just call TUNSETOWNER to the user of qemu.
->>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->>>
->>> ---
->>>
->>> Note: this is unrelated to Stefan's bugfix.
->>>
->>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->>> index fbd106e..78e3225 100644
->>> --- a/drivers/net/tun.c
->>> +++ b/drivers/net/tun.c
->>> @@ -1789,10 +1792,8 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
->>>  		tun = tfile->detached;
->>>  		if (!tun)
->>>  			ret = -EINVAL;
->>> -		else if (tun_not_capable(tun))
->>> -			ret = -EPERM;
->>>  		else
->>>  			ret = tun_attach(tun, file);
->>>  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
->>>  		tun = rcu_dereference_protected(tfile->tun,
->>>  						lockdep_rtnl_is_held());
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+So if we pass mem=1G in first kernel but not in second kernel, we want
+second kernel to see whole of the system memory and not just 1G.
 
+> and pass it via bootloader structures.
+
+That's how bootloader is supposed to pass e820 memory map to kernel and
+kexec is a bootloader.
+
+> And this e820 table gets immediately voided by memmap=exactmap
+> and a new one passed via boot parameters is set up.
+> If I read this correctly, this is what happens?
+
+This happens only in case of kdump and not kexec. In case of kdump
+we want second kernel to use only selected memory areas.
+
+In fact this is one improvement area. Instead of using memmap= entries
+in kdump case, we should probably modify the e820 map passed in 
+zero page and get rid of memmap= entries.
+
+Thanks
+Vivek
