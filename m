@@ -1,212 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab3AJPet (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:34:49 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:52690 "EHLO multi.imgtec.com"
+	id S1754886Ab3AJPes (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:34:48 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:51611 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754535Ab3AJPc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:32:57 -0500
+	id S1754293Ab3AJPc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:32:58 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v3 42/44] metag: Add JTAG Debug Adapter (DA) support
-Date: Thu, 10 Jan 2013 15:31:10 +0000
-Message-ID: <1357831872-29451-43-git-send-email-james.hogan@imgtec.com>
+CC: James Hogan <james.hogan@imgtec.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH v3 39/44] metag: ftrace support
+Date: Thu, 10 Jan 2013 15:31:07 +0000
+Message-ID: <1357831872-29451-40-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_39
+X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add basic JTAG Debug Adapter (DA) support so that drivers which
-communicate with the DA can detect whether one is actually present
-(otherwise the target will halt indefinitely).
+Add ftrace support for metag.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 ---
- arch/metag/Kconfig                     |    9 ++++++
- arch/metag/configs/meta1_defconfig     |    1 +
- arch/metag/configs/meta2_defconfig     |    1 +
- arch/metag/configs/meta2_smp_defconfig |    1 +
- arch/metag/include/asm/da.h            |   43 ++++++++++++++++++++++++++++++++
- arch/metag/kernel/Makefile             |    1 +
- arch/metag/kernel/da.c                 |   23 +++++++++++++++++
- arch/metag/kernel/setup.c              |    3 ++
- 8 files changed, 82 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/da.h
- create mode 100644 arch/metag/kernel/da.c
+ arch/metag/Kconfig              |    5 ++
+ arch/metag/include/asm/Kbuild   |    1 -
+ arch/metag/include/asm/ftrace.h |   23 +++++++
+ arch/metag/kernel/ftrace.c      |  127 +++++++++++++++++++++++++++++++++++++++
+ arch/metag/kernel/ftrace_stub.S |   76 +++++++++++++++++++++++
+ arch/metag/kernel/metag_ksyms.c |    5 ++
+ scripts/recordmcount.c          |   13 ++++
+ 7 files changed, 249 insertions(+), 1 deletions(-)
+ create mode 100644 arch/metag/include/asm/ftrace.h
+ create mode 100644 arch/metag/kernel/ftrace.c
+ create mode 100644 arch/metag/kernel/ftrace_stub.S
 
 diff --git a/arch/metag/Kconfig b/arch/metag/Kconfig
-index 98433e5..72147ed 100644
+index d60de2b..e2235e3 100644
 --- a/arch/metag/Kconfig
 +++ b/arch/metag/Kconfig
-@@ -213,6 +213,15 @@ config METAG_PERFCOUNTER_IRQS
- 	  When disabled, Performance Counters information will be collected
- 	  based on Timer Interrupt.
- 
-+config METAG_DA
-+	bool "DA support"
-+	help
-+	  Say Y if you plan to use a DA debug adapter with Linux. The presence
-+	  of the DA will be detected automatically at boot, so it is safe to say
-+	  Y to this option even when booting without a DA.
-+
-+	  This enables support for services provided by DA JTAG debug adapters.
-+
- menu "Boot options"
- 
- config METAG_BUILTIN_DTB
-diff --git a/arch/metag/configs/meta1_defconfig b/arch/metag/configs/meta1_defconfig
-index 28b5d63..58d114a 100644
---- a/arch/metag/configs/meta1_defconfig
-+++ b/arch/metag/configs/meta1_defconfig
-@@ -13,6 +13,7 @@ CONFIG_PARTITION_ADVANCED=y
- # CONFIG_IOSCHED_CFQ is not set
- CONFIG_FLATMEM_MANUAL=y
- CONFIG_META12_FPGA=y
-+CONFIG_METAG_DA=y
- CONFIG_HZ_100=y
- CONFIG_DEVTMPFS=y
- CONFIG_DEVTMPFS_MOUNT=y
-diff --git a/arch/metag/configs/meta2_defconfig b/arch/metag/configs/meta2_defconfig
-index 6c96f17..30afdbd 100644
---- a/arch/metag/configs/meta2_defconfig
-+++ b/arch/metag/configs/meta2_defconfig
-@@ -15,6 +15,7 @@ CONFIG_PARTITION_ADVANCED=y
- CONFIG_METAG_L2C=y
- CONFIG_FLATMEM_MANUAL=y
- CONFIG_METAG_HALT_ON_PANIC=y
-+CONFIG_METAG_DA=y
- CONFIG_HZ_100=y
- CONFIG_DEVTMPFS=y
- # CONFIG_STANDALONE is not set
-diff --git a/arch/metag/configs/meta2_smp_defconfig b/arch/metag/configs/meta2_smp_defconfig
-index c5c7ace..82189a2 100644
---- a/arch/metag/configs/meta2_smp_defconfig
-+++ b/arch/metag/configs/meta2_smp_defconfig
-@@ -16,6 +16,7 @@ CONFIG_METAG_L2C=y
- CONFIG_FLATMEM_MANUAL=y
- CONFIG_METAG_HALT_ON_PANIC=y
- CONFIG_SMP=y
-+CONFIG_METAG_DA=y
- CONFIG_HZ_100=y
- CONFIG_DEVTMPFS=y
- # CONFIG_STANDALONE is not set
-diff --git a/arch/metag/include/asm/da.h b/arch/metag/include/asm/da.h
+@@ -11,7 +11,12 @@ config METAG
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select HAVE_64BIT_ALIGNED_ACCESS
+ 	select HAVE_ARCH_TRACEHOOK
++	select HAVE_C_RECORDMCOUNT
+ 	select HAVE_DEBUG_KMEMLEAK
++	select HAVE_DYNAMIC_FTRACE
++	select HAVE_FTRACE_MCOUNT_RECORD
++	select HAVE_FUNCTION_TRACER
++	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_KERNEL_BZIP2
+ 	select HAVE_KERNEL_GZIP
+diff --git a/arch/metag/include/asm/Kbuild b/arch/metag/include/asm/Kbuild
+index 3a13981..6ae0ccb 100644
+--- a/arch/metag/include/asm/Kbuild
++++ b/arch/metag/include/asm/Kbuild
+@@ -11,7 +11,6 @@ generic-y += errno.h
+ generic-y += exec.h
+ generic-y += fb.h
+ generic-y += fcntl.h
+-generic-y += ftrace.h
+ generic-y += futex.h
+ generic-y += hardirq.h
+ generic-y += hw_irq.h
+diff --git a/arch/metag/include/asm/ftrace.h b/arch/metag/include/asm/ftrace.h
 new file mode 100644
-index 0000000..81bd521
+index 0000000..2901f0f
 --- /dev/null
-+++ b/arch/metag/include/asm/da.h
-@@ -0,0 +1,43 @@
-+/*
-+ * Meta DA JTAG debugger control.
-+ *
-+ * Copyright 2012 Imagination Technologies Ltd.
-+ */
++++ b/arch/metag/include/asm/ftrace.h
+@@ -0,0 +1,23 @@
++#ifndef _ASM_METAG_FTRACE
++#define _ASM_METAG_FTRACE
 +
-+#ifndef _METAG_DA_H_
-+#define _METAG_DA_H_
++#ifdef CONFIG_FUNCTION_TRACER
++#define MCOUNT_INSN_SIZE	8 /* sizeof mcount call */
 +
-+#ifdef CONFIG_METAG_DA
++#ifndef __ASSEMBLY__
++extern void mcount_wrapper(void);
++#define MCOUNT_ADDR		((long)(mcount_wrapper))
 +
-+#include <linux/init.h>
-+#include <linux/types.h>
-+
-+extern bool _metag_da_present;
-+
-+/**
-+ * metag_da_enabled() - Find whether a DA is currently enabled.
-+ *
-+ * Returns:	true if a DA was detected, false if not.
-+ */
-+static inline bool metag_da_enabled(void)
++static inline unsigned long ftrace_call_adjust(unsigned long addr)
 +{
-+	return _metag_da_present;
++	return addr;
 +}
 +
-+/**
-+ * metag_da_probe() - Try and detect a connected DA.
-+ *
-+ * This is used at start up to detect whether a DA is active.
-+ *
-+ * Returns:	0 on detection, -err otherwise.
-+ */
-+int __init metag_da_probe(void);
++struct dyn_arch_ftrace {
++	/* No extra data needed on metag */
++};
++#endif /* __ASSEMBLY__ */
 +
-+#else /* !CONFIG_METAG_DA */
++#endif /* CONFIG_FUNCTION_TRACER */
 +
-+#define metag_da_enabled() false
-+#define metag_da_probe() do {} while (0)
-+
-+#endif
-+
-+#endif /* _METAG_DA_H_ */
-diff --git a/arch/metag/kernel/Makefile b/arch/metag/kernel/Makefile
-index a5e4ba6..d7675f4 100644
---- a/arch/metag/kernel/Makefile
-+++ b/arch/metag/kernel/Makefile
-@@ -28,6 +28,7 @@ obj-y	+= user_gateway.o
- obj-$(CONFIG_PERF_EVENTS)		+= perf/
- 
- obj-$(CONFIG_METAG_COREMEM)		+= coremem.o
-+obj-$(CONFIG_METAG_DA)			+= da.o
- obj-$(CONFIG_DYNAMIC_FTRACE)		+= ftrace.o
- obj-$(CONFIG_FUNCTION_TRACER)		+= ftrace_stub.o
- obj-$(CONFIG_MODULES)			+= metag_ksyms.o
-diff --git a/arch/metag/kernel/da.c b/arch/metag/kernel/da.c
++#endif /* _ASM_METAG_FTRACE */
+diff --git a/arch/metag/kernel/ftrace.c b/arch/metag/kernel/ftrace.c
 new file mode 100644
-index 0000000..52aabb6
+index 0000000..8cbeb53
 --- /dev/null
-+++ b/arch/metag/kernel/da.c
-@@ -0,0 +1,23 @@
++++ b/arch/metag/kernel/ftrace.c
+@@ -0,0 +1,127 @@
 +/*
-+ * Meta DA JTAG debugger control.
++ * Copyright (C) 2008 Imagination Technologies Ltd.
++ * Licensed under the GPL
 + *
-+ * Copyright 2012 Imagination Technologies Ltd.
++ * Dynamic ftrace support.
 + */
 +
-+
++#include <linux/ftrace.h>
 +#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <asm/da.h>
-+#include <asm/metag_mem.h>
++#include <linux/uaccess.h>
++#include <linux/ftrace.h>
 +
-+bool _metag_da_present;
++#include <asm/cacheflush.h>
 +
-+int __init metag_da_probe(void)
++#define D04_MOVT_TEMPLATE	0x02200005
++#define D04_CALL_TEMPLATE	0xAC200005
++#define D1RTP_MOVT_TEMPLATE	0x03200005
++#define D1RTP_CALL_TEMPLATE	0xAC200006
++
++static const unsigned long NOP[2] = {0xa0fffffe, 0xa0fffffe};
++static unsigned long movt_and_call_insn[2];
++
++static unsigned char *ftrace_nop_replace(void)
 +{
-+	_metag_da_present = (metag_in32(T0VECINT_BHALT) == 1);
-+	if (_metag_da_present)
-+		pr_info("DA present\n");
-+	else
-+		pr_info("DA not present\n");
++	return (char *)&NOP[0];
++}
++
++static unsigned char *ftrace_call_replace(unsigned long pc, unsigned long addr)
++{
++	unsigned long hi16, low16;
++
++	hi16 = (addr & 0xffff0000) >> 13;
++	low16 = (addr & 0x0000ffff) << 3;
++
++	/*
++	 * The compiler makes the call to mcount_wrapper()
++	 * (Meta's wrapper around mcount()) through the register
++	 * D0.4. So whenever we're patching one of those compiler-generated
++	 * calls we also need to go through D0.4. Otherwise use D1RtP.
++	 */
++	if (pc == (unsigned long)&ftrace_call) {
++		writel(D1RTP_MOVT_TEMPLATE | hi16, &movt_and_call_insn[0]);
++		writel(D1RTP_CALL_TEMPLATE | low16, &movt_and_call_insn[1]);
++	} else {
++		writel(D04_MOVT_TEMPLATE | hi16, &movt_and_call_insn[0]);
++		writel(D04_CALL_TEMPLATE | low16, &movt_and_call_insn[1]);
++	}
++
++	return (unsigned char *)&movt_and_call_insn[0];
++}
++
++static int ftrace_modify_code(unsigned long pc, unsigned char *old_code,
++			      unsigned char *new_code)
++{
++	unsigned char replaced[MCOUNT_INSN_SIZE];
++
++	/*
++	 * Note: Due to modules and __init, code can
++	 *  disappear and change, we need to protect against faulting
++	 *  as well as code changing.
++	 *
++	 * No real locking needed, this code is run through
++	 * kstop_machine.
++	 */
++
++	/* read the text we want to modify */
++	if (probe_kernel_read(replaced, (void *)pc, MCOUNT_INSN_SIZE))
++		return -EFAULT;
++
++	/* Make sure it is what we expect it to be */
++	if (memcmp(replaced, old_code, MCOUNT_INSN_SIZE) != 0)
++		return -EINVAL;
++
++	/* replace the text with the new text */
++	if (probe_kernel_write((void *)pc, new_code, MCOUNT_INSN_SIZE))
++		return -EPERM;
++
++	flush_icache_range(pc, pc + MCOUNT_INSN_SIZE);
++
 +	return 0;
 +}
-diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
-index 139b109..1410db0 100644
---- a/arch/metag/kernel/setup.c
-+++ b/arch/metag/kernel/setup.c
-@@ -37,6 +37,7 @@
- #include <asm/hwthread.h>
- #include <asm/mmzone.h>
- #include <asm/l2cache.h>
-+#include <asm/da.h>
- #include <asm/prom.h>
- #include <asm/mach/arch.h>
- #include <asm/core_reg.h>
-@@ -180,6 +181,8 @@ void __init setup_arch(char **cmdline_p)
- 
- 	metag_cache_probe();
- 
-+	metag_da_probe();
 +
- 	/* try interpreting the argument as a device tree */
- 	machine_desc = setup_machine_fdt(original_cmd_line);
- 	/* if it doesn't look like a device tree it must be a command line */
++int ftrace_update_ftrace_func(ftrace_func_t func)
++{
++	int ret;
++	unsigned long pc;
++	unsigned char old[MCOUNT_INSN_SIZE], *new;
++
++	pc = (unsigned long)&ftrace_call;
++	memcpy(old, &ftrace_call, MCOUNT_INSN_SIZE);
++	new = ftrace_call_replace(pc, (unsigned long)func);
++	ret = ftrace_modify_code(pc, old, new);
++
++	return ret;
++}
++
++int ftrace_make_nop(struct module *mod,
++		    struct dyn_ftrace *rec, unsigned long addr)
++{
++	unsigned char *new, *old;
++	unsigned long ip = rec->ip;
++
++	old = ftrace_call_replace(ip, addr);
++	new = ftrace_nop_replace();
++
++	return ftrace_modify_code(ip, old, new);
++}
++
++int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
++{
++	unsigned char *new, *old;
++	unsigned long ip = rec->ip;
++
++	old = ftrace_nop_replace();
++	new = ftrace_call_replace(ip, addr);
++
++	return ftrace_modify_code(ip, old, new);
++}
++
++/* run from kstop_machine */
++int __init ftrace_dyn_arch_init(void *data)
++{
++	/* The return code is returned via data */
++	writel(0, data);
++
++	return 0;
++}
+diff --git a/arch/metag/kernel/ftrace_stub.S b/arch/metag/kernel/ftrace_stub.S
+new file mode 100644
+index 0000000..e70bff7
+--- /dev/null
++++ b/arch/metag/kernel/ftrace_stub.S
+@@ -0,0 +1,76 @@
++/*
++ * Copyright (C) 2008 Imagination Technologies Ltd.
++ * Licensed under the GPL
++ *
++ */
++
++#include <asm/ftrace.h>
++
++	.text
++#ifdef CONFIG_DYNAMIC_FTRACE
++	.global	_mcount_wrapper
++	.type	_mcount_wrapper,function
++_mcount_wrapper:
++	MOV	PC,D0.4
++
++	.global _ftrace_caller
++	.type	_ftrace_caller,function
++_ftrace_caller:
++	MOVT    D0Re0,#HI(_function_trace_stop)
++	ADD	D0Re0,D0Re0,#LO(_function_trace_stop)
++	GETD	D0Re0,[D0Re0]
++	CMP	D0Re0,#0
++	BEQ	$Lcall_stub
++	MOV	PC,D0.4
++$Lcall_stub:
++	MSETL   [A0StP], D0Ar6, D0Ar4, D0Ar2, D0.4
++	MOV     D1Ar1, D0.4
++	MOV     D0Ar2, D1RtP
++	SUB	D1Ar1,D1Ar1,#MCOUNT_INSN_SIZE
++
++	.global _ftrace_call
++_ftrace_call:
++	MOVT	D1RtP,#HI(_ftrace_stub)
++	CALL	D1RtP,#LO(_ftrace_stub)
++	GETL    D0.4,  D1RtP, [A0StP++#(-8)]
++	GETL    D0Ar2, D1Ar1, [A0StP++#(-8)]
++	GETL    D0Ar4, D1Ar3, [A0StP++#(-8)]
++	GETL    D0Ar6, D1Ar5, [A0StP++#(-8)]
++	MOV     PC, D0.4
++#else
++
++	.global	_mcount_wrapper
++	.type	_mcount_wrapper,function
++_mcount_wrapper:
++	MOVT    D0Re0,#HI(_function_trace_stop)
++	ADD	D0Re0,D0Re0,#LO(_function_trace_stop)
++	GETD	D0Re0,[D0Re0]
++	CMP	D0Re0,#0
++	BEQ	$Lcall_mcount
++	MOV	PC,D0.4
++$Lcall_mcount:
++	MSETL   [A0StP], D0Ar6, D0Ar4, D0Ar2, D0.4
++	MOV     D1Ar1, D0.4
++	MOV     D0Ar2, D1RtP
++	MOVT    D0Re0,#HI(_ftrace_trace_function)
++	ADD	D0Re0,D0Re0,#LO(_ftrace_trace_function)
++	GET	D1Ar3,[D0Re0]
++	MOVT	D1Re0,#HI(_ftrace_stub)
++	ADD	D1Re0,D1Re0,#LO(_ftrace_stub)
++	CMP	D1Ar3,D1Re0
++	BEQ	$Ltrace_exit
++	MOV	D1RtP,D1Ar3
++	SUB	D1Ar1,D1Ar1,#MCOUNT_INSN_SIZE
++	SWAP	PC,D1RtP
++$Ltrace_exit:
++	GETL    D0.4,  D1RtP, [A0StP++#(-8)]
++	GETL    D0Ar2, D1Ar1, [A0StP++#(-8)]
++	GETL    D0Ar4, D1Ar3, [A0StP++#(-8)]
++	GETL    D0Ar6, D1Ar5, [A0StP++#(-8)]
++	MOV     PC, D0.4
++
++#endif	/* CONFIG_DYNAMIC_FTRACE */
++
++	.global _ftrace_stub
++_ftrace_stub:
++	MOV 	PC,D1RtP
+diff --git a/arch/metag/kernel/metag_ksyms.c b/arch/metag/kernel/metag_ksyms.c
+index c73ebd3..3cc4d1d 100644
+--- a/arch/metag/kernel/metag_ksyms.c
++++ b/arch/metag/kernel/metag_ksyms.c
+@@ -10,6 +10,7 @@
+ #include <asm/checksum.h>
+ #include <asm/uaccess.h>
+ #include <asm/traps.h>
++#include <asm/ftrace.h>
+ #include <asm/tbx.h>
+ 
+ /* uaccess symbols */
+@@ -73,3 +74,7 @@ EXPORT_SYMBOL(div_s64);
+ EXPORT_SYMBOL(memcpy);
+ EXPORT_SYMBOL(memset);
+ EXPORT_SYMBOL(memmove);
++
++#ifdef CONFIG_FUNCTION_TRACER
++EXPORT_SYMBOL(mcount_wrapper);
++#endif
+diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
+index ee52cb8..9c22317 100644
+--- a/scripts/recordmcount.c
++++ b/scripts/recordmcount.c
+@@ -33,6 +33,13 @@
+ #include <string.h>
+ #include <unistd.h>
+ 
++#ifndef EM_METAG
++/* Remove this when these make it to the standard system elf.h. */
++#define EM_METAG      174
++#define R_METAG_ADDR32                   2
++#define R_METAG_NONE                     3
++#endif
++
+ static int fd_map;	/* File descriptor for file being modified. */
+ static int mmap_failed; /* Boolean flag. */
+ static void *ehdr_curr; /* current ElfXX_Ehdr *  for resource cleanup */
+@@ -341,6 +348,12 @@ do_file(char const *const fname)
+ 			 altmcount = "__gnu_mcount_nc";
+ 			 break;
+ 	case EM_IA_64:	 reltype = R_IA64_IMM64;   gpfx = '_'; break;
++	case EM_METAG:	 reltype = R_METAG_ADDR32;
++			 altmcount = "_mcount_wrapper";
++			 rel_type_nop = R_METAG_NONE;
++			 /* We happen to have the same requirement as MIPS */
++			 is_fake_mcount32 = MIPS32_is_fake_mcount;
++			 break;
+ 	case EM_MIPS:	 /* reltype: e_class    */ gpfx = '_'; break;
+ 	case EM_PPC:	 reltype = R_PPC_ADDR32;   gpfx = '_'; break;
+ 	case EM_PPC64:	 reltype = R_PPC64_ADDR64; gpfx = '_'; break;
 -- 
 1.7.7.6
 
