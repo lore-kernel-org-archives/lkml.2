@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab3AJJYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:24:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:4760 "EHLO mga09.intel.com"
+	id S1753232Ab3AJJZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:25:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35778 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751872Ab3AJJYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:24:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="244528018"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3 2/8] serial: 8250_dw: Don't use UPF_FIXED_TYPE
-Date: Thu, 10 Jan 2013 11:25:06 +0200
-Message-Id: <1357809912-25790-3-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1357809912-25790-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1357809912-25790-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1751201Ab3AJJZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 04:25:52 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: Stefan Hajnoczi <stefanha@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.8-rc] tuntap: refuse to re-attach to different tun_struct
+Date: Thu, 10 Jan 2013 17:25:45 +0800
+Message-ID: <4517911.WDi5JC0yEs@jason-thinkpad-t430s>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7+; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1357804788-19976-1-git-send-email-stefanha@redhat.com>
+References: <1357804788-19976-1-git-send-email-stefanha@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow 8250.c to determine the port type for us. This allows
-the driver take advantage of FIFO on Designware UARTs that
-have it.
+On Thursday, January 10, 2013 08:59:48 AM Stefan Hajnoczi wrote:
+> Multiqueue tun devices support detaching a tun_file from its tun_struct
+> and re-attaching at a later point in time.  This allows users to disable
+> a specific queue temporarily.
+> 
+> ioctl(TUNSETIFF) allows the user to specify the network interface to
+> attach by name.  This means the user can attempt to attach to interface
+> "B" after detaching from interface "A".
+> 
+> The driver is not designed to support this so check we are re-attaching
+> to the right tun_struct.  Failure to do so may lead to oops.
+> 
+> Signed-off-by: Stefan Hajnoczi <stefanha@redhat.com>
+> ---
+> This fix is for 3.8-rc.
+> 
+>  drivers/net/tun.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index fbd106e..cf6da6e 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -491,6 +491,8 @@ static int tun_attach(struct tun_struct *tun, struct
+> file *file) err = -EINVAL;
+>  	if (rcu_dereference_protected(tfile->tun, lockdep_rtnl_is_held()))
+>  		goto out;
+> +	if (tfile->detached && tun != tfile->detached)
+> +		goto out;
+> 
+>  	err = -EBUSY;
+>  	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Reviewed-by: Jamie Iles <jamie@jamieiles.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
----
- drivers/tty/serial/8250/8250_dw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks.
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index 1d0dba2..ff83ea5 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -112,7 +112,7 @@ static int dw8250_probe(struct platform_device *pdev)
- 	uart.port.handle_irq = dw8250_handle_irq;
- 	uart.port.type = PORT_8250;
- 	uart.port.flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_IOREMAP |
--		UPF_FIXED_PORT | UPF_FIXED_TYPE;
-+		UPF_FIXED_PORT;
- 	uart.port.dev = &pdev->dev;
- 
- 	uart.port.iotype = UPIO_MEM;
--- 
-1.7.10.4
+Acked-by: Jason Wang <jasowang@redhat.com>
 
