@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab3AJJYe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:24:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:24143 "EHLO mga09.intel.com"
+	id S1753265Ab3AJJZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:25:16 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:50216 "EHLO dcvr.yhbt.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752199Ab3AJJYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:24:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="244528035"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3 3/8] serial: 8250_dw: Map IO memory
-Date: Thu, 10 Jan 2013 11:25:07 +0200
-Message-Id: <1357809912-25790-4-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1357809912-25790-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1357809912-25790-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1750871Ab3AJJZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 04:25:12 -0500
+Date: Thu, 10 Jan 2013 09:25:11 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
+Message-ID: <20130110092511.GA32333@dcvr.yhbt.net>
+References: <20121228014503.GA5017@dcvr.yhbt.net>
+ <20130102200848.GA4500@dcvr.yhbt.net>
+ <20130104160148.GB3885@suse.de>
+ <20130106120700.GA24671@dcvr.yhbt.net>
+ <20130107122516.GC3885@suse.de>
+ <20130107223850.GA21311@dcvr.yhbt.net>
+ <20130108224313.GA13304@suse.de>
+ <20130108232325.GA5948@dcvr.yhbt.net>
+ <20130109133746.GD13304@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130109133746.GD13304@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This needs to be done in order to later access the
-Designware specific registers.
+Mel Gorman <mgorman@suse.de> wrote:
+> page->pfmemalloc can be left set for captured pages so try this but as
+> capture is rarely used I'm strongly favouring a partial revert even if
+> this works for you. I haven't reproduced this using your workload yet
+> but I have found that high-order allocation stress tests for 3.8-rc2 are
+> completely screwed. 71% success rates at rest in 3.7 and 6% in 3.8-rc2 so
+> I have to chase that down too.
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 9d20c13..c242d21 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2180,8 +2180,10 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+>  	current->flags &= ~PF_MEMALLOC;
+>  
+>  	/* If compaction captured a page, prep and use it */
+> -	if (page && !prep_new_page(page, order, gfp_mask))
+> +	if (page && !prep_new_page(page, order, gfp_mask)) {
+> +		page->pfmemalloc = false;
+>  		goto got_page;
+> +	}
+>  
+>  	if (*did_some_progress != COMPACT_SKIPPED) {
+>  		/* Page migration frees to the PCP lists but we want merging */
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Reviewed-by: Jamie Iles <jamie@jamieiles.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
----
- drivers/tty/serial/8250/8250_dw.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index ff83ea5..e174901 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -111,10 +111,13 @@ static int dw8250_probe(struct platform_device *pdev)
- 	uart.port.irq = irq->start;
- 	uart.port.handle_irq = dw8250_handle_irq;
- 	uart.port.type = PORT_8250;
--	uart.port.flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_IOREMAP |
--		UPF_FIXED_PORT;
-+	uart.port.flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_FIXED_PORT;
- 	uart.port.dev = &pdev->dev;
- 
-+	uart.port.membase = ioremap(regs->start, resource_size(regs));
-+	if (!uart.port.membase)
-+		return -ENOMEM;
-+
- 	uart.port.iotype = UPIO_MEM;
- 	uart.port.serial_in = dw8250_serial_in;
- 	uart.port.serial_out = dw8250_serial_out;
--- 
-1.7.10.4
-
+This (on top of your previous patch) seems to work great after several
+hours of testing on both my VM and real machine.  I haven't tried your
+partial revert, yet.  Will try that in a bit on the VM.
