@@ -1,54 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab3AJLgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 06:36:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35673 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753946Ab3AJLgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 06:36:19 -0500
-Date: Thu, 10 Jan 2013 11:36:16 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/2] Add decoder for GFP masks to tools.
-Message-ID: <20130110113616.GG13304@suse.de>
-References: <1357687455-13234-1-git-send-email-cody@linux.vnet.ibm.com>
+	id S1753606Ab3AJLkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 06:40:46 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:50200 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063Ab3AJLko convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 06:40:44 -0500
+Date: Thu, 10 Jan 2013 11:40:44 +0000
+From: Morten Rasmussen <Morten.Rasmussen@arm.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 15/22] sched: log the cpu utilization at rq
+Message-ID: <20130110114044.GE2046@e103034-lin>
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
+ <1357375071-11793-16-git-send-email-alex.shi@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1357687455-13234-1-git-send-email-cody@linux.vnet.ibm.com>
+In-Reply-To: <1357375071-11793-16-git-send-email-alex.shi@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 10 Jan 2013 11:40:40.0702 (UTC) FILETIME=[5119C9E0:01CDEF27]
+X-MC-Unique: 113011011404301701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 03:24:13PM -0800, Cody P Schafer wrote:
-> I needed to decode some gfp_masks to debug an oom-killer invocation, and wrote
-> this tool to avoid doing the decoding manually.
+On Sat, Jan 05, 2013 at 08:37:44AM +0000, Alex Shi wrote:
+> The cpu's utilization is to measure how busy is the cpu.
+>         util = cpu_rq(cpu)->avg.runnable_avg_sum
+>                 / cpu_rq(cpu)->avg.runnable_avg_period;
 > 
-> Bad things about this: slightly hacky use of code intended for use with ftrace,
-> splitting linux/gfp.h into 2 parts.
+> Since the util is no more than 1, we use its percentage value in later
+> caculations. And set the the FULL_UTIL as 99%.
 > 
-> Good things: No additional places need modification to keep the decoder up to
-> date, no mistakes from manual gfp_mask decoding.
+> In later power aware scheduling, we are sensitive for how busy of the
+> cpu, not how weight of its load. As to power consuming, it is more
+> related with busy time, not the load weight.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/debug.c | 1 +
+>  kernel/sched/fair.c  | 4 ++++
+>  kernel/sched/sched.h | 4 ++++
+>  3 files changed, 9 insertions(+)
+> 
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index 2cd3c1b..e4035f7 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -318,6 +318,7 @@ do {									\
+>  
+>  	P(ttwu_count);
+>  	P(ttwu_local);
+> +	P(util);
+>  
+>  #undef P
+>  #undef P64
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index ee015b8..7bfbd69 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1495,8 +1495,12 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+>  
+>  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+>  {
+> +	u32 period;
+>  	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+>  	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+> +
+> +	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
+> +	rq->util = rq->avg.runnable_avg_sum * 100 / period;
+
+The existing tg->runnable_avg and cfs_rq->tg_runnable_contrib variables
+both holds
+rq->avg.runnable_avg_sum / rq->avg.runnable_avg_period scaled by
+NICE_0_LOAD (1024). Why not use one of the existing variables instead of
+introducing a new one?
+
+Morten
+
+>  }
+>  
+>  /* Add the load generated by se into cfs_rq's child load-average */
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 66b08a1..3c6e803 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -350,6 +350,9 @@ extern struct root_domain def_root_domain;
+>  
+>  #endif /* CONFIG_SMP */
+>  
+> +/* Take as full load, if the cpu percentage util is up to 99 */
+> +#define FULL_UTIL	99
+> +
+>  /*
+>   * This is the main, per-CPU runqueue data structure.
+>   *
+> @@ -481,6 +484,7 @@ struct rq {
+>  #endif
+>  
+>  	struct sched_avg avg;
+> +	unsigned int util;
+>  };
+>  
+>  static inline int cpu_of(struct rq *rq)
+> -- 
+> 1.7.12
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
-Any particular reason you did not use scripts/gfp-translate?
-
-$ bash ./scripts/gfp-translate 0x1000d0
-Source: /home/mel/git-public/linux-2.6
-Parsing: 0x1000d0
-#define ___GFP_WAIT		0x10
-#define ___GFP_IO		0x40
-#define ___GFP_FS		0x80
-#define ___GFP_KMEMCG		0x100000
-
-Script is dumb as rocks, requires access to the source code and does not
-translate flag combinations into something like GFP_KERNEL but it's usually
-sufficient. I'm not pushed either way but if you want to push your tool
-then the patch should also delete scripts/gfp-translate.
-
--- 
-Mel Gorman
-SUSE Labs
