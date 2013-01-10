@@ -1,124 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab3AJCDw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 21:03:52 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50079 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757898Ab3AJCDv (ORCPT
+	id S1758105Ab3AJCE4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 21:04:56 -0500
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:39104 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757582Ab3AJCEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 21:03:51 -0500
-X-AuditID: 9c93016f-b7b54ae000000e9e-6c-50ee2184ca3f
-Date: Thu, 10 Jan 2013 11:03:47 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/2] mm: prevent to add a page to swap if may_writepage
- is unset
-Message-ID: <20130110020347.GA14685@blaptop>
-References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
- <1357712474-27595-2-git-send-email-minchan@kernel.org>
- <20130109161854.67412dcc.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130109161854.67412dcc.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 9 Jan 2013 21:04:54 -0500
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        liu chuansheng <chuansheng.liu@intel.com>,
+        linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>
+Subject: [PATCH] hardlockup: detect hard lockups without NMIs using secondary cpus
+Date: Wed,  9 Jan 2013 17:57:39 -0800
+Message-Id: <1357783059-13923-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Emulate NMIs on systems where they are not available by using timer
+interrupts on other cpus.  Each cpu will use its softlockup hrtimer
+to check that the next cpu is processing hrtimer interrupts by
+verifying that a counter is increasing.
 
-On Wed, Jan 09, 2013 at 04:18:54PM -0800, Andrew Morton wrote:
-> On Wed,  9 Jan 2013 15:21:13 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > Recently, Luigi reported there are lots of free swap space when
-> > OOM happens. It's easily reproduced on zram-over-swap, where
-> > many instance of memory hogs are running and laptop_mode is enabled.
-> > 
-> > Luigi reported there was no problem when he disabled laptop_mode.
-> > The problem when I investigate problem is following as.
-> > 
-> > try_to_free_pages disable may_writepage if laptop_mode is enabled.
-> > shrink_page_list adds lots of anon pages in swap cache by
-> > add_to_swap, which makes pages Dirty and rotate them to head of
-> > inactive LRU without pageout. If it is repeated, inactive anon LRU
-> > is full of Dirty and SwapCache pages.
-> > 
-> > In case of that, isolate_lru_pages fails because it try to isolate
-> > clean page due to may_writepage == 0.
-> > 
-> > The may_writepage could be 1 only if total_scanned is higher than
-> > writeback_threshold in do_try_to_free_pages but unfortunately,
-> > VM can't isolate anon pages from inactive anon lru list by
-> > above reason and we already reclaimed all file-backed pages.
-> > So it ends up OOM killing.
-> > 
-> > This patch prevents to add a page to swap cache unnecessary when
-> > may_writepage is unset so anoymous lru list isn't full of
-> > Dirty/Swapcache page. So VM can isolate pages from anon lru list,
-> > which ends up setting may_writepage to 1 and could swap out
-> > anon lru pages. When OOM triggers, I confirmed swap space was full.
-> > 
-> > ...
-> >
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -780,6 +780,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
-> >  		if (PageAnon(page) && !PageSwapCache(page)) {
-> >  			if (!(sc->gfp_mask & __GFP_IO))
-> >  				goto keep_locked;
-> > +			if (!sc->may_writepage)
-> > +				goto keep_locked;
-> >  			if (!add_to_swap(page))
-> >  				goto activate_locked;
-> >  			may_enter_fs = 1;
-> 
-> I'm not really getting it, and the description is rather hard to follow :(
+This patch is useful on systems where the hardlockup detector is not
+available due to a lack of NMIs, for example most ARM SoCs.
+Without this patch any cpu stuck with interrupts disabled can
+cause a hardware watchdog reset with no debugging information,
+but with this patch the kernel can detect the lockup and panic,
+which can result in useful debugging info.
 
-It seems I don't have a talent about description. :(
-I hope it would be better this year. :)
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ include/linux/nmi.h |    5 ++-
+ kernel/watchdog.c   |   98 ++++++++++++++++++++++++++++++++++++++++++++++++---
+ lib/Kconfig.debug   |   14 +++++++-
+ 3 files changed, 110 insertions(+), 7 deletions(-)
 
-> 
-> We should be adding anon pages to swapcache even when laptop_mode is
-> set.  And we should be writing them to swap as well, then reclaiming
-> them.  The only thing laptop_mode shouild do is make the disk spin up
-> less frequently - that doesn't mean "not at all"!
-
-So it seems your rationale is that let's save power in only system has
-enough memory so let's remove may_writepage in reclaim path?
-
-If it is, I love it because I didn't see any number about power saving
-through reclaiming throttling(But surely there was reason to add it)
-and not sure it works well during long time because we have tweaked
-reclaim part too many.
-
-> 
-> So something seems screwed up here and the patch looks like a
-> heavy-handed workaround.  Why aren't these anon pages getting written
-> out in laptop_mode?
-
-Don't know. It was there long time and I don't want to screw it up.
-If we decide paging out in reclaim path regardless of laptop_mode,
-it makes the problem easy without ugly workaround.
-
-Remove may_writepage? If it's too agressive, we can remove it in only
-direct reclaim path.
-
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+index db50840..c8f8aa0 100644
+--- a/include/linux/nmi.h
++++ b/include/linux/nmi.h
+@@ -14,8 +14,11 @@
+  * may be used to reset the timeout - for code which intentionally
+  * disables interrupts for a long time. This call is stateless.
+  */
+-#if defined(CONFIG_HAVE_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR)
++#if defined(CONFIG_HAVE_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR_NMI)
+ #include <asm/nmi.h>
++#endif
++
++#if defined(CONFIG_HAVE_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR)
+ extern void touch_nmi_watchdog(void);
+ #else
+ static inline void touch_nmi_watchdog(void)
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 75a2ab3..94c231e 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -44,6 +44,11 @@
+ static DEFINE_PER_CPU(bool, hard_watchdog_warn);
+ static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+ static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
++#endif
++#ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
++static cpumask_t __read_mostly watchdog_cpus;
++#endif
++#ifdef CONFIG_HARDLOCKUP_DETECTOR_NMI
+ static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
+ #endif
+ 
+@@ -179,7 +184,7 @@ void touch_softlockup_watchdog_sync(void)
+ 	__raw_get_cpu_var(watchdog_touch_ts) = 0;
+ }
+ 
+-#ifdef CONFIG_HARDLOCKUP_DETECTOR
++#ifdef CONFIG_HARDLOCKUP_DETECTOR_NMI
+ /* watchdog detector functions */
+ static int is_hardlockup(void)
+ {
+@@ -193,6 +198,64 @@ static int is_hardlockup(void)
+ }
+ #endif
+ 
++#ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
++static int is_hardlockup_other_cpu(int cpu)
++{
++	unsigned long hrint = per_cpu(hrtimer_interrupts, cpu);
++
++	if (per_cpu(hrtimer_interrupts_saved, cpu) == hrint)
++		return 1;
++
++	per_cpu(hrtimer_interrupts_saved, cpu) = hrint;
++	return 0;
++}
++
++static void watchdog_check_hardlockup_other_cpu(void)
++{
++	int cpu;
++	cpumask_t cpus = watchdog_cpus;
++
++	/*
++	 * Test for hardlockups every 3 samples.  The sample period is
++	 *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly over
++	 *  watchdog_thresh (over by 20%).
++	 */
++	if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
++		return;
++
++	/* check for a hardlockup on the next cpu */
++	cpu = cpumask_next(smp_processor_id(), &cpus);
++	if (cpu >= nr_cpu_ids)
++		cpu = cpumask_first(&cpus);
++	if (cpu == smp_processor_id())
++		return;
++
++	smp_rmb();
++
++	if (per_cpu(watchdog_nmi_touch, cpu) == true) {
++		per_cpu(watchdog_nmi_touch, cpu) = false;
++		return;
++	}
++
++	if (is_hardlockup_other_cpu(cpu)) {
++		/* only warn once */
++		if (per_cpu(hard_watchdog_warn, cpu) == true)
++			return;
++
++		if (hardlockup_panic)
++			panic("Watchdog detected hard LOCKUP on cpu %d", cpu);
++		else
++			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", cpu);
++
++		per_cpu(hard_watchdog_warn, cpu) = true;
++	} else {
++		per_cpu(hard_watchdog_warn, cpu) = false;
++	}
++}
++#else
++static inline void watchdog_check_hardlockup_other_cpu(void) { return; }
++#endif
++
+ static int is_softlockup(unsigned long touch_ts)
+ {
+ 	unsigned long now = get_timestamp(smp_processor_id());
+@@ -204,7 +267,7 @@ static int is_softlockup(unsigned long touch_ts)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_HARDLOCKUP_DETECTOR
++#ifdef CONFIG_HARDLOCKUP_DETECTOR_NMI
+ 
+ static struct perf_event_attr wd_hw_attr = {
+ 	.type		= PERF_TYPE_HARDWARE,
+@@ -252,7 +315,7 @@ static void watchdog_overflow_callback(struct perf_event *event,
+ 	__this_cpu_write(hard_watchdog_warn, false);
+ 	return;
+ }
+-#endif /* CONFIG_HARDLOCKUP_DETECTOR */
++#endif /* CONFIG_HARDLOCKUP_DETECTOR_NMI */
+ 
+ static void watchdog_interrupt_count(void)
+ {
+@@ -272,6 +335,9 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	/* kick the hardlockup detector */
+ 	watchdog_interrupt_count();
+ 
++	/* test for hardlockups on the next cpu */
++	watchdog_check_hardlockup_other_cpu();
++
+ 	/* kick the softlockup detector */
+ 	wake_up_process(__this_cpu_read(softlockup_watchdog));
+ 
+@@ -396,7 +462,7 @@ static void watchdog(unsigned int cpu)
+ 	__touch_watchdog();
+ }
+ 
+-#ifdef CONFIG_HARDLOCKUP_DETECTOR
++#ifdef CONFIG_HARDLOCKUP_DETECTOR_NMI
+ /*
+  * People like the simple clean cpu node info on boot.
+  * Reduce the watchdog noise by only printing messages
+@@ -472,9 +538,31 @@ static void watchdog_nmi_disable(unsigned int cpu)
+ 	return;
+ }
+ #else
++#ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
++static int watchdog_nmi_enable(unsigned int cpu)
++{
++	/*
++	 * The new cpu will be marked online before the first hrtimer interrupt
++	 * runs on it.  If another cpu tests for a hardlockup on the new cpu
++	 * before it has run its first hrtimer, it will get a false positive.
++	 * Touch the watchdog on the new cpu to delay the first check for at
++	 * least 3 sampling periods to guarantee one hrtimer has run on the new
++	 * cpu.
++	 */
++	per_cpu(watchdog_nmi_touch, cpu) = true;
++	smp_wmb();
++	cpumask_set_cpu(cpu, &watchdog_cpus);
++	return 0;
++}
++
++static void watchdog_nmi_disable(unsigned int cpu) {
++	cpumask_clear_cpu(cpu, &watchdog_cpus);
++}
++#else
+ static int watchdog_nmi_enable(unsigned int cpu) { return 0; }
+ static void watchdog_nmi_disable(unsigned int cpu) { return; }
+-#endif /* CONFIG_HARDLOCKUP_DETECTOR */
++#endif /* CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU */
++#endif /* CONFIG_HARDLOCKUP_DETECTOR_NMI */
+ 
+ /* prepare/enable/disable routines */
+ /* sysctl functions */
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index aaf8baf..f7c4859 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -191,15 +191,27 @@ config LOCKUP_DETECTOR
+ 	  The overhead should be minimal.  A periodic hrtimer runs to
+ 	  generate interrupts and kick the watchdog task every 4 seconds.
+ 	  An NMI is generated every 10 seconds or so to check for hardlockups.
++	  If NMIs are not available on the platform, every 12 seconds the
++	  hrtimer interrupt on one cpu will be used to check for hardlockups
++	  on the next cpu.
+ 
+ 	  The frequency of hrtimer and NMI events and the soft and hard lockup
+ 	  thresholds can be controlled through the sysctl watchdog_thresh.
+ 
+-config HARDLOCKUP_DETECTOR
++config HARDLOCKUP_DETECTOR_NMI
+ 	def_bool y
+ 	depends on LOCKUP_DETECTOR && !HAVE_NMI_WATCHDOG
+ 	depends on PERF_EVENTS && HAVE_PERF_EVENTS_NMI
+ 
++config HARDLOCKUP_DETECTOR_OTHER_CPU
++	def_bool y
++	depends on LOCKUP_DETECTOR && SMP
++	depends on !HARDLOCKUP_DETECTOR_NMI && !HAVE_NMI_WATCHDOG
++
++config HARDLOCKUP_DETECTOR
++	def_bool y
++	depends on HARDLOCKUP_DETECTOR_NMI || HARDLOCKUP_DETECTOR_OTHER_CPU
++
+ config BOOTPARAM_HARDLOCKUP_PANIC
+ 	bool "Panic (Reboot) On Hard Lockups"
+ 	depends on HARDLOCKUP_DETECTOR
 -- 
-Kind regards,
-Minchan Kim
+1.7.7.3
+
