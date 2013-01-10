@@ -1,143 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab3AJLDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 06:03:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40297 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354Ab3AJLDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 06:03:48 -0500
-Date: Thu, 10 Jan 2013 13:07:37 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.8-rc] tuntap: refuse to re-attach to different
- tun_struct
-Message-ID: <20130110110737.GD13451@redhat.com>
-References: <1357804788-19976-1-git-send-email-stefanha@redhat.com>
- <20130110102319.GB13451@redhat.com>
- <50EE9B48.6080306@redhat.com>
+	id S1753750Ab3AJLEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 06:04:16 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17258 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab3AJLEP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 06:04:15 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 10 Jan 2013 03:03:39 -0800
+Message-ID: <50EE9FFB.4040807@nvidia.com>
+Date: Thu, 10 Jan 2013 16:33:23 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EE9B48.6080306@redhat.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+Subject: Re: [PATCH 3/4] gpio: palmas: Add support for Palams GPIO
+References: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com> <1357210020-19876-4-git-send-email-ldewangan@nvidia.com> <CACRpkdbSW+aj9RSedsAMyF3UtSL+w=0KM+pxc2bGdceSy+rXaw@mail.gmail.com>
+In-Reply-To: <CACRpkdbSW+aj9RSedsAMyF3UtSL+w=0KM+pxc2bGdceSy+rXaw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 06:43:20PM +0800, Jason Wang wrote:
-> On 01/10/2013 06:23 PM, Michael S. Tsirkin wrote:
-> > On Thu, Jan 10, 2013 at 08:59:48AM +0100, Stefan Hajnoczi wrote:
-> >> Multiqueue tun devices support detaching a tun_file from its tun_struct
-> >> and re-attaching at a later point in time.  This allows users to disable
-> >> a specific queue temporarily.
-> >>
-> >> ioctl(TUNSETIFF) allows the user to specify the network interface to
-> >> attach by name.  This means the user can attempt to attach to interface
-> >> "B" after detaching from interface "A".
-> >>
-> >> The driver is not designed to support this so check we are re-attaching
-> >> to the right tun_struct.  Failure to do so may lead to oops.
-> >>
-> >> Signed-off-by: Stefan Hajnoczi <stefanha@redhat.com>
-> >> ---
-> >> This fix is for 3.8-rc.
-> >>
-> >>  drivers/net/tun.c | 2 ++
-> >>  1 file changed, 2 insertions(+)
-> >>
-> >> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> >> index fbd106e..cf6da6e 100644
-> >> --- a/drivers/net/tun.c
-> >> +++ b/drivers/net/tun.c
-> >> @@ -491,6 +491,8 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
-> >>  	err = -EINVAL;
-> >>  	if (rcu_dereference_protected(tfile->tun, lockdep_rtnl_is_held()))
-> >>  		goto out;
-> >> +	if (tfile->detached && tun != tfile->detached)
-> >> +		goto out;
-> >>  
-> >>  	err = -EBUSY;
-> >>  	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
-> >> -- 
-> >> 1.8.0.2
-> >
-> > I agree this is a bug but even with this patch, we still allow:
-> >
-> > SETIFF
-> > SETQUEUE (DISABLED)
-> > SETIFF
-> >
-> > Originally the rule always was that repeated setiff calls fail with
-> > EINVAL. We broke that when we set tun to NULL.  It's probably worth
-> > preserving that, even if queue is disabled.  Applying something like the below
-> > instead will address this concern, won't it?
-> >
-> > Note: works with regular userspace but I didn't test
-> > multiqueue userspace. What do you think.
-> 
-> Or just fail when tun->detached is not NULL at the beginning of
-> tun_set_iff()?
+On Thursday 10 January 2013 04:27 PM, Linus Walleij wrote:
+> On Thu, Jan 3, 2013 at 11:46 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+>
+>> Add gpio driver for TI Palmas series PMIC. This has 8 gpio which can
+>> work as input/output.
+>>
+>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> This driver seems unnecessary. Can't you just use
+> drivers/gpio/gpio-generic.c ?
+The gpio-generic driver is for the MMIO based interface. This is for the 
+PMIC-Palma which is in i2c interface and so need to have register access 
+through the i2c call exposed by palma mfd driver.
 
-Yes that'll also work I think. If you prefer this pls send patch.
 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >
-> > ---
-> >
-> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> > index fbd106e..5ec8b08 100644
-> > --- a/drivers/net/tun.c
-> > +++ b/drivers/net/tun.c
-> > @@ -483,7 +483,7 @@ static void tun_detach_all(struct net_device *dev)
-> >  	BUG_ON(tun->numdisabled != 0);
-> >  }
-> >  
-> > -static int tun_attach(struct tun_struct *tun, struct file *file)
-> > +static int tun_attach(struct tun_struct *tun, struct file *file, bool setiff)
-> >  {
-> >  	struct tun_file *tfile = file->private_data;
-> >  	int err;
-> > @@ -492,6 +492,9 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
-> >  	if (rcu_dereference_protected(tfile->tun, lockdep_rtnl_is_held()))
-> >  		goto out;
-> >  
-> > +	if (setiff && tfile->detached)
-> > +		goto out;
-> > +
-> >  	err = -EBUSY;
-> >  	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
-> >  		goto out;
-> > @@ -1561,7 +1564,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
-> >  		if (err < 0)
-> >  			return err;
-> >  
-> > -		err = tun_attach(tun, file);
-> > +		err = tun_attach(tun, file, true);
-> >  		if (err < 0)
-> >  			return err;
-> >  
-> > @@ -1627,7 +1630,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
-> >  		dev->features = dev->hw_features;
-> >  
-> >  		INIT_LIST_HEAD(&tun->disabled);
-> > -		err = tun_attach(tun, file);
-> > +		err = tun_attach(tun, file, true);
-> >  		if (err < 0)
-> >  			goto err_free_dev;
-> >  
-> > @@ -1792,7 +1795,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
-> >  		else if (tun_not_capable(tun))
-> >  			ret = -EPERM;
-> >  		else
-> > -			ret = tun_attach(tun, file);
-> > +			ret = tun_attach(tun, file, false);
-> >  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
-> >  		tun = rcu_dereference_protected(tfile->tun,
-> >  						lockdep_rtnl_is_held());
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+
+>
+>> +static int palmas_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
+>> +{
+>> +       struct palmas_gpio *pg = to_palmas_gpio(gc);
+>> +       struct palmas *palmas = pg->palmas;
+>> +
+>> +       return palmas_irq_get_virq(palmas, PALMAS_GPIO_0_IRQ + offset);
+>> +}
+> Why are you implementing this for a driver which does not even expose
+> the ability to trigger IRQs? If it's supposed to support IRQs it should
+> register a struct irq_chip.
+
+The interrupts are registered in mfd core via the regmap-irq_chip.
+This api converts the gpio number to corresponding irq.
+
