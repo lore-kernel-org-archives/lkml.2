@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474Ab3AJAUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 19:20:37 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33435 "EHLO e9.ny.us.ibm.com"
+	id S932539Ab3AJAUm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 19:20:42 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33520 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932441Ab3AJAUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 19:20:33 -0500
+	id S932441Ab3AJAUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 19:20:39 -0500
 From: sukadev@linux.vnet.ibm.com
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>
@@ -14,183 +14,85 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         <robert.richter@amd.com>, <linuxppc-dev@ozlabs.org>,
         <linux-kernel@vger.kernel.org>, Stephane Eranian <eranian@google.com>,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/6][v3] perf/POWER7: Make generic event translations available in sysfs
-Date: Wed,  9 Jan 2013 16:20:29 -0800
-Message-Id: <1357777232-32037-3-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH 5/6][v3] perf: Create a sysfs entry for Power event format
+Date: Wed,  9 Jan 2013 16:20:31 -0800
+Message-Id: <1357777232-32037-5-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1357777232-32037-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1357777232-32037-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011000-7182-0000-0000-0000044F87E1
+x-cbid: 13011000-7182-0000-0000-0000044F8821
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the generic perf events in POWER7 available via sysfs.
+Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
+which describes the format of a POWER cpu.
 
-	$ ls /sys/bus/event_source/devices/cpu/events
-	branch-instructions
-	branch-misses
-	cache-misses
-	cache-references
-	cpu-cycles
-	instructions
-	stalled-cycles-backend
-	stalled-cycles-frontend
+The format of the event is the same for all POWER cpus at least in
+(Power6, Power7), so bulk of this change is common in the code common
+to POWER cpus.
 
-	$ cat /sys/bus/event_source/devices/cpu/events/cache-misses
-	event=0x400f0
+This code is based on corresponding code in x86.
 
-This patch is based on commits that implement this functionality on x86.
-Eg:
-	commit a47473939db20e3961b200eb00acf5fcf084d755
-	Author: Jiri Olsa <jolsa@redhat.com>
-	Date:   Wed Oct 10 14:53:11 2012 +0200
-
-	    perf/x86: Make hardware event translations available in sysfs
-
-Changelog:[v3]
-	[Jiri Olsa] Drop EVENT_ID() macro since it is only used once.
+Changelog[v2]: [Jiri Olsa] Use PMU_FORMAT_ATTR() rather than duplicating it.
 
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- arch/powerpc/include/asm/perf_event_server.h      |   24 ++++++++++++++
- arch/powerpc/perf/core-book3s.c                   |   12 +++++++
- arch/powerpc/perf/power7-pmu.c                    |   34 +++++++++++++++++++++
- 3 files changed, 70 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/stable/sysfs-devices-cpu-events
+ arch/powerpc/include/asm/perf_event_server.h |    6 ++++++
+ arch/powerpc/perf/core-book3s.c              |   12 ++++++++++++
+ arch/powerpc/perf/power7-pmu.c               |    1 +
+ 3 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/ABI/stable/sysfs-devices-cpu-events b/Documentation/ABI/stable/sysfs-devices-cpu-events
-new file mode 100644
-index 0000000..e69de29
 diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
-index 9710be3..3f21d89 100644
+index b29fcc6..ee63205 100644
 --- a/arch/powerpc/include/asm/perf_event_server.h
 +++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -11,6 +11,7 @@
+@@ -135,3 +135,9 @@ extern ssize_t power_events_sysfs_show(struct device *dev,
  
- #include <linux/types.h>
- #include <asm/hw_irq.h>
-+#include <linux/device.h>
- 
- #define MAX_HWEVENTS		8
- #define MAX_EVENT_ALTERNATIVES	8
-@@ -35,6 +36,7 @@ struct power_pmu {
- 	void		(*disable_pmc)(unsigned int pmc, unsigned long mmcr[]);
- 	int		(*limited_pmc_event)(u64 event_id);
- 	u32		flags;
-+	const struct attribute_group	**attr_groups;
- 	int		n_generic;
- 	int		*generic_events;
- 	int		(*cache_events)[PERF_COUNT_HW_CACHE_MAX]
-@@ -109,3 +111,25 @@ extern unsigned long perf_instruction_pointer(struct pt_regs *regs);
-  * If an event_id is not subject to the constraint expressed by a particular
-  * field, then it will have 0 in both the mask and value for that field.
-  */
-+
-+extern ssize_t power_events_sysfs_show(struct device *dev,
-+				struct device_attribute *attr, char *page);
+ #define	POWER_EVENT_ATTR(_name, _id)	EVENT_ATTR(PM_##_name, _id, _p)
+ #define	POWER_EVENT_PTR(_id)		EVENT_PTR(_id, _p)
 +
 +/*
-+ * EVENT_VAR() is same as PMU_EVENT_VAR with a suffix.
-+ *
-+ * Having a suffix allows us to have aliases in sysfs - eg: the generic
-+ * event 'cpu-cycles' can have two entries in sysfs: 'cpu-cycles' and
-+ * 'PM_CYC' where the latter is the name by which the event is known in
-+ * POWER CPU specification.
++ * Format of a perf event is the same on all POWER cpus. Declare a
++ * common sysfs attribute group that individual POWER cpus can share.
 + */
-+#define	EVENT_VAR(_id, _suffix)		event_attr_##_id##_suffix
-+#define	EVENT_PTR(_id, _suffix)		&EVENT_VAR(_id, _suffix)
-+
-+#define	EVENT_ATTR(_name, _id, _suffix)					\
-+	PMU_EVENT_ATTR(_name, EVENT_VAR(_id, _suffix), PME_PM_##_id,	\
-+			power_events_sysfs_show)
-+
-+#define	GENERIC_EVENT_ATTR(_name, _id)	EVENT_ATTR(_name, _id, _g)
-+#define	GENERIC_EVENT_PTR(_id)		EVENT_PTR(_id, _g)
-+
++extern struct attribute_group power_pmu_format_group;
 diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index aa2465e..fa476d5 100644
+index fa476d5..4ae044b 100644
 --- a/arch/powerpc/perf/core-book3s.c
 +++ b/arch/powerpc/perf/core-book3s.c
-@@ -1305,6 +1305,16 @@ static int power_pmu_event_idx(struct perf_event *event)
- 	return event->hw.idx;
+@@ -1315,6 +1315,18 @@ ssize_t power_events_sysfs_show(struct device *dev,
+ 	return sprintf(page, "event=0x%02llx\n", pmu_attr->id);
  }
  
-+ssize_t power_events_sysfs_show(struct device *dev,
-+				struct device_attribute *attr, char *page)
-+{
-+	struct perf_pmu_events_attr *pmu_attr;
++PMU_FORMAT_ATTR(event, "config:0-20");
 +
-+	pmu_attr = container_of(attr, struct perf_pmu_events_attr, attr);
++static struct attribute *power_pmu_format_attr[] = {
++	&format_attr_event.attr,
++	NULL,
++};
 +
-+	return sprintf(page, "event=0x%02llx\n", pmu_attr->id);
-+}
++struct attribute_group power_pmu_format_group = {
++	.name = "format",
++	.attrs = power_pmu_format_attr,
++};
 +
  struct pmu power_pmu = {
  	.pmu_enable	= power_pmu_enable,
  	.pmu_disable	= power_pmu_disable,
-@@ -1537,6 +1547,8 @@ int __cpuinit register_power_pmu(struct power_pmu *pmu)
- 	pr_info("%s performance monitor hardware support registered\n",
- 		pmu->name);
- 
-+	power_pmu.attr_groups = ppmu->attr_groups;
-+
- #ifdef MSR_HV
- 	/*
- 	 * Use FCHV to ignore kernel events if MSR.HV is set.
 diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index 44e70d2..ae5d757 100644
+index 5627940..5fb3c9b 100644
 --- a/arch/powerpc/perf/power7-pmu.c
 +++ b/arch/powerpc/perf/power7-pmu.c
-@@ -363,6 +363,39 @@ static int power7_cache_events[C(MAX)][C(OP_MAX)][C(RESULT_MAX)] = {
- 	},
+@@ -410,6 +410,7 @@ static struct attribute_group power7_pmu_events_group = {
  };
  
-+
-+GENERIC_EVENT_ATTR(cpu-cycles,			CYC);
-+GENERIC_EVENT_ATTR(stalled-cycles-frontend,	GCT_NOSLOT_CYC);
-+GENERIC_EVENT_ATTR(stalled-cycles-backend,	CMPLU_STALL);
-+GENERIC_EVENT_ATTR(instructions,		INST_CMPL);
-+GENERIC_EVENT_ATTR(cache-references,		LD_REF_L1);
-+GENERIC_EVENT_ATTR(cache-misses,		LD_MISS_L1);
-+GENERIC_EVENT_ATTR(branch-instructions,		BRU_FIN);
-+GENERIC_EVENT_ATTR(branch-misses,		BRU_MPRED);
-+
-+static struct attribute *power7_events_attr[] = {
-+	GENERIC_EVENT_PTR(CYC),
-+	GENERIC_EVENT_PTR(GCT_NOSLOT_CYC),
-+	GENERIC_EVENT_PTR(CMPLU_STALL),
-+	GENERIC_EVENT_PTR(INST_CMPL),
-+	GENERIC_EVENT_PTR(LD_REF_L1),
-+	GENERIC_EVENT_PTR(LD_MISS_L1),
-+	GENERIC_EVENT_PTR(BRU_FIN),
-+	GENERIC_EVENT_PTR(BRU_MPRED),
-+	NULL
-+};
-+
-+
-+static struct attribute_group power7_pmu_events_group = {
-+	.name = "events",
-+	.attrs = power7_events_attr,
-+};
-+
-+static const struct attribute_group *power7_pmu_attr_groups[] = {
-+	&power7_pmu_events_group,
-+	NULL,
-+};
-+
- static struct power_pmu power7_pmu = {
- 	.name			= "POWER7",
- 	.n_counter		= 6,
-@@ -374,6 +407,7 @@ static struct power_pmu power7_pmu = {
- 	.get_alternatives	= power7_get_alternatives,
- 	.disable_pmc		= power7_disable_pmc,
- 	.flags			= PPMU_ALT_SIPR,
-+	.attr_groups		= power7_pmu_attr_groups,
- 	.n_generic		= ARRAY_SIZE(power7_generic_events),
- 	.generic_events		= power7_generic_events,
- 	.cache_events		= &power7_cache_events,
+ static const struct attribute_group *power7_pmu_attr_groups[] = {
++	&power_pmu_format_group,
+ 	&power7_pmu_events_group,
+ 	NULL,
+ };
 -- 
 1.7.1
 
