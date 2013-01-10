@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab3AJPeE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:34:04 -0500
-Received: from mga14.intel.com ([143.182.124.37]:19041 "EHLO mga14.intel.com"
+	id S1754979Ab3AJPev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:34:51 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:52711 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754011Ab3AJPeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:34:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,444,1355126400"; 
-   d="scan'208";a="189781094"
-Date: Thu, 10 Jan 2013 15:54:15 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: arve@android.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/10] goldfish: add the goldfish virtual bus
-Message-ID: <20130110155415.52920a41@bob.linux.org.uk>
-In-Reply-To: <201301092230.40331.arnd@arndb.de>
-References: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
-	<20130109142305.9239.37581.stgit@bob.linux.org.uk>
-	<201301092230.40331.arnd@arndb.de>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754435Ab3AJPc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:32:57 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH v3 36/44] Kconfig.debug: add METAG to dependency lists
+Date: Thu, 10 Jan 2013 15:31:04 +0000
+Message-ID: <1357831872-29451-37-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
+References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Maybe drivers/bus would be more appropriate though. Every platform
-> handles platforms differently, and x86 seems to be the only one that
-> likes the model of putting stuff under drivers/platform.
+Add [!]METAG to a couple of Kconfig dependencies in lib/Kconfig.debug.
+Don't allow stack utilization instrumentation on metag, and allow
+building with frame pointers.
 
-I'm fine with that and I agree - it is a bus.
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+---
+ lib/Kconfig.debug |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> __devinit/__devexit are going away, so you can skip adding them
-> for new code.
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 07fd5a0..a6b7175 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -730,7 +730,7 @@ config STACKTRACE
+ 
+ config DEBUG_STACK_USAGE
+ 	bool "Stack utilization instrumentation"
+-	depends on DEBUG_KERNEL && !IA64 && !PARISC
++	depends on DEBUG_KERNEL && !IA64 && !PARISC && !METAG
+ 	help
+ 	  Enables the display of the minimum amount of free stack which each
+ 	  task has ever had available in the sysrq-T and sysrq-P debug output.
+@@ -911,7 +911,7 @@ config FRAME_POINTER
+ 	bool "Compile the kernel with frame pointers"
+ 	depends on DEBUG_KERNEL && \
+ 		(CRIS || M68K || FRV || UML || \
+-		 AVR32 || SUPERH || BLACKFIN || MN10300) || \
++		 AVR32 || SUPERH || BLACKFIN || MN10300 || METAG) || \
+ 		ARCH_WANT_FRAME_POINTERS
+ 	default y if (DEBUG_INFO && UML) || ARCH_WANT_FRAME_POINTERS
+ 	help
+-- 
+1.7.7.6
 
-I'll strip those out of the upstream version
 
-> > +module_init(goldfish_pdev_bus_init);
-> > +module_exit(goldfish_pdev_bus_exit);
-> 
-> The module_platform_driver() macro takes care of this.
-
-Will change to that.
-
-> 
-> > +static struct resource goldfish_pdev_bus_resources[] = {
-> > +	{
-> > +		.start  = GOLDFISH_PDEV_BUS_BASE,
-> > +		.end    = GOLDFISH_PDEV_BUS_BASE +
-> > GOLDFISH_PDEV_BUS_END - 1,
-> > +		.flags  = IORESOURCE_IO,
-> > +	},
-> > +	{
-> > +		.start	= GOLDFISH_PDEV_BUS_IRQ,
-> > +		.end	= GOLDFISH_PDEV_BUS_IRQ,
-> > +		.flags	= IORESOURCE_IRQ,
-> > +	}
-> > +};
-> > +
-> > +struct platform_device goldfish_pdev_bus_device = {
-> > +	.name = "goldfish_pdev_bus",
-> > +	.id = -1,
-> > +	.num_resources = ARRAY_SIZE(goldfish_pdev_bus_resources),
-> > +	.resource = goldfish_pdev_bus_resources
-> > +};
-> > +
-> > +static int __init goldfish_init(void)
-> > +{
-> > +	return platform_device_register(&goldfish_pdev_bus_device);
-> > +}
-> > +device_initcall(goldfish_init);
-> 
-> This is the part that I think should actually be part of the
-> architecture tree.
-
-Thinking about it a bit I agree. We still end up needing an
-architectural header for early console and the like eventually but it
-does eliminate much of the rest.
-
-I'll rework it that way.
-
-Alan
