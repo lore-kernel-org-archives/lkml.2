@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab3AJNLJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 08:11:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19842 "EHLO mx1.redhat.com"
+	id S1754669Ab3AJNMY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 08:12:24 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36771 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab3AJNLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 08:11:08 -0500
-Message-ID: <50EEBC7C.70508@redhat.com>
-Date: Thu, 10 Jan 2013 08:05:00 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753892Ab3AJNMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 08:12:23 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, eric.y.miao@gmail.com,
+        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from platform data
+Date: Thu, 10 Jan 2013 14:18:08 +0100
+Message-ID: <90529114.hOo9bzgA6o@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130110125159.GQ20956@opensource.wolfsonmicro.com>
+References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com> <2921304.SsX3sQo2BU@vostro.rjw.lan> <20130110125159.GQ20956@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-kernel@vger.kernel.org, aquini@redhat.com, eric.dumazet@gmail.com,
-        lwoodman@redhat.com, jeremy@goop.org,
-        Jan Beulich <JBeulich@novell.com>, knoel@redhat.com,
-        chegu_vinod@hp.com, raghavendra.kt@linux.vnet.ibm.com,
-        mingo@redhat.com
-Subject: Re: [PATCH 4/5] x86,smp: keep spinlock delay values per hashed spinlock
- address
-References: <20130108172632.1126898a@annuminas.surriel.com> <20130108173119.5e59fac2@annuminas.surriel.com> <CANN689H1eb_h-eX3wiEMczrA9hrX7C9zgwWzg0N7w_UcHHA2MA@mail.gmail.com>
-In-Reply-To: <CANN689H1eb_h-eX3wiEMczrA9hrX7C9zgwWzg0N7w_UcHHA2MA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 08:01 AM, Michel Lespinasse wrote:
-> On Tue, Jan 8, 2013 at 2:31 PM, Rik van Riel <riel@redhat.com> wrote:
->> From: Eric Dumazet <eric.dumazet@gmail.com>
->>
->> Eric Dumazet found a regression with the first version of the spinlock
->> backoff code, in a workload where multiple spinlocks were contended,
->> each having a different wait time.
->>
->> This patch has multiple delay values per cpu, indexed on a hash
->> of the lock address, to avoid that problem.
->>
->> Eric Dumazet wrote:
->>
->> I did some tests with your patches with following configuration :
->>
->> tc qdisc add dev eth0 root htb r2q 1000 default 3
->> (to force a contention on qdisc lock, even with a multi queue net
->> device)
->>
->> and 24 concurrent "netperf -t UDP_STREAM -H other_machine -- -m 128"
->>
->> Machine : 2 Intel(R) Xeon(R) CPU X5660  @ 2.80GHz
->> (24 threads), and a fast NIC (10Gbps)
->>
->> Resulting in a 13 % regression (676 Mbits -> 595 Mbits)
->>
->> In this workload we have at least two contended spinlocks, with
->> different delays. (spinlocks are not held for the same duration)
->>
->> It clearly defeats your assumption of a single per cpu delay being OK :
->> Some cpus are spinning too long while the lock was released.
->>
->> We might try to use a hash on lock address, and an array of 16 different
->> delays so that different spinlocks have a chance of not sharing the same
->> delay.
->>
->> With following patch, I get 982 Mbits/s with same bench, so an increase
->> of 45 % instead of a 13 % regression.
->
-> Note that these results were with your v1 proposal. With v3 proposal,
-> on a slightly different machine (2 socket sandybridge) with a similar
-> NIC, I am not seeing the regression when not using the hash table. I
-> think this is because v3 got more conservative about mixed spinlock
-> hold times, and converges towards the shortest of the hold times in
-> that case.
+On Thursday, January 10, 2013 12:51:59 PM Mark Brown wrote:
+> On Thu, Jan 10, 2013 at 01:54:41PM +0100, Rafael J. Wysocki wrote:
+> > On Thursday, January 10, 2013 02:38:37 PM Mika Westerberg wrote:
+> 
+> > > 	3. We make the acpi_create_platform_device() match on, lets say
+> > > 	   "INT33C" (a partial match), and in such case it assumes that we are
+> > >            running on Lynxpoint. It will then create platform device for 'clk-lpt'.
+> 
+> > > 	4. Now the clk-lpt driver creates the clocks.
+> 
+> > > 	5. The SPI driver gets the clock it wants.
+> 
+> > That sounds reasonable to me.  Mark, what do you think?
+> 
+> Sounds sensible, yes - about what I'd expect.  Is it possible to match
+> on CPUID or similar information (given that this is all in the SoC)
+> instead of ACPI, that might be more robust I guess?
 
-Eric,
+This particular part may be present in different SoCs.
 
-with just patches 1-3, can you still reproduce the
-regression on your system?
-
-In other words, could we get away with dropping the
-complexity of patch 4, or do we still need it?
+Thanks,
+Rafael
 
 
 -- 
-All rights reversed
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
