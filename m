@@ -1,47 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638Ab3AJHyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 02:54:33 -0500
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:49225
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932466Ab3AJHyc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 02:54:32 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dIzz1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 10 Jan 2013 15:54:23 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <rjw@sisk.pl>, <robin.randhawa@arm.com>, <Steve.Bannister@arm.com>,
-        <Liviu.Dudau@arm.com>, <linaro-dev@lists.linaro.org>,
-        <patches@linaro.org>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: Simplify __cpufreq_remove_dev()
-Message-ID: <20130110075422.GA11458@S2101-09.ap.freescale.net>
-References: <aa10abe640afed8700abf262dbfc9b9c22659b6a.1357729671.git.viresh.kumar@linaro.org>
+	id S932667Ab3AJHzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 02:55:08 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:42180 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932560Ab3AJHzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 02:55:05 -0500
+Message-ID: <50EE73DE.30208@parallels.com>
+Date: Thu, 10 Jan 2013 11:55:10 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <aa10abe640afed8700abf262dbfc9b9c22659b6a.1357729671.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, <rientjes@google.com>,
+        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <cl@linux.com>, <minchan.kim@gmail.com>,
+        <kosaki.motohiro@jp.fujitsu.com>, <isimatu.yasuaki@jp.fujitsu.com>,
+        <wujianguo@huawei.com>, <wency@cn.fujitsu.com>, <hpa@zytor.com>,
+        <linfeng@cn.fujitsu.com>, <laijs@cn.fujitsu.com>, <mgorman@suse.de>,
+        <yinghai@kernel.org>, <x86@kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-acpi@vger.kernel.org>, <linux-s390@vger.kernel.org>,
+        <linux-sh@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
+        <cmetcalf@tilera.com>, <sparclinux@vger.kernel.org>
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com> <20130109142314.1ce04a96.akpm@linux-foundation.org> <50EE24A4.8020601@cn.fujitsu.com> <50EE6A48.7060307@parallels.com> <50EE6E50.3040609@jp.fujitsu.com>
+In-Reply-To: <50EE6E50.3040609@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 04:50:44PM +0530, Viresh Kumar wrote:
-> @Shawn: I believe your driver don't require that ugly code anymore (Though i
-> know there is a situation for that to happen, if we have two cpus, you remove
-> second one and then add it back. With this cpufreq_add_dev() would call init()
-> first and then try to match if there are any managed_policies present. But the
-> issue you pointed out about unregistering the driver would be solved by this
-> patch.)
+On 01/10/2013 11:31 AM, Kamezawa Hiroyuki wrote:
+> (2013/01/10 16:14), Glauber Costa wrote:
+>> On 01/10/2013 06:17 AM, Tang Chen wrote:
+>>>>> Note: if the memory provided by the memory device is used by the
+>>>>> kernel, it
+>>>>> can't be offlined. It is not a bug.
+>>>>
+>>>> Right.  But how often does this happen in testing?  In other words,
+>>>> please provide an overall description of how well memory hot-remove is
+>>>> presently operating.  Is it reliable?  What is the success rate in
+>>>> real-world situations?
+>>>
+>>> We test the hot-remove functionality mostly with movable_online used.
+>>> And the memory used by kernel is not allowed to be removed.
+>>
+>> Can you try doing this using cpusets configured to hardwall ?
+>> It is my understanding that the object allocators will try hard not to
+>> allocate anything outside the walls defined by cpuset. Which means that
+>> if you have one process per node, and they are hardwalled, your kernel
+>> memory will be spread evenly among the machine. With a big enough load,
+>> they should eventually be present in all blocks.
+>>
+> 
+> I'm sorry I couldn't catch your point.
+> Do you want to confirm whether cpuset can work enough instead of
+> ZONE_MOVABLE ?
+> Or Do you want to confirm whether ZONE_MOVABLE will not work if it's
+> used with cpuset ?
+> 
+> 
+No, I am not proposing to use cpuset do tackle the problem. I am just
+wondering if you would still have high success rates with cpusets in use
+with hardwalls. This is just one example of a workload that would spread
+kernel memory around quite heavily.
 
-Yes, just played it and it works for me.  However, I would have to keep
-that little ugly code in my patch to save the dependency on your patch.
-Will send a follow-up to clean that up once your patch hits mainline.
+So this is just me trying to understand the limitations of the mechanism.
 
-Shawn
+>> Another question I have for you: Have you considering calling
+>> shrink_slab to try to deplete the caches and therefore free at least
+>> slab memory in the nodes that can't be offlined? Is it relevant?
+>>
+> 
+> At this stage, we don't consider to call shrink_slab(). We require
+> nearly 100% success at offlining memory for removing DIMM.
+> It's my understanding.
+> 
+Of course, this is indisputable.
+
+> IMHO, I don't think shrink_slab() can kill all objects in a node even
+> if they are some caches. We need more study for doing that.
+> 
+
+Indeed, shrink_slab can only kill cached objects. They, however, are
+usually a very big part of kernel memory. I wonder though if in case of
+failure, it is worth it to try at least one shrink pass before you give up.
+
+It is not very different from what is in memory-failure.c, except that
+we could do better and do a more targetted shrinking (support for that
+is being worked on)
+
 
