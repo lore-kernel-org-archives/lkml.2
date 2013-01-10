@@ -1,60 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab3AJAj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 19:39:56 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:60478 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932224Ab3AJAjz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 19:39:55 -0500
-Date: Wed, 9 Jan 2013 16:40:25 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Lijo Antony <lijo.kernel@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
-Message-ID: <20130110004025.GB11605@kroah.com>
-References: <20130108223611.GA19672@kroah.com>
- <20130109003824.GA21075@kroah.com>
- <CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com>
- <20130109042533.GA9164@kroah.com>
- <CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com>
- <50ED1C12.2090608@gmail.com>
- <50EDC8A1.30307@oracle.com>
- <50EDCF14.4080101@oracle.com>
+	id S932444Ab3AJAs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 19:48:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46093 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932225Ab3AJAs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 19:48:27 -0500
+Date: Thu, 10 Jan 2013 01:48:18 +0100
+From: David Sterba <dsterba@suse.cz>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, darrick.wong@oracle.com,
+        andi@firstfloor.org, hch@infradead.org, linuxram@linux.vnet.ibm.com,
+        wuzhy@linux.vnet.ibm.com
+Subject: Re: [PATCH RESEND v1 01/16] vfs: introduce some data structures
+Message-ID: <20130110004817.GU20089@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+References: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
+ <1356014615-15073-2-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50EDCF14.4080101@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1356014615-15073-2-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 02:12:04PM -0600, Dave Kleikamp wrote:
-> On 01/09/2013 01:44 PM, Dave Kleikamp wrote:
-> > 
-> > I can easily reproduce it running glxgears on 3.8-rc1 or 3.8-rc2.
-> > 
-> > 00:02.0 VGA compatible controller [0300]: Intel Corporation Core
-> > Processor Integrated Graphics Controller [8086:0046] (rev 02)
-> > 
-> > Thinkpad T410
-> > 
-> > Shaggy
-> 
-> Daniel's patch:
-> 
-> drm/i915: Revert shrinker changes from "Track unbound pages"
-> 
-> fixes the problem for me.
+On Thu, Dec 20, 2012 at 10:43:20PM +0800, zwu.kernel@gmail.com wrote:
+> --- /dev/null
+> +++ b/fs/hot_tracking.c
+> @@ -0,0 +1,109 @@
+> +/*
+> + * fs/hot_tracking.c
 
-After an afternoon of multiple kernel builds and other stressful things,
-it looks like it fixes it for me as well.  Chris, this will be going to
-Linus soon, right?
+>From what I've undrestood the file name written here is not wanted, so
+please drop it (and from .h too)
 
-thanks,
+> + *
+> + * Copyright (C) 2012 IBM Corp. All rights reserved.
+> + * Written by Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public
+> + * License v2 as published by the Free Software Foundation.
 
-greg k-h
+A short description of the hot tracking feature or pointer to the
+Documentation/ file would be nice here.
+
+> + */
+> +
+> +#include <linux/list.h>
+> +#include <linux/err.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/hardirq.h>
+> +#include <linux/fs.h>
+> +#include <linux/blkdev.h>
+> +#include <linux/types.h>
+> +#include <linux/limits.h>
+> +#include "hot_tracking.h"
+> +
+> +/* kmem_cache pointers for slab caches */
+
+This comment seems useless to me, I does not help understanding the code, just
+says the same what reads in C. There are more such redundant comments in the
+series, but I'm not going point to all of them right now.
+
+> +static struct kmem_cache *hot_inode_item_cachep __read_mostly;
+> +static struct kmem_cache *hot_range_item_cachep __read_mostly;
+> +
+
+> --- /dev/null
+> +++ b/include/linux/hot_tracking.h
+> +/* The common info for both following structures */
+> +struct hot_comm_item {
+> +	struct rb_node rb_node; /* rbtree index */
+> +	struct hot_freq_data hot_freq_data;  /* frequency data */
+> +	spinlock_t lock; /* protects object data */
+> +	struct kref refs;  /* prevents kfree */
+> +};
+> +
+> +/* An item representing an inode and its access frequency */
+> +struct hot_inode_item {
+> +	struct hot_comm_item hot_inode; /* node in hot_inode_tree */
+> +	struct hot_rb_tree hot_range_tree; /* tree of ranges */
+> +	spinlock_t lock; /* protect range tree */
+> +	struct hot_rb_tree *hot_inode_tree;
+> +	u64 i_ino; /* inode number from inode */
+> +};
+
+Please align the comments to something like this (or drop them if they seem
+redundant):
+
+/* The common info for both following structures */
+struct hot_comm_item {
+        struct rb_node rb_node;              /* rbtree index */
+        struct hot_freq_data hot_freq_data;  /* frequency data */
+        spinlock_t lock;                     /* protects object data */
+        struct kref refs;                    /* prevents kfree */
+        struct list_head n_list;             /* list node index */
+};
+
+/* An item representing an inode and its access frequency */
+struct hot_inode_item {
+        struct hot_comm_item hot_inode;      /* node in hot_inode_tree */
+        struct hot_rb_tree hot_range_tree;   /* tree of ranges */
+        spinlock_t lock;                     /* protect range tree */
+        struct hot_rb_tree *hot_inode_tree;
+        u64 i_ino;                           /* inode number from inode */
+};
+
+> +extern void __init hot_cache_init(void);
+
+this belongs to the private include fs/hot_tracking.h (because this is called
+only once by vfs init and not by filesystems), there's
+hot_track_init(superblock) for that purpose introduced later.
+
+
+david
