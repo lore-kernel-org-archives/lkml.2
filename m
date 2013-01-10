@@ -1,145 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab3AJNyI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 08:54:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26487 "EHLO mx1.redhat.com"
+	id S1751752Ab3AJNzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 08:55:25 -0500
+Received: from mga02.intel.com ([134.134.136.20]:57346 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab3AJNyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 08:54:05 -0500
-Message-ID: <50EEC7F7.1030905@redhat.com>
-Date: Thu, 10 Jan 2013 21:53:59 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1750800Ab3AJNzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 08:55:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,444,1355126400"; 
+   d="scan'208";a="270478553"
+Date: Thu, 10 Jan 2013 15:58:52 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        eric.y.miao@gmail.com, linux@arm.linux.org.uk,
+        haojian.zhuang@gmail.com, chao.bi@intel.com,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from
+ platform data
+Message-ID: <20130110135852.GS13897@intel.com>
+References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
+ <2921304.SsX3sQo2BU@vostro.rjw.lan>
+ <20130110125159.GQ20956@opensource.wolfsonmicro.com>
+ <90529114.hOo9bzgA6o@vostro.rjw.lan>
+ <20130110133319.GT20956@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Stefan Hajnoczi <stefanha@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.8-rc] tuntap: refuse to re-attach to different tun_struct
-References: <1357804788-19976-1-git-send-email-stefanha@redhat.com> <20130110102319.GB13451@redhat.com> <50EE9B48.6080306@redhat.com> <20130110110737.GD13451@redhat.com>
-In-Reply-To: <20130110110737.GD13451@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130110133319.GT20956@opensource.wolfsonmicro.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 07:07 PM, Michael S. Tsirkin wrote:
-> On Thu, Jan 10, 2013 at 06:43:20PM +0800, Jason Wang wrote:
->> On 01/10/2013 06:23 PM, Michael S. Tsirkin wrote:
->>> On Thu, Jan 10, 2013 at 08:59:48AM +0100, Stefan Hajnoczi wrote:
->>>> Multiqueue tun devices support detaching a tun_file from its tun_struct
->>>> and re-attaching at a later point in time.  This allows users to disable
->>>> a specific queue temporarily.
->>>>
->>>> ioctl(TUNSETIFF) allows the user to specify the network interface to
->>>> attach by name.  This means the user can attempt to attach to interface
->>>> "B" after detaching from interface "A".
->>>>
->>>> The driver is not designed to support this so check we are re-attaching
->>>> to the right tun_struct.  Failure to do so may lead to oops.
->>>>
->>>> Signed-off-by: Stefan Hajnoczi <stefanha@redhat.com>
->>>> ---
->>>> This fix is for 3.8-rc.
->>>>
->>>>  drivers/net/tun.c | 2 ++
->>>>  1 file changed, 2 insertions(+)
->>>>
->>>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->>>> index fbd106e..cf6da6e 100644
->>>> --- a/drivers/net/tun.c
->>>> +++ b/drivers/net/tun.c
->>>> @@ -491,6 +491,8 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
->>>>  	err = -EINVAL;
->>>>  	if (rcu_dereference_protected(tfile->tun, lockdep_rtnl_is_held()))
->>>>  		goto out;
->>>> +	if (tfile->detached && tun != tfile->detached)
->>>> +		goto out;
->>>>  
->>>>  	err = -EBUSY;
->>>>  	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
->>>> -- 
->>>> 1.8.0.2
->>> I agree this is a bug but even with this patch, we still allow:
->>>
->>> SETIFF
->>> SETQUEUE (DISABLED)
->>> SETIFF
->>>
->>> Originally the rule always was that repeated setiff calls fail with
->>> EINVAL. We broke that when we set tun to NULL.  It's probably worth
->>> preserving that, even if queue is disabled.  Applying something like the below
->>> instead will address this concern, won't it?
->>>
->>> Note: works with regular userspace but I didn't test
->>> multiqueue userspace. What do you think.
->> Or just fail when tun->detached is not NULL at the beginning of
->> tun_set_iff()?
-> Yes that'll also work I think. If you prefer this pls send patch.
+On Thu, Jan 10, 2013 at 01:33:19PM +0000, Mark Brown wrote:
+> On Thu, Jan 10, 2013 at 02:18:08PM +0100, Rafael J. Wysocki wrote:
+> > On Thursday, January 10, 2013 12:51:59 PM Mark Brown wrote:
+> 
+> > > Sounds sensible, yes - about what I'd expect.  Is it possible to match
+> > > on CPUID or similar information (given that this is all in the SoC)
+> > > instead of ACPI, that might be more robust I guess?
+> 
+> > This particular part may be present in different SoCs.
+> 
+> Right, but I'd expect you could enumerate the SoCs?  Someone might
+> decide to change the clock configuration for future SoCs anyway.
 
-Will post a patch, thanks.
->>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->>>
->>> ---
->>>
->>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->>> index fbd106e..5ec8b08 100644
->>> --- a/drivers/net/tun.c
->>> +++ b/drivers/net/tun.c
->>> @@ -483,7 +483,7 @@ static void tun_detach_all(struct net_device *dev)
->>>  	BUG_ON(tun->numdisabled != 0);
->>>  }
->>>  
->>> -static int tun_attach(struct tun_struct *tun, struct file *file)
->>> +static int tun_attach(struct tun_struct *tun, struct file *file, bool setiff)
->>>  {
->>>  	struct tun_file *tfile = file->private_data;
->>>  	int err;
->>> @@ -492,6 +492,9 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
->>>  	if (rcu_dereference_protected(tfile->tun, lockdep_rtnl_is_held()))
->>>  		goto out;
->>>  
->>> +	if (setiff && tfile->detached)
->>> +		goto out;
->>> +
->>>  	err = -EBUSY;
->>>  	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
->>>  		goto out;
->>> @@ -1561,7 +1564,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->>>  		if (err < 0)
->>>  			return err;
->>>  
->>> -		err = tun_attach(tun, file);
->>> +		err = tun_attach(tun, file, true);
->>>  		if (err < 0)
->>>  			return err;
->>>  
->>> @@ -1627,7 +1630,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->>>  		dev->features = dev->hw_features;
->>>  
->>>  		INIT_LIST_HEAD(&tun->disabled);
->>> -		err = tun_attach(tun, file);
->>> +		err = tun_attach(tun, file, true);
->>>  		if (err < 0)
->>>  			goto err_free_dev;
->>>  
->>> @@ -1792,7 +1795,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
->>>  		else if (tun_not_capable(tun))
->>>  			ret = -EPERM;
->>>  		else
->>> -			ret = tun_attach(tun, file);
->>> +			ret = tun_attach(tun, file, false);
->>>  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
->>>  		tun = rcu_dereference_protected(tfile->tun,
->>>  						lockdep_rtnl_is_held());
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Well, they can use the same LPSS block with a different CPU but then we
+expect the ACPI IDs to change as well (so we can then make another set of
+clocks for those).
