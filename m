@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab3AJFw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 00:52:59 -0500
-Received: from gate.crashing.org ([63.228.1.57]:34482 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751029Ab3AJFw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 00:52:58 -0500
-Message-ID: <1357796898.4838.85.camel@pasglop>
-Subject: Re: [TRIVIAL PATCH 11/26] powerpc: Convert print_symbol to %pSR
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Joe Perches <joe@perches.com>, Jiri Kosina <trivial@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Thu, 10 Jan 2013 16:48:18 +1100
-In-Reply-To: <201212131158.46055.arnd@arndb.de>
-References: <cover.1355335227.git.joe@perches.com>
-	 <8c901014a0f571011023ed98b9a22bc690925b73.1355335228.git.joe@perches.com>
-	 <201212131158.46055.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751771Ab3AJGBh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 01:01:37 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:45756 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab3AJGBg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 01:01:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKohpo=ajxxanDPNpdxiJO8vvcQPxeQA29sZgeRtRg85F4CVGg@mail.gmail.com>
+References: <aa10abe640afed8700abf262dbfc9b9c22659b6a.1357729671.git.viresh.kumar@linaro.org>
+	<CAKohpo=ajxxanDPNpdxiJO8vvcQPxeQA29sZgeRtRg85F4CVGg@mail.gmail.com>
+Date: Thu, 10 Jan 2013 11:31:35 +0530
+Message-ID: <CAKohpok4WLHkBQFoh1-T8H33Mi=+ZHmuKYnik_dZBOG_B2LzOA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Simplify __cpufreq_remove_dev()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-13 at 11:58 +0000, Arnd Bergmann wrote:
-> On Wednesday 12 December 2012, Joe Perches wrote:
-> > Use the new vsprintf extension to avoid any possible
-> > message interleaving.
-> > 
-> > Convert the #ifdef DEBUG block to a single pr_debug.
-> > 
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> 
-> nice cleanup!
+On 9 January 2013 21:09, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 9 January 2013 16:50, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> [Probably need to simplify cpufreq_add_dev() too, but that can be done as next
+>> step.]
+>
+> I have tried that too, it is also pushed at:
+>
+> https://lkml.org/lkml/2012/12/16/5
+>
+> [Untested for now, will be doing it tomorrow]
+>
+> From: Viresh Kumar <viresh.kumar@linaro.org>
+> Date: Wed, 9 Jan 2013 21:02:50 +0530
+> Subject: [PATCH] cpufreq: Simplify cpufreq_add_dev()
+>
+> Currently cpufreq_add_dev() firsts allocated policy, calls ->init() and then
+> checks if this cpu should be already managed or not. And if it already managed,
+> free its policy.
+>
+> We can save all this if we somehow know if this cpu is managed or not in
+> advance. policy->related_cpus contains list of all valid sibling cpus of
+> policy->cpu. We can check this to know if current cpu is already managed.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
- ... which also breaks the build :-(
-
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-I'll fix it up locally.
-
-Ben.
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Tested-by: Viresh Kumar <viresh.kumar@linaro.org>
