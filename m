@@ -1,121 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3AJPGt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:06:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15946 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab3AJPGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:06:47 -0500
-Date: Thu, 10 Jan 2013 17:10:37 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Moore <pmoore@redhat.com>
-Subject: Re: [PATCH] tun: avoid owner checks on IFF_ATTACH_QUEUE
-Message-ID: <20130110151037.GD30731@redhat.com>
-References: <20130110113108.GF13451@redhat.com>
- <50EECB43.8020405@redhat.com>
- <20130110141939.GA30557@redhat.com>
- <50EECFC8.9020402@redhat.com>
- <20130110144138.GA30731@redhat.com>
- <50EED495.4040405@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EED495.4040405@redhat.com>
+	id S1753744Ab3AJPLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:11:52 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:64857 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260Ab3AJPLv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:11:51 -0500
+From: Laurent Navet <laurent.navet@gmail.com>
+To: w.sang@pengutronix.de
+Cc: khali@linux-fr.org, ben-linux@fluff.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH] drivers: i2c-nforce2: fix coding style issues
+Date: Thu, 10 Jan 2013 15:07:42 +0100
+Message-Id: <1357826862-4975-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 10:47:49PM +0800, Jason Wang wrote:
-> On 01/10/2013 10:41 PM, Michael S. Tsirkin wrote:
-> > On Thu, Jan 10, 2013 at 10:27:20PM +0800, Jason Wang wrote:
-> >> On 01/10/2013 10:19 PM, Michael S. Tsirkin wrote:
-> >>> On Thu, Jan 10, 2013 at 10:08:03PM +0800, Jason Wang wrote:
-> >>>> On 01/10/2013 07:31 PM, Michael S. Tsirkin wrote:
-> >>>>> At the moment, we check owner when we enable queue in tun.
-> >>>>> This seems redundant and will break some valid uses
-> >>>>> where fd is passed around: I think TUNSETOWNER is there
-> >>>>> to prevent others from attaching to a persistent device not
-> >>>>> owned by them. Here the fd is already attached,
-> >>>>> enabling/disabling queue is more like read/write.
-> >>>> It also change the number of queues of the tuntap, maybe we should limit
-> >>>> this.
-> >>> Number of active queues? Why does it matter?
-> >>> Max number of queues is already limited by SETIFF.
-> >> Yes the number of active(real) queues in the kernel net device and this
-> >> changing may introduce other events such uevent.
-> > How can it trigger a uevent?
-> 
-> netif_set_real_num_{tx|rx}_queues() will update the queue kobjects which
-> may trigger an uevent.
+avoid these checkpatch.pl issues :
+- ERROR: "foo * bar" should be "foo *bar"
+- ERROR: switch and case should be at the same indent
+- ERROR: "(foo*)" should be "(foo *)"
+- ERROR: do not use assignment in if condition
+- ERROR: space required before the open parenthesis '('
+- WARNING: suspect code indent for conditional statements
+- WARNING: quoted string split across lines
+- WARNING: space prohibited between function name and open parenthesis '('
+- WARNING: line over 80 characters
+also add spaces around some "+", "=", "*"
 
-Look SETOWNER is a tool intended mostly for persistent taps,
-where you give a specific user the rights to attach to
-specific taps but not others.
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+---
+ drivers/i2c/busses/i2c-nforce2.c |  152 +++++++++++++++++++-------------------
+ 1 file changed, 76 insertions(+), 76 deletions(-)
 
-The uevent issue is preventing a DOS by a uevent flood?
-Then it applies to persistent and non persistent as one.
-So if one cares about this one should use an LSM
-or we can add a separate capability to limit this if we
-care enough.
+diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
+index adac854..ac88f40 100644
+--- a/drivers/i2c/busses/i2c-nforce2.c
++++ b/drivers/i2c/busses/i2c-nforce2.c
+@@ -60,7 +60,7 @@
+ #include <linux/io.h>
+ 
+ MODULE_LICENSE("GPL");
+-MODULE_AUTHOR ("Hans-Frieder Vogt <hfvogt@gmx.net>");
++MODULE_AUTHOR("Hans-Frieder Vogt <hfvogt@gmx.net>");
+ MODULE_DESCRIPTION("nForce2/3/4/5xx SMBus driver");
+ 
+ 
+@@ -188,9 +188,9 @@ static int nforce2_check_status(struct i2c_adapter *adap)
+ }
+ 
+ /* Return negative errno on error */
+-static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
++static s32 nforce2_access(struct i2c_adapter *adap, u16 addr,
+ 		unsigned short flags, char read_write,
+-		u8 command, int size, union i2c_smbus_data * data)
++		u8 command, int size, union i2c_smbus_data *data)
+ {
+ 	struct nforce2_smbus *smbus = adap->algo_data;
+ 	unsigned char protocol, pec;
+@@ -202,56 +202,54 @@ static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
+ 	pec = (flags & I2C_CLIENT_PEC) ? NVIDIA_SMB_PRTCL_PEC : 0;
+ 
+ 	switch (size) {
++	case I2C_SMBUS_QUICK:
++		protocol |= NVIDIA_SMB_PRTCL_QUICK;
++		read_write = I2C_SMBUS_WRITE;
++		break;
+ 
+-		case I2C_SMBUS_QUICK:
+-			protocol |= NVIDIA_SMB_PRTCL_QUICK;
+-			read_write = I2C_SMBUS_WRITE;
+-			break;
+-
+-		case I2C_SMBUS_BYTE:
+-			if (read_write == I2C_SMBUS_WRITE)
+-				outb_p(command, NVIDIA_SMB_CMD);
+-			protocol |= NVIDIA_SMB_PRTCL_BYTE;
+-			break;
+-
+-		case I2C_SMBUS_BYTE_DATA:
+-			outb_p(command, NVIDIA_SMB_CMD);
+-			if (read_write == I2C_SMBUS_WRITE)
+-				outb_p(data->byte, NVIDIA_SMB_DATA);
+-			protocol |= NVIDIA_SMB_PRTCL_BYTE_DATA;
+-			break;
+-
+-		case I2C_SMBUS_WORD_DATA:
++	case I2C_SMBUS_BYTE:
++		if (read_write == I2C_SMBUS_WRITE)
+ 			outb_p(command, NVIDIA_SMB_CMD);
+-			if (read_write == I2C_SMBUS_WRITE) {
+-				 outb_p(data->word, NVIDIA_SMB_DATA);
+-				 outb_p(data->word >> 8, NVIDIA_SMB_DATA+1);
+-			}
+-			protocol |= NVIDIA_SMB_PRTCL_WORD_DATA | pec;
+-			break;
+-
+-		case I2C_SMBUS_BLOCK_DATA:
+-			outb_p(command, NVIDIA_SMB_CMD);
+-			if (read_write == I2C_SMBUS_WRITE) {
+-				len = data->block[0];
+-				if ((len == 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
+-					dev_err(&adap->dev,
+-						"Transaction failed "
+-						"(requested block size: %d)\n",
+-						len);
+-					return -EINVAL;
+-				}
+-				outb_p(len, NVIDIA_SMB_BCNT);
+-				for (i = 0; i < I2C_SMBUS_BLOCK_MAX; i++)
+-					outb_p(data->block[i + 1],
+-					       NVIDIA_SMB_DATA+i);
++		protocol |= NVIDIA_SMB_PRTCL_BYTE;
++		break;
++
++	case I2C_SMBUS_BYTE_DATA:
++		outb_p(command, NVIDIA_SMB_CMD);
++		if (read_write == I2C_SMBUS_WRITE)
++			outb_p(data->byte, NVIDIA_SMB_DATA);
++		protocol |= NVIDIA_SMB_PRTCL_BYTE_DATA;
++		break;
++
++	case I2C_SMBUS_WORD_DATA:
++		outb_p(command, NVIDIA_SMB_CMD);
++		if (read_write == I2C_SMBUS_WRITE) {
++			outb_p(data->word, NVIDIA_SMB_DATA);
++			outb_p(data->word >> 8, NVIDIA_SMB_DATA + 1);
++		}
++		protocol |= NVIDIA_SMB_PRTCL_WORD_DATA | pec;
++		break;
++
++	case I2C_SMBUS_BLOCK_DATA:
++		outb_p(command, NVIDIA_SMB_CMD);
++		if (read_write == I2C_SMBUS_WRITE) {
++			len = data->block[0];
++			if ((len == 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
++				dev_err(&adap->dev,
++					"Transaction failed (requested block size: %d)\n",
++					len);
++				return -EINVAL;
+ 			}
+-			protocol |= NVIDIA_SMB_PRTCL_BLOCK_DATA | pec;
+-			break;
++			outb_p(len, NVIDIA_SMB_BCNT);
++			for (i = 0; i < I2C_SMBUS_BLOCK_MAX; i++)
++				outb_p(data->block[i + 1],
++				       NVIDIA_SMB_DATA + i);
++		}
++		protocol |= NVIDIA_SMB_PRTCL_BLOCK_DATA | pec;
++		break;
+ 
+-		default:
+-			dev_err(&adap->dev, "Unsupported transaction %d\n", size);
+-			return -EOPNOTSUPP;
++	default:
++		dev_err(&adap->dev, "Unsupported transaction %d\n", size);
++		return -EOPNOTSUPP;
+ 	}
+ 
+ 	outb_p((addr & 0x7f) << 1, NVIDIA_SMB_ADDR);
+@@ -265,28 +263,28 @@ static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
+ 		return 0;
+ 
+ 	switch (size) {
+-
+-		case I2C_SMBUS_BYTE:
+-		case I2C_SMBUS_BYTE_DATA:
+-			data->byte = inb_p(NVIDIA_SMB_DATA);
+-			break;
+-
+-		case I2C_SMBUS_WORD_DATA:
+-			data->word = inb_p(NVIDIA_SMB_DATA) | (inb_p(NVIDIA_SMB_DATA+1) << 8);
+-			break;
+-
+-		case I2C_SMBUS_BLOCK_DATA:
+-			len = inb_p(NVIDIA_SMB_BCNT);
+-			if ((len <= 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
+-				dev_err(&adap->dev, "Transaction failed "
+-					"(received block size: 0x%02x)\n",
+-					len);
+-				return -EPROTO;
+-			}
+-			for (i = 0; i < len; i++)
+-				data->block[i+1] = inb_p(NVIDIA_SMB_DATA + i);
+-			data->block[0] = len;
+-			break;
++	case I2C_SMBUS_BYTE:
++	case I2C_SMBUS_BYTE_DATA:
++		data->byte = inb_p(NVIDIA_SMB_DATA);
++		break;
++
++	case I2C_SMBUS_WORD_DATA:
++		data->word = inb_p(NVIDIA_SMB_DATA) |
++			     (inb_p(NVIDIA_SMB_DATA + 1) << 8);
++		break;
++
++	case I2C_SMBUS_BLOCK_DATA:
++		len = inb_p(NVIDIA_SMB_BCNT);
++		if ((len <= 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
++			dev_err(&adap->dev,
++				"Transaction failed (received block size: 0x%02x)\n",
++				len);
++			return -EPROTO;
++		}
++		for (i = 0; i < len; i++)
++			data->block[i + 1] = inb_p(NVIDIA_SMB_DATA + i);
++		data->block[0] = len;
++		break;
+ 	}
+ 
+ 	return 0;
+@@ -299,7 +297,7 @@ static u32 nforce2_func(struct i2c_adapter *adapter)
+ 	return I2C_FUNC_SMBUS_QUICK | I2C_FUNC_SMBUS_BYTE |
+ 	       I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA |
+ 	       I2C_FUNC_SMBUS_PEC |
+-	       (((struct nforce2_smbus*)adapter->algo_data)->blockops ?
++	       (((struct nforce2_smbus *)adapter->algo_data)->blockops ?
+ 		I2C_FUNC_SMBUS_BLOCK_DATA : 0);
+ }
+ 
+@@ -327,7 +325,7 @@ static DEFINE_PCI_DEVICE_TABLE(nforce2_ids) = {
+ 	{ 0 }
+ };
+ 
+-MODULE_DEVICE_TABLE (pci, nforce2_ids);
++MODULE_DEVICE_TABLE(pci, nforce2_ids);
+ 
+ 
+ static int nforce2_probe_smb(struct pci_dev *dev, int bar, int alt_reg,
+@@ -377,7 +375,8 @@ static int nforce2_probe_smb(struct pci_dev *dev, int bar, int alt_reg,
+ 		release_region(smbus->base, smbus->size);
+ 		return error;
+ 	}
+-	dev_info(&smbus->adapter.dev, "nForce2 SMBus adapter at %#x\n", smbus->base);
++	dev_info(&smbus->adapter.dev, "nForce2 SMBus adapter at %#x\n",
++		smbus->base);
+ 	return 0;
+ }
+ 
+@@ -388,11 +387,12 @@ static int nforce2_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	int res1, res2;
+ 
+ 	/* we support 2 SMBus adapters */
+-	if (!(smbuses = kzalloc(2*sizeof(struct nforce2_smbus), GFP_KERNEL)))
++	smbuses = kzalloc(2 * sizeof(struct nforce2_smbus), GFP_KERNEL);
++	if (!smbuses)
+ 		return -ENOMEM;
+ 	pci_set_drvdata(dev, smbuses);
+ 
+-	switch(dev->device) {
++	switch (dev->device) {
+ 	case PCI_DEVICE_ID_NVIDIA_NFORCE2_SMBUS:
+ 	case PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_SMBUS:
+ 	case PCI_DEVICE_ID_NVIDIA_NFORCE_MCP55_SMBUS:
+-- 
+1.7.10.4
 
-> >
-> >> With this patch, even
-> >> if a owner is set for tap, every user could change the number of real
-> >> queues which I don't think is not expected. Without this patch, we can
-> >> limit a user that just do read and write.
-> > In the end if you want very fine tuned security policy you have to
-> > use an LSM.
-> >
-> > Here we are talking about the expected usage without an LSM.
-> > There, enabling/disabling queues is just an optimization:
-> > if an application wants to process data from a single thread
-> > it's better off getting it through a single fd.
-> > Having to channel threading changes through a priveledged
-> > proxy would be very awkward.
-> 
-> Yes, but we have something similar like bridge-helper in qemu which
-> create devices through a privileged proxy.
-
-This only happens on startup. Threading changes can happen
-at any time.
-
-> >>>> Note that if management layer does not call TUNSETOWNER, the check
-> >>>> is just a nop. So if management layer want to limit the behavior, it's
-> >>>> its duty to do this correctly.
-> >>> The point is that management limits tun to allow SETIFF from libvirt
-> >>> only, then passes the fds to qemu.
-> >> Yes, but looks like libvirt does not call TUNSETOWNER before passing it
-> >> to qemu, so we're ok even without this patch. And if libvirt want to do
-> >> this, it can just call TUNSETOWNER to the user of qemu.
-> > No, that would allow qemu to do SETIFF which we don't want.
-> 
-> True, I was wrong.
-> >
-> >>>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >>>>>
-> >>>>> ---
-> >>>>>
-> >>>>> Note: this is unrelated to Stefan's bugfix.
-> >>>>>
-> >>>>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> >>>>> index fbd106e..78e3225 100644
-> >>>>> --- a/drivers/net/tun.c
-> >>>>> +++ b/drivers/net/tun.c
-> >>>>> @@ -1789,10 +1792,8 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
-> >>>>>  		tun = tfile->detached;
-> >>>>>  		if (!tun)
-> >>>>>  			ret = -EINVAL;
-> >>>>> -		else if (tun_not_capable(tun))
-> >>>>> -			ret = -EPERM;
-> >>>>>  		else
-> >>>>>  			ret = tun_attach(tun, file);
-> >>>>>  	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
-> >>>>>  		tun = rcu_dereference_protected(tfile->tun,
-> >>>>>  						lockdep_rtnl_is_held());
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
