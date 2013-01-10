@@ -1,93 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab3AJO6W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 09:58:22 -0500
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:47972 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab3AJO6V (ORCPT
+	id S1753794Ab3AJPBO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:01:14 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:53026 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740Ab3AJPBM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 09:58:21 -0500
-X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jan 2013 09:58:21 EST
+	Thu, 10 Jan 2013 10:01:12 -0500
+Date: Thu, 10 Jan 2013 15:01:08 +0000
+From: Morten Rasmussen <Morten.Rasmussen@arm.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 16/22] sched: add power aware scheduling in
+ fork/exec/wake
+Message-ID: <20130110150108.GF2046@e103034-lin>
+References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
+ <1357375071-11793-17-git-send-email-alex.shi@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <18607840.Is41JcgqAR@vostro.rjw.lan>
-References: <20121030040237.GA10472@google.com> <5274779.gJQ3WSr6QB@vostro.rjw.lan>
- <CAErSpo7QBNzaMKOGpkrPxop+WN+RMAoeOBUPiFDi9HFyH+UoOQ@mail.gmail.com> <18607840.Is41JcgqAR@vostro.rjw.lan>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 10 Jan 2013 07:49:46 -0700
-Message-ID: <CAErSpo7rnmSjtsMu1AJ81VmSQytBDdAL=qrJWJHQ15iaJRvuhw@mail.gmail.com>
-Subject: Re: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for
- hot-add root bus
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1357375071-11793-17-git-send-email-alex.shi@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 10 Jan 2013 15:01:04.0527 (UTC) FILETIME=[4FDBE1F0:01CDEF43]
+X-MC-Unique: 113011015010829801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 6:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Wednesday, January 09, 2013 05:34:32 PM Bjorn Helgaas wrote:
->> On Wed, Jan 9, 2013 at 1:10 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Wednesday, January 09, 2013 11:01:39 AM Yinghai Lu wrote:
->> >> On Wed, Jan 9, 2013 at 10:39 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> >> >> the reason why we need to change those codes for x86, we want to make it support
->> >> >> pci root bus hotplug. So it would be reasonable for us to align other
->> >> >> platform to x86
->> >> >> changes after pci root bus hotplug change is completely done.
->> >> >
->> >> > OK, I opened https://bugzilla.kernel.org/show_bug.cgi?id=52531 as a
->> >> > way to keep track of this consistency issue and merged
->> >> > pci/yinghai-survey-resources to my -next branch.
->> >>
->> >> Thanks a lot. will send other pci root bus hotplug out.
->> >>
->> >> question: now Rafael's tree has acpi-scan branch and it touches pci-root.c.
->> >>
->> >> so is it ok for me to base patches on your pci/next and his pm/acpi-scan?
->> >> how?
->> >> can you two have some arrangement like you pulling Rafael's branch?
->> >
->> > My acpi-scan branch is not going to be rebased going forward, so it can be
->> > pulled from safely if that helps.
->>
->> I'm happy to do that, but it is outside the scope of my limited git
->> experience.  My guess is that I should do this (doing the pull into a
->> branch which I later merge into my -next branch):
->>
->>   $ git checkout -b pci/yinghai-survey-resources+acpi-scan
->> pci/yinghai-survey-resources
->>   $ git pull --no-ff --log
->> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
->> acpi-scan
->>   $ vi drivers/acpi/pci_root.c    # resolve conflicts
->>   $ git add drivers/acpi/pci_root.c
->>   $ git commit
->>
->>   $ git checkout next
->>   $ git merge --no-ff --log pci/yinghai-survey-resources+acpi-scan
->>
->> Is that reasonable?
->
-> Yes, it looks reasonable.
->
->> This won't cause issues when both Rafael and I ask Linus to pull from our
->> trees later?
->
-> No, it won't, as long as I don't rebase the original acpi-scan branch (which
-> I'm not going to do) and you don't rebase your
-> pci/yinghai-survey-resources+acpi-scan branch going forward.
->
-> The pull makes your tree contain the same commits (i.e. commit IDs along with
-> the data) that are in my acpi-scan branch, so when Linus merges them together,
-> git will notice that the commits are the same.
+On Sat, Jan 05, 2013 at 08:37:45AM +0000, Alex Shi wrote:
+> This patch add power aware scheduling in fork/exec/wake. It try to
+> select cpu from the busiest while still has utilization group. That's
+> will save power for other groups.
+> 
+> The trade off is adding a power aware statistics collection in group
+> seeking. But since the collection just happened in power scheduling
+> eligible condition, the worst case of hackbench testing just drops
+> about 2% with powersaving/balance policy. No clear change for
+> performance policy.
+> 
+> I had tried to use rq load avg utilisation in this balancing, but since
+> the utilisation need much time to accumulate itself. It's unfit for any
+> burst balancing. So I use nr_running as instant rq utilisation.
 
-OK, I did the above, merged it into my -next branch, and pushed it.
-Let me know if you see any issues.
+So you effective use a mix of nr_running (counting tasks) and PJT's
+tracked load for balancing?
 
-Bjorn
+The problem of slow reaction time of the tracked load a cpu/rq is an
+interesting one. Would it be possible to use it if you maintained a
+sched group runnable_load_avg similar to cfs_rq->runnable_load_avg where
+load contribution of a tasks is added when a task is enqueued and
+removed again if it migrates to another cpu?
+This way you would know the new load of the sched group/domain instantly
+when you migrate a task there. It might not be precise as the load
+contribution of the task to some extend depends on the load of the cpu
+where it is running. But it would probably be a fair estimate, which is
+quite likely to be better than just counting tasks (nr_running).
+
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 230 ++++++++++++++++++++++++++++++++++++++++------------
+>  1 file changed, 179 insertions(+), 51 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 7bfbd69..8d0d3af 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3323,25 +3323,189 @@ done:
+>  }
+>  
+>  /*
+> - * sched_balance_self: balance the current task (running on cpu) in domains
+> + * sd_lb_stats - Structure to store the statistics of a sched_domain
+> + *		during load balancing.
+> + */
+> +struct sd_lb_stats {
+> +	struct sched_group *busiest; /* Busiest group in this sd */
+> +	struct sched_group *this;  /* Local group in this sd */
+> +	unsigned long total_load;  /* Total load of all groups in sd */
+> +	unsigned long total_pwr;   /*	Total power of all groups in sd */
+> +	unsigned long avg_load;	   /* Average load across all groups in sd */
+> +
+> +	/** Statistics of this group */
+> +	unsigned long this_load;
+> +	unsigned long this_load_per_task;
+> +	unsigned long this_nr_running;
+> +	unsigned int  this_has_capacity;
+> +	unsigned int  this_idle_cpus;
+> +
+> +	/* Statistics of the busiest group */
+> +	unsigned int  busiest_idle_cpus;
+> +	unsigned long max_load;
+> +	unsigned long busiest_load_per_task;
+> +	unsigned long busiest_nr_running;
+> +	unsigned long busiest_group_capacity;
+> +	unsigned int  busiest_has_capacity;
+> +	unsigned int  busiest_group_weight;
+> +
+> +	int group_imb; /* Is there imbalance in this sd */
+> +
+> +	/* Varibles of power awaring scheduling */
+> +	unsigned int  sd_utils;	/* sum utilizations of this domain */
+> +	unsigned long sd_capacity;	/* capacity of this domain */
+> +	struct sched_group *group_leader; /* Group which relieves group_min */
+> +	unsigned long min_load_per_task; /* load_per_task in group_min */
+> +	unsigned int  leader_util;	/* sum utilizations of group_leader */
+> +	unsigned int  min_util;		/* sum utilizations of group_min */
+> +};
+> +
+> +/*
+> + * sg_lb_stats - stats of a sched_group required for load_balancing
+> + */
+> +struct sg_lb_stats {
+> +	unsigned long avg_load; /*Avg load across the CPUs of the group */
+> +	unsigned long group_load; /* Total load over the CPUs of the group */
+> +	unsigned long sum_nr_running; /* Nr tasks running in the group */
+> +	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
+> +	unsigned long group_capacity;
+> +	unsigned long idle_cpus;
+> +	unsigned long group_weight;
+> +	int group_imb; /* Is there an imbalance in the group ? */
+> +	int group_has_capacity; /* Is there extra capacity in the group? */
+> +	unsigned int group_utils;	/* sum utilizations of group */
+> +
+> +	unsigned long sum_shared_running;	/* 0 on non-NUMA */
+> +};
+> +
+> +static inline int
+> +fix_small_capacity(struct sched_domain *sd, struct sched_group *group);
+> +
+> +/*
+> + * Try to collect the task running number and capacity of the group.
+> + */
+> +static void get_sg_power_stats(struct sched_group *group,
+> +	struct sched_domain *sd, struct sg_lb_stats *sgs)
+> +{
+> +	int i;
+> +
+> +	for_each_cpu(i, sched_group_cpus(group)) {
+> +		struct rq *rq = cpu_rq(i);
+> +
+> +		sgs->group_utils += rq->nr_running;
+
+The utilization of the sched group is the number task active on the
+runqueues of the cpus in the group.
+
+> +	}
+> +
+> +	sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
+> +						SCHED_POWER_SCALE);
+> +	if (!sgs->group_capacity)
+> +		sgs->group_capacity = fix_small_capacity(sd, group);
+> +	sgs->group_weight = group->group_weight;
+
+If the cpus in the sched group have default cpu_power group_capacity =
+group_weight = number of cpus in the group. The cpu_power of each cpu
+needs to be significantly higher or lower than default to make
+group_capacity different from group_weight. Or you need many cpus in
+the sched group.
+
+> +}
+> +
+> +/*
+> + * Try to collect the task running number and capacity of the doamin.
+> + */
+> +static void get_sd_power_stats(struct sched_domain *sd,
+> +		struct task_struct *p, struct sd_lb_stats *sds)
+> +{
+> +	struct sched_group *group;
+> +	struct sg_lb_stats sgs;
+> +	int sd_min_delta = INT_MAX;
+> +	int cpu = task_cpu(p);
+> +
+> +	group = sd->groups;
+> +	do {
+> +		long g_delta;
+> +		unsigned long threshold;
+> +
+> +		if (!cpumask_test_cpu(cpu, sched_group_mask(group)))
+> +			continue;
+> +
+> +		memset(&sgs, 0, sizeof(sgs));
+> +		get_sg_power_stats(group, sd, &sgs);
+> +
+> +		if (sched_policy == SCHED_POLICY_POWERSAVING)
+> +			threshold = sgs.group_weight;
+> +		else
+> +			threshold = sgs.group_capacity;
+
+Is group_capacity larger or smaller than group_weight on your platform?
+
+> +
+> +		g_delta = threshold - sgs.group_utils;
+> +
+> +		if (g_delta > 0 && g_delta < sd_min_delta) {
+> +			sd_min_delta = g_delta;
+> +			sds->group_leader = group;
+
+If I understand correctly, you pack tasks on the sched group with fewest
+spare capacity? Capacity in this context is a low number of tasks, not
+actual spare cpu time.
+
+Morten
+
+> +		}
+> +
+> +		sds->sd_utils += sgs.group_utils;
+> +		sds->total_pwr += group->sgp->power;
+> +	} while  (group = group->next, group != sd->groups);
+> +
+> +	sds->sd_capacity = DIV_ROUND_CLOSEST(sds->total_pwr,
+> +						SCHED_POWER_SCALE);
+> +}
+> +
+> +/*
+> + * Execute power policy if this domain is not full.
+> + */
+> +static inline int get_sd_sched_policy(struct sched_domain *sd,
+> +	int cpu, struct task_struct *p, struct sd_lb_stats *sds)
+> +{
+> +	unsigned long threshold;
+> +
+> +	if (sched_policy == SCHED_POLICY_PERFORMANCE)
+> +		return SCHED_POLICY_PERFORMANCE;
+> +
+> +	memset(sds, 0, sizeof(*sds));
+> +	get_sd_power_stats(sd, p, sds);
+> +
+> +	if (sched_policy == SCHED_POLICY_POWERSAVING)
+> +		threshold = sd->span_weight;
+> +	else
+> +		threshold = sds->sd_capacity;
+> +
+> +	/* still can hold one more task in this domain */
+> +	if (sds->sd_utils < threshold)
+> +		return sched_policy;
+> +
+> +	return SCHED_POLICY_PERFORMANCE;
+> +}
+> +
+> +/*
+> + * If power policy is eligible for this domain, and it has task allowed cpu.
+> + * we will select CPU from this domain.
+> + */
+> +static int get_cpu_for_power_policy(struct sched_domain *sd, int cpu,
+> +		struct task_struct *p, struct sd_lb_stats *sds)
+> +{
+> +	int policy;
+> +	int new_cpu = -1;
+> +
+> +	policy = get_sd_sched_policy(sd, cpu, p, sds);
+> +	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader)
+> +		new_cpu = find_idlest_cpu(sds->group_leader, p, cpu);
+> +
+> +	return new_cpu;
+> +}
+> +
+> +/*
+> + * select_task_rq_fair: balance the current task (running on cpu) in domains
+>   * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
+>   * SD_BALANCE_EXEC.
+>   *
+> - * Balance, ie. select the least loaded group.
+> - *
+>   * Returns the target CPU number, or the same CPU if no balancing is needed.
+>   *
+>   * preempt must be disabled.
+>   */
+>  static int
+> -select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+> +select_task_rq_fair(struct task_struct *p, int sd_flag, int flags)
+>  {
+>  	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
+>  	int cpu = smp_processor_id();
+>  	int prev_cpu = task_cpu(p);
+>  	int new_cpu = cpu;
+>  	int want_affine = 0;
+> -	int sync = wake_flags & WF_SYNC;
+> +	int sync = flags & WF_SYNC;
+> +	struct sd_lb_stats sds;
+>  
+>  	if (p->nr_cpus_allowed == 1)
+>  		return prev_cpu;
+> @@ -3367,11 +3531,20 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>  			break;
+>  		}
+>  
+> -		if (tmp->flags & sd_flag)
+> +		if (tmp->flags & sd_flag) {
+>  			sd = tmp;
+> +
+> +			new_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds);
+> +			if (new_cpu != -1)
+> +				goto unlock;
+> +		}
+>  	}
+>  
+>  	if (affine_sd) {
+> +		new_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds);
+> +		if (new_cpu != -1)
+> +			goto unlock;
+> +
+>  		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+>  			prev_cpu = cpu;
+>  
+> @@ -4181,51 +4354,6 @@ static unsigned long task_h_load(struct task_struct *p)
+>  #endif
+>  
+>  /********** Helpers for find_busiest_group ************************/
+> -/*
+> - * sd_lb_stats - Structure to store the statistics of a sched_domain
+> - * 		during load balancing.
+> - */
+> -struct sd_lb_stats {
+> -	struct sched_group *busiest; /* Busiest group in this sd */
+> -	struct sched_group *this;  /* Local group in this sd */
+> -	unsigned long total_load;  /* Total load of all groups in sd */
+> -	unsigned long total_pwr;   /*	Total power of all groups in sd */
+> -	unsigned long avg_load;	   /* Average load across all groups in sd */
+> -
+> -	/** Statistics of this group */
+> -	unsigned long this_load;
+> -	unsigned long this_load_per_task;
+> -	unsigned long this_nr_running;
+> -	unsigned long this_has_capacity;
+> -	unsigned int  this_idle_cpus;
+> -
+> -	/* Statistics of the busiest group */
+> -	unsigned int  busiest_idle_cpus;
+> -	unsigned long max_load;
+> -	unsigned long busiest_load_per_task;
+> -	unsigned long busiest_nr_running;
+> -	unsigned long busiest_group_capacity;
+> -	unsigned long busiest_has_capacity;
+> -	unsigned int  busiest_group_weight;
+> -
+> -	int group_imb; /* Is there imbalance in this sd */
+> -};
+> -
+> -/*
+> - * sg_lb_stats - stats of a sched_group required for load_balancing
+> - */
+> -struct sg_lb_stats {
+> -	unsigned long avg_load; /*Avg load across the CPUs of the group */
+> -	unsigned long group_load; /* Total load over the CPUs of the group */
+> -	unsigned long sum_nr_running; /* Nr tasks running in the group */
+> -	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
+> -	unsigned long group_capacity;
+> -	unsigned long idle_cpus;
+> -	unsigned long group_weight;
+> -	int group_imb; /* Is there an imbalance in the group ? */
+> -	int group_has_capacity; /* Is there extra capacity in the group? */
+> -};
+> -
+>  /**
+>   * get_sd_load_idx - Obtain the load index for a given sched domain.
+>   * @sd: The sched_domain whose load_idx is to be obtained.
+> -- 
+> 1.7.12
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
