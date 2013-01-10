@@ -1,76 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3AJKRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 05:17:22 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60909 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab3AJKRU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 05:17:20 -0500
-Message-ID: <50EE9517.3030703@ti.com>
-Date: Thu, 10 Jan 2013 15:46:55 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1753264Ab3AJKTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 05:19:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33838 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751518Ab3AJKTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 05:19:30 -0500
+Date: Thu, 10 Jan 2013 12:23:19 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Stefan Hajnoczi <stefanha@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.8-rc] tuntap: refuse to re-attach to different
+ tun_struct
+Message-ID: <20130110102319.GB13451@redhat.com>
+References: <1357804788-19976-1-git-send-email-stefanha@redhat.com>
 MIME-Version: 1.0
-To: Benoit Cousson <b-cousson@ti.com>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <arnd@arndb.de>, <balbi@ti.com>,
-        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ARM: dts: omap: Add omap-usb2 dt data
-References: <1348050772-27819-1-git-send-email-kishon@ti.com> <1348050772-27819-3-git-send-email-kishon@ti.com> <50EE8A89.4010801@ti.com> <50EE921D.8020601@ti.com>
-In-Reply-To: <50EE921D.8020601@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357804788-19976-1-git-send-email-stefanha@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jan 10, 2013 at 08:59:48AM +0100, Stefan Hajnoczi wrote:
+> Multiqueue tun devices support detaching a tun_file from its tun_struct
+> and re-attaching at a later point in time.  This allows users to disable
+> a specific queue temporarily.
+> 
+> ioctl(TUNSETIFF) allows the user to specify the network interface to
+> attach by name.  This means the user can attempt to attach to interface
+> "B" after detaching from interface "A".
+> 
+> The driver is not designed to support this so check we are re-attaching
+> to the right tun_struct.  Failure to do so may lead to oops.
+> 
+> Signed-off-by: Stefan Hajnoczi <stefanha@redhat.com>
+> ---
+> This fix is for 3.8-rc.
+> 
+>  drivers/net/tun.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index fbd106e..cf6da6e 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -491,6 +491,8 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+>  	err = -EINVAL;
+>  	if (rcu_dereference_protected(tfile->tun, lockdep_rtnl_is_held()))
+>  		goto out;
+> +	if (tfile->detached && tun != tfile->detached)
+> +		goto out;
+>  
+>  	err = -EBUSY;
+>  	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
+> -- 
+> 1.8.0.2
 
-On Thursday 10 January 2013 03:34 PM, Benoit Cousson wrote:
-> On 01/10/2013 10:31 AM, kishon wrote:
->> Hi Benoit,
->>
->> On Wednesday 19 September 2012 04:02 PM, Kishon Vijay Abraham I wrote:
->>> Add omap-usb2 data node in omap4 device tree file. Since omap-usb2 is
->>> connected to ocp2scp, omap-usb2 dt data is added as a child node
->>> of ocp2scp.
->>>
->>> Acked-by: Felipe Balbi <balbi@ti.com>
->>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>
->> This patch is also missing in mainline :-(
->
-> Well, in that case this was done on purpose :-)
->
->>
->> Thanks
->> Kishon
->>
->>> ---
->>>    arch/arm/boot/dts/omap4.dtsi |    5 +++++
->>>    1 file changed, 5 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
->>> index 4fbb9dc..28eaddc 100644
->>> --- a/arch/arm/boot/dts/omap4.dtsi
->>> +++ b/arch/arm/boot/dts/omap4.dtsi
->>> @@ -303,6 +303,11 @@
->>>                #size-cells = <1>;
->>>                ranges;
->>>                ti,hwmods = "ocp2scp_usb_phy";
->>> +            usb2phy@4a0ad080 {
->>> +                compatible = "ti,omap-usb2";
->>> +                reg = <0x4a0ad080 0x58>,
->>> +                      <0x4a002300 0x4>; /* TO BE REMOVED: SCM */
->
-> Rob and I did not agree to use that temp hack in the case of DT, so you
-> were supposed to repost with a proper driver for the SCM part that
-> control the USB.
 
-Ok. Missed that. Will work on that.
+I agree this is a bug but even with this patch, we still allow:
 
-Thanks
-Kishon
+SETIFF
+SETQUEUE (DISABLED)
+SETIFF
+
+Originally the rule always was that repeated setiff calls fail with
+EINVAL. We broke that when we set tun to NULL.  It's probably worth
+preserving that, even if queue is disabled.  Applying something like the below
+instead will address this concern, won't it?
+
+Note: works with regular userspace but I didn't test
+multiqueue userspace. What do you think.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+---
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index fbd106e..5ec8b08 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -483,7 +483,7 @@ static void tun_detach_all(struct net_device *dev)
+ 	BUG_ON(tun->numdisabled != 0);
+ }
+ 
+-static int tun_attach(struct tun_struct *tun, struct file *file)
++static int tun_attach(struct tun_struct *tun, struct file *file, bool setiff)
+ {
+ 	struct tun_file *tfile = file->private_data;
+ 	int err;
+@@ -492,6 +492,9 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+ 	if (rcu_dereference_protected(tfile->tun, lockdep_rtnl_is_held()))
+ 		goto out;
+ 
++	if (setiff && tfile->detached)
++		goto out;
++
+ 	err = -EBUSY;
+ 	if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
+ 		goto out;
+@@ -1561,7 +1564,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		if (err < 0)
+ 			return err;
+ 
+-		err = tun_attach(tun, file);
++		err = tun_attach(tun, file, true);
+ 		if (err < 0)
+ 			return err;
+ 
+@@ -1627,7 +1630,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		dev->features = dev->hw_features;
+ 
+ 		INIT_LIST_HEAD(&tun->disabled);
+-		err = tun_attach(tun, file);
++		err = tun_attach(tun, file, true);
+ 		if (err < 0)
+ 			goto err_free_dev;
+ 
+@@ -1792,7 +1795,7 @@ static int tun_set_queue(struct file *file, struct ifreq *ifr)
+ 		else if (tun_not_capable(tun))
+ 			ret = -EPERM;
+ 		else
+-			ret = tun_attach(tun, file);
++			ret = tun_attach(tun, file, false);
+ 	} else if (ifr->ifr_flags & IFF_DETACH_QUEUE) {
+ 		tun = rcu_dereference_protected(tfile->tun,
+ 						lockdep_rtnl_is_held());
