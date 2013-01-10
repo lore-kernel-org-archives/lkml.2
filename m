@@ -1,91 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab3AJLoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 06:44:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24126 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753590Ab3AJLoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 06:44:17 -0500
-Date: Thu, 10 Jan 2013 12:44:06 +0100
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [RFC PATCH v2 3/4] uretprobes: return probe entry, prepare
- uretprobe
-Message-ID: <20130110114406.GB12964@bandura.brq.redhat.com>
-References: <1357730692-3928-1-git-send-email-anton@redhat.com>
- <1357730692-3928-4-git-send-email-anton@redhat.com>
- <20130109161701.GC27722@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130109161701.GC27722@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754076Ab3AJLo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 06:44:28 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:42008 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab3AJLo0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 06:44:26 -0500
+From: Sha Zhengju <handai.szj@gmail.com>
+To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org
+Cc: mhocko@suse.cz, akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: [PATCH] memcg: modify swap accounting function to support THP
+Date: Thu, 10 Jan 2013 19:43:58 +0800
+Message-Id: <1357818238-11455-1-git-send-email-handai.szj@taobao.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 05:17:01PM +0100, Oleg Nesterov wrote:
-> On 01/09, Anton Arapov wrote:
-> >
-> > todo:
-> >   protect uprobe
-> 
-> Yep ;)
-> 
-> >  static struct uprobe_task *get_utask(void)
-> >  {
-> > -	if (!current->utask)
-> > +	if (!current->utask) {
-> >  		current->utask = kzalloc(sizeof(struct uprobe_task), GFP_KERNEL);
-> > +		INIT_HLIST_HEAD(&current->utask->return_uprobes);
-> 
-> What if kzalloc() fails?
-:)
+From: Sha Zhengju <handai.szj@taobao.com>
 
-> 
-> > +static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
-> > +{
-> > +	struct return_uprobe_i *ri;
-> > +	struct uprobe_task *utask;
-> > +	struct xol_area *area;
-> > +	unsigned long rp_trampoline_vaddr = 0;
-> > +
-> > +	area = get_xol_area();
-> > +	if (area)
-> > +		rp_trampoline_vaddr = area->rp_trampoline_vaddr;
-> > +	if (!rp_trampoline_vaddr) {
-> > +		rp_trampoline_vaddr = xol_get_trampoline_slot();
-> 
-> This is obviously racy. But again, so far I think we can simply remove
-> this.
-working on this...
+Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+---
+ mm/memcontrol.c |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-> >  static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
-> >  {
-> > +	int rc = 0;
-> >  	struct uprobe_consumer *uc;
-> >  	int remove = UPROBE_HANDLER_REMOVE;
-> >  
-> >  	down_read(&uprobe->register_rwsem);
-> >  	for (uc = uprobe->consumers; uc; uc = uc->next) {
-> > -		int rc = uc->handler(uc, regs);
-> > +		if (uc->handler)
-> > +			rc = uc->handler(uc, regs);
-> > +
-> > +		if (uc->rp_handler)
-> > +			prepare_uretprobe(uprobe, regs); /* put bp at return */
-> 
-> This doesn't look right. prepare_uretprobe() should not be called
-> multiple times.
-Overlooked this issue, thanks for catching. 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 3817460..674cf21 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -914,10 +914,9 @@ static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
+ }
+ 
+ static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg,
+-					 bool charge)
++					 int nr_pages)
+ {
+-	int val = (charge) ? 1 : -1;
+-	this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_SWAP], val);
++	this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_SWAP], nr_pages);
+ }
+ 
+ static unsigned long mem_cgroup_read_events(struct mem_cgroup *memcg,
+@@ -4107,7 +4106,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype,
+ 	 */
+ 	memcg_check_events(memcg, page);
+ 	if (do_swap_account && ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT) {
+-		mem_cgroup_swap_statistics(memcg, true);
++		mem_cgroup_swap_statistics(memcg, nr_pages);
+ 		mem_cgroup_get(memcg);
+ 	}
+ 	/*
+@@ -4238,7 +4237,7 @@ void mem_cgroup_uncharge_swap(swp_entry_t ent)
+ 		 */
+ 		if (!mem_cgroup_is_root(memcg))
+ 			res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
+-		mem_cgroup_swap_statistics(memcg, false);
++		mem_cgroup_swap_statistics(memcg, -1);
+ 		mem_cgroup_put(memcg);
+ 	}
+ 	rcu_read_unlock();
+@@ -4267,8 +4266,8 @@ static int mem_cgroup_move_swap_account(swp_entry_t entry,
+ 	new_id = css_id(&to->css);
+ 
+ 	if (swap_cgroup_cmpxchg(entry, old_id, new_id) == old_id) {
+-		mem_cgroup_swap_statistics(from, false);
+-		mem_cgroup_swap_statistics(to, true);
++		mem_cgroup_swap_statistics(from, -1);
++		mem_cgroup_swap_statistics(to, 1);
+ 		/*
+ 		 * This function is only called from task migration context now.
+ 		 * It postpones res_counter and refcount handling till the end
+-- 
+1.7.9.5
 
-Anton.
-> 
-> Oleg.
-> 
