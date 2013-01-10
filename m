@@ -1,45 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab3AJJGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:06:34 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:39264 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab3AJJG3 (ORCPT
+	id S1752298Ab3AJJIO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:08:14 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:35630 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab3AJJIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:06:29 -0500
-Date: Thu, 10 Jan 2013 12:06:20 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Anil Gurumurthy <agurumur@brocade.com>
-Cc: Vijaya Mohan Guvva <vmohan@brocade.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] [SCSI] bfa: fix strncpy() limiter in bfad_start_ops()
-Message-ID: <20130110090620.GE23063@elgon.mountain>
+	Thu, 10 Jan 2013 04:08:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1357807986-4026-10-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1357807986-4026-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1357807986-4026-10-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Thu, 10 Jan 2013 11:08:08 +0200
+Message-ID: <CAHp75VdmAe7pFE8BeZ91Pi9Kx30JPkQELAL6nfqatrZbpj6h7g@mail.gmail.com>
+Subject: Re: [PATCHv2 09/11] dw_dmac: make usage of dw_dma_slave optional
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The closing parenthesis is in the wrong place so it takes the sizeof a
-pointer instead of the sizeof the buffer minus one.
+Please, don't push this one yet. I forgot to update the name of is_slave_xfer.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Thu, Jan 10, 2013 at 10:53 AM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> The driver requires a custom slave configuration to be present to be able to
+> make the slave transfers. Nevertheless, in some cases we need only the request
+> line as an additional information to the generic slave configuration.  The
+> request line is provided by slave_id parameter of the dma_slave_config
+> structure. That's why the custom slave configuration could be optional for such
+> cases.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/dma/dw_dmac.c |   13 +++++++------
+>  1 file changed, 7 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index a2c5a60..c87d8ab 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -50,11 +50,12 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
+>                 struct dw_dma_slave *__slave = (_chan->private);        \
+>                 struct dw_dma_chan *_dwc = to_dw_dma_chan(_chan);       \
+>                 struct dma_slave_config *_sconfig = &_dwc->dma_sconfig; \
+> +               bool _is_slave = is_slave_xfer(_dwc->direction);        \
+>                 int _dms = dwc_get_dms(__slave);                \
+>                 int _sms = dwc_get_sms(__slave);                \
+> -               u8 _smsize = __slave ? _sconfig->src_maxburst : \
+> +               u8 _smsize = _is_slave ? _sconfig->src_maxburst :       \
+>                         DW_DMA_MSIZE_16;                        \
+> -               u8 _dmsize = __slave ? _sconfig->dst_maxburst : \
+> +               u8 _dmsize = _is_slave ? _sconfig->dst_maxburst :       \
+>                         DW_DMA_MSIZE_16;                        \
+>                                                                 \
+>                 (DWC_CTLL_DST_MSIZE(_dmsize)                    \
+> @@ -328,7 +329,7 @@ dwc_descriptor_complete(struct dw_dma_chan *dwc, struct dw_desc *desc,
+>         list_splice_init(&desc->tx_list, &dwc->free_list);
+>         list_move(&desc->desc_node, &dwc->free_list);
+>
+> -       if (!dwc->chan.private) {
+> +       if (!is_slave_xfer(dwc->direction)) {
+>                 struct device *parent = chan2parent(&dwc->chan);
+>                 if (!(txd->flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
+>                         if (txd->flags & DMA_COMPL_DEST_UNMAP_SINGLE)
+> @@ -804,7 +805,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+>
+>         dev_vdbg(chan2dev(chan), "%s\n", __func__);
+>
+> -       if (unlikely(!dws || !sg_len))
+> +       if (unlikely(!is_slave_xfer(direction) || !sg_len))
+>                 return NULL;
+>
+>         dwc->direction = direction;
+> @@ -980,8 +981,8 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+>  {
+>         struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
+>
+> -       /* Check if it is chan is configured for slave transfers */
+> -       if (!chan->private)
+> +       /* Check if chan will be configured for slave transfers */
+> +       if (!is_slave_xfer(sconfig->direction))
+>                 return -EINVAL;
+>
+>         memcpy(&dwc->dma_sconfig, sconfig, sizeof(*sconfig));
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
-index e6bf126..a5f7690 100644
---- a/drivers/scsi/bfa/bfad.c
-+++ b/drivers/scsi/bfa/bfad.c
-@@ -1034,7 +1034,7 @@ bfad_start_ops(struct bfad_s *bfad) {
- 			sizeof(driver_info.host_os_patch) - 1);
- 
- 	strncpy(driver_info.os_device_name, bfad->pci_name,
--		sizeof(driver_info.os_device_name - 1));
-+		sizeof(driver_info.os_device_name) - 1);
- 
- 	/* FCS driver info init */
- 	spin_lock_irqsave(&bfad->bfad_lock, flags);
+
+
+-- 
+With Best Regards,
+Andy Shevchenko
