@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab3AJM5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 07:57:31 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57468 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754423Ab3AJM5a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 07:57:30 -0500
-Date: Thu, 10 Jan 2013 12:57:28 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFT] regulator: lp8788-buck: Silence build warning
-Message-ID: <20130110125728.GS20956@opensource.wolfsonmicro.com>
-References: <1357785186.28668.1.camel@phoenix>
+	id S1754244Ab3AJNBj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 08:01:39 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36745 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753491Ab3AJNBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 08:01:37 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for hot-add root bus
+Date: Thu, 10 Jan 2013 14:07:19 +0100
+Message-ID: <18607840.Is41JcgqAR@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAErSpo7QBNzaMKOGpkrPxop+WN+RMAoeOBUPiFDi9HFyH+UoOQ@mail.gmail.com>
+References: <20121030040237.GA10472@google.com> <5274779.gJQ3WSr6QB@vostro.rjw.lan> <CAErSpo7QBNzaMKOGpkrPxop+WN+RMAoeOBUPiFDi9HFyH+UoOQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A3RWl4qWgABmkY4K"
-Content-Disposition: inline
-In-Reply-To: <1357785186.28668.1.camel@phoenix>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, January 09, 2013 05:34:32 PM Bjorn Helgaas wrote:
+> On Wed, Jan 9, 2013 at 1:10 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Wednesday, January 09, 2013 11:01:39 AM Yinghai Lu wrote:
+> >> On Wed, Jan 9, 2013 at 10:39 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> >> >> the reason why we need to change those codes for x86, we want to make it support
+> >> >> pci root bus hotplug. So it would be reasonable for us to align other
+> >> >> platform to x86
+> >> >> changes after pci root bus hotplug change is completely done.
+> >> >
+> >> > OK, I opened https://bugzilla.kernel.org/show_bug.cgi?id=52531 as a
+> >> > way to keep track of this consistency issue and merged
+> >> > pci/yinghai-survey-resources to my -next branch.
+> >>
+> >> Thanks a lot. will send other pci root bus hotplug out.
+> >>
+> >> question: now Rafael's tree has acpi-scan branch and it touches pci-root.c.
+> >>
+> >> so is it ok for me to base patches on your pci/next and his pm/acpi-scan?
+> >> how?
+> >> can you two have some arrangement like you pulling Rafael's branch?
+> >
+> > My acpi-scan branch is not going to be rebased going forward, so it can be
+> > pulled from safely if that helps.
+> 
+> I'm happy to do that, but it is outside the scope of my limited git
+> experience.  My guess is that I should do this (doing the pull into a
+> branch which I later merge into my -next branch):
+> 
+>   $ git checkout -b pci/yinghai-survey-resources+acpi-scan
+> pci/yinghai-survey-resources
+>   $ git pull --no-ff --log
+> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
+> acpi-scan
+>   $ vi drivers/acpi/pci_root.c    # resolve conflicts
+>   $ git add drivers/acpi/pci_root.c
+>   $ git commit
+> 
+>   $ git checkout next
+>   $ git merge --no-ff --log pci/yinghai-survey-resources+acpi-scan
+> 
+> Is that reasonable?
 
---A3RWl4qWgABmkY4K
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, it looks reasonable.
 
-On Thu, Jan 10, 2013 at 10:33:06AM +0800, Axel Lin wrote:
-> This driver use id as array index, thus add bounder checking for id.
+> This won't cause issues when both Rafael and I ask Linus to pull from our
+> trees later?
 
-Applied, thanks.
+No, it won't, as long as I don't rebase the original acpi-scan branch (which
+I'm not going to do) and you don't rebase your
+pci/yinghai-survey-resources+acpi-scan branch going forward.
 
---A3RWl4qWgABmkY4K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The pull makes your tree contain the same commits (i.e. commit IDs along with
+the data) that are in my acpi-scan branch, so when Linus merges them together,
+git will notice that the commits are the same.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks,
+Rafael
 
-iQIcBAEBAgAGBQJQ7rqeAAoJELSic+t+oim9ytQQAIn+YmJReJ3Z46vtl6apxM7p
-FCoWH2f6h8j3I8DuiVGy3uhCBcgTILm1ErDDRQb+Tx4SJ1EiNXWOl5L5xNrmhHEw
-1qZw3YU/9cBNftyFtanZF7nW9TZE3+VpBxaa+AkBRLVM7nOG4SpyQxZp70u86hmv
-I0qx/QADBC9KzAohhfDEHf3pdWp24/iXYG3Nx8TUIyVu33UnEyP177b+paY3z8RG
-Y1d/y/ycDNsLYEUKROInqssNMORn8WX1pdYRnhVEm5wtx/qbucJExkMKXuyhWook
-+ipEEirISsE2t7szZa8iNM+W3gn+VLqMJGUH/o2difJmHTzhmHsfsh1DNzKRd3Cg
-bko4GYMGlY2kancJoYBnK/8KRBfZZonA+Yl35ppw9Pukg96+ZUbayYW65JtHNui6
-rf+gSBEEgFhwSOMvLfd2uQ++BVguXmwYdeW7eoeyxiHZji4qmKuNteP5I8RROvA2
-MFVBJeOVBRf4nvzIJvLofRfspU+ELMRFx76WTABfpxFFd7zBsTjnkkXBeUWk/HC8
-sSkuDu6/r+z1qTCQgkoG3IAU26iP/ISIMtl/vIVCAkLLYe7KUKZ2gtU+fNwOqh9u
-H56lxgE8c0S3LhwNBGtsSXH7eF6Iu6sX/pKQuD85PjbavKweiEtZKWkMHZHX8Rpw
-V/GDes270Di7sOKIh7QM
-=A3qh
------END PGP SIGNATURE-----
 
---A3RWl4qWgABmkY4K--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
