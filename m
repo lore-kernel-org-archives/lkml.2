@@ -1,66 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab3AJSEJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 13:04:09 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:63593 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab3AJSEH (ORCPT
+	id S1755625Ab3AJSFy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 13:05:54 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:58521 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753583Ab3AJSFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 13:04:07 -0500
+	Thu, 10 Jan 2013 13:05:52 -0500
+Message-ID: <50EF02ED.7060006@linux.vnet.ibm.com>
+Date: Fri, 11 Jan 2013 02:05:33 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
-Date: Thu, 10 Jan 2013 11:04:05 -0700
-Message-ID: <CAKocOOO6QVWdw8WuLKq+8Cbdu6WRV=fVQ_-jOSNoa40sUv1s=Q@mail.gmail.com>
-Subject: Re: [ 000/123] 3.7.2-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 5/5] KVM: x86: improve reexecute_instruction
+References: <50EBBE54.1040007@linux.vnet.ibm.com> <50EBBEEC.2060100@linux.vnet.ibm.com> <20130110172657.GA24703@amt.cnet>
+In-Reply-To: <20130110172657.GA24703@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011017-3568-0000-0000-000003020960
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 1:33 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> Note, there are still a lot of patches submitted for inclusion in the
-> stable releases that I have not gotten to yet.  I wanted to get this
-> release out now, instead of delaying for a week or so while I dig
-> through all of the pending patches.
->
-> This is the start of the stable review cycle for the 3.7.2 release.
-> There are 123 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Fri Jan 11 20:11:16 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.7.2-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
+On 01/11/2013 01:26 AM, Marcelo Tosatti wrote:
+> On Tue, Jan 08, 2013 at 02:38:36PM +0800, Xiao Guangrong wrote:
+>> The current reexecute_instruction can not well detect the failed instruction
+>> emulation. It allows guest to retry all the instructions except it accesses
+>> on error pfn
+>>
+>> For example, some cases are nested-write-protect - if the page we want to
+>> write is used as PDE but it chains to itself. Under this case, we should
+>> stop the emulation and report the case to userspace
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/include/asm/kvm_host.h |    7 +++++++
+>>  arch/x86/kvm/paging_tmpl.h      |   27 ++++++++++++++++++++-------
+>>  arch/x86/kvm/x86.c              |    8 +++++++-
+>>  3 files changed, 34 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index c431b33..d6ab8d2 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -502,6 +502,13 @@ struct kvm_vcpu_arch {
+>>  		u64 msr_val;
+>>  		struct gfn_to_hva_cache data;
+>>  	} pv_eoi;
+>> +
+>> +	/*
+>> +	 * Indicate whether the access faults on its page table in guest
+>> +	 * which is set when fix page fault and used to detect unhandeable
+>> +	 * instruction.
+>> +	 */
+>> +	bool write_fault_to_shadow_pgtable;
+>>  };
+>>
+>>  struct kvm_lpage_info {
+>> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+>> index 67b390d..df50560 100644
+>> --- a/arch/x86/kvm/paging_tmpl.h
+>> +++ b/arch/x86/kvm/paging_tmpl.h
+>> @@ -497,26 +497,34 @@ out_gpte_changed:
+>>   * created when kvm establishes shadow page table that stop kvm using large
+>>   * page size. Do it early can avoid unnecessary #PF and emulation.
+>>   *
+>> + * @write_fault_to_shadow_pgtable will return true if the fault gfn is
+>> + * currently used as its page table.
+>> + *
+>>   * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
+>>   * since the PDPT is always shadowed, that means, we can not use large page
+>>   * size to map the gfn which is used as PDPT.
+>>   */
+>>  static bool
+>>  FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
+>> -			      struct guest_walker *walker, int user_fault)
+>> +			      struct guest_walker *walker, int user_fault,
+>> +			      bool *write_fault_to_shadow_pgtable)
+>>  {
+>>  	int level;
+>>  	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
+>> +	bool self_changed = false;
+>>
+>>  	if (!(walker->pte_access & ACC_WRITE_MASK ||
+>>  	      (!is_write_protection(vcpu) && !user_fault)))
+>>  		return false;
+>>
+>> -	for (level = walker->level; level <= walker->max_level; level++)
+>> -		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
+>> -			return true;
+>> +	for (level = walker->level; level <= walker->max_level; level++) {
+>> +		gfn_t gfn = walker->gfn ^ walker->table_gfn[level - 1];
+>> +
+>> +		self_changed |= !(gfn & mask);
+>> +		*write_fault_to_shadow_pgtable |= !gfn;
+>> +	}
+>>
+>> -	return false;
+>> +	return self_changed;
+>>  }
+>>
+>>  /*
+>> @@ -544,7 +552,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+>>  	int level = PT_PAGE_TABLE_LEVEL;
+>>  	int force_pt_level;
+>>  	unsigned long mmu_seq;
+>> -	bool map_writable;
+>> +	bool map_writable, is_self_change_mapping;
+>>
+>>  	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
+>>
+>> @@ -572,9 +580,14 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+>>  		return 0;
+>>  	}
+>>
+>> +	vcpu->arch.write_fault_to_shadow_pgtable = false;
+>> +
+>> +	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu,
+>> +	      &walker, user_fault, &vcpu->arch.write_fault_to_shadow_pgtable);
+>> +
+>>  	if (walker.level >= PT_DIRECTORY_LEVEL)
+>>  		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
+>> -		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
+>> +		   || is_self_change_mapping;
+>>  	else
+>>  		force_pt_level = 1;
+>>  	if (!force_pt_level) {
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 6f13e03..2957012 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -4810,7 +4810,13 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t cr2)
+>>  	 * guest to let CPU execute the instruction.
+>>  	 */
+>>  	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+>> -	return true;
+>> +
+>> +	/*
+>> +	 * If the access faults on its page table, it can not
+>> +	 * be fixed by unprotecting shadow page and it should
+>> +	 * be reported to userspace.
+>> +	 */
+>> +	return !vcpu->arch.write_fault_to_shadow_pgtable;
+>>  }
+> 
+> This sounds wrong: only reporting emulation failure in case 
+> of a write fault to shadow pagetable? 
 
-Patches applied cleanly to 3.0.y, 3.4.y, and 3.7.y.
-Compiled and booted on the following systems:
-HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+We suppose unprotecting target-gfn can avoid emulation, the same
+as current code. :(
 
-Cross-compile tests:
-alpha: defconfig passed on all
-arm: defconfig passed on all
-arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.7.y
-c6x: not applicable to 3.0.y, defconfig passed on the rest three
-mips: defconfig passed on all
-mipsel: defconfig passed on all
-powerpc: wii_defconfig passed on all
-sh: defconfig passed on all
-sparc: defconfig passed on all
-tile: tilegx_defconfig passed on all
+> 
+> The current pattern is sane:
+> 
+> if (condition_1 which allows reexecution is true)
+> 	return true;
+> 
+> if (condition_2 which allows reexecution is true)
+> 	return true;
+> ...
+> 	return false;
 
--- Shuah
+Unfortunately, the current code reports failure only when the access
+fault on error pfn:
+
+        pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
+        if (!is_error_pfn(pfn)) {
+                kvm_release_pfn_clean(pfn);
+                return true;
+        }
+
+        return false;
+
+All !is_rror_pfn returns true.
+
