@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab3AJRER (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 12:04:17 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:40901 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070Ab3AJREQ (ORCPT
+	id S1755143Ab3AJRFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 12:05:49 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:53873 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab3AJRFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 12:04:16 -0500
-Message-ID: <50EEF453.9040106@windriver.com>
-Date: Thu, 10 Jan 2013 12:03:15 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 10 Jan 2013 12:05:47 -0500
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [v2.6.34-stable 60/77] udf: Avoid run away loop when partition
- table length is corrupted
-References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>  <1357688156-25387-61-git-send-email-paul.gortmaker@windriver.com> <1357829004.4514.1.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1357829004.4514.1.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+In-Reply-To: <20130110121922.GF23008@liondog.tnic>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-9-git-send-email-yinghai@kernel.org>
+	<20130107155544.GD29449@x1.alien8.de>
+	<CAE9FiQXcP9E-RXre_NKf-SU454nT9K39f1GsVVroV1TFxPgQ7g@mail.gmail.com>
+	<20130110121922.GF23008@liondog.tnic>
+Date: Thu, 10 Jan 2013 09:05:46 -0800
+X-Google-Sender-Auth: Aheo9CuelsdvVtiVGpIrCin2r7o
+Message-ID: <CAE9FiQV9i2D319soGWyS-NwcEM2HH2gzbh_UjxmoijH0z+0mWQ@mail.gmail.com>
+Subject: Re: [PATCH v7u1 08/31] x86, 64bit: early #PF handler set page table
+From: Yinghai Lu <yinghai@kernel.org>
+To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-01-10 09:43 AM, Ben Hutchings wrote:
-> On Tue, 2013-01-08 at 18:35 -0500, Paul Gortmaker wrote:
->> From: Jan Kara <jack@suse.cz>
->>
->>                    -------------------
->>     This is a commit scheduled for the next v2.6.34 longterm release.
->>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
->>     If you see a problem with using this for longterm, please comment.
->>                    -------------------
->>
->> commit adee11b2085bee90bd8f4f52123ffb07882d6256 upstream.
->>
->> Check provided length of partition table so that (possibly maliciously)
->> corrupted partition table cannot cause accessing data beyond current buffer.
->>
->> Signed-off-by: Jan Kara <jack@suse.cz>
->> [PG: in 2.6.34 udf_err() is called udf_error()]
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> [...]
-> 
-> There's a follow-up I think you should add:
-> 
-> commit 57b9655d01ef057a523e810d29c37ac09b80eead
-> Author: Jan Kara <jack@suse.cz>
-> Date:   Tue Jul 10 17:58:04 2012 +0200
-> 
->     udf: Improve table length check to avoid possible overflow
-> 
-> Ben.
+On Thu, Jan 10, 2013 at 4:19 AM, Borislav Petkov <bp@alien8.de> wrote:
+> This is not how SOB chaining works:
+>
+> SOB: Author
+> SOB: Handler - this is you, who has added it to the patchset
+> SOB: Committer - maintainer
+>
+> You need to read Documentation/SubmittingPatches if there's still things
+> unclear.
 
-Thanks Ben for the review and the addition; I've queued this
-one as well.
+Really don't know what you are doing here.
 
-Paul.
---
+We did that before for a long time.
 
-> 
+During reviewing some patches, Linus or HPA or Eric has better idea
+and drafted some patch,
+without their Signed-offs.
+
+then first version submitter will continue the debugging and testing
+and make the patch working.
+
+At last the submit the patch with authorship from Linus or HPA or Eric.
+
+So at that time how can the Signed-off from them?
+
+And there are commits in the upstream does not have Signed-off from the Author.
+
+Thanks
+
+Yinghai
