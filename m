@@ -1,84 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab3AJLS0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 06:18:26 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51420 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753384Ab3AJLSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 06:18:24 -0500
-Date: Thu, 10 Jan 2013 12:18:21 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: v3.8-rc3: uninitialized warnings in net/netfilter/xt_CT.c
-Message-ID: <20130110111821.GA23008@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-	coreteam@netfilter.org, lkml <linux-kernel@vger.kernel.org>
+	id S1753491Ab3AJLXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 06:23:34 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:62943 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab3AJLXc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 06:23:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357577261-31536-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1357577261-31536-1-git-send-email-fabio.baltieri@linaro.org>
+Date: Thu, 10 Jan 2013 12:23:32 +0100
+Message-ID: <CACRpkdZD1i_tvDf6XFyk5muYjtDziQaMNGK6vvihhFJVztXUjw@mail.gmail.com>
+Subject: Re: [PATCH] usb: musb: ux500: use clk_prepare_enable and clk_disable_unprepare
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Felipe Balbi <balbi@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jan 7, 2013 at 5:47 PM, Fabio Baltieri
+<fabio.baltieri@linaro.org> wrote:
 
-I get
+> This patch converts the module to use clk_prepare_enable and
+> clk_disable_unprepare variants as required by common clock framework.
+>
+> Without this the system crash during probe function.
+>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 
-net/netfilter/xt_CT.c: In function ‘xt_ct_tg_check_v1’:
-net/netfilter/xt_CT.c:250:6: warning: ‘ret’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-net/netfilter/xt_CT.c: In function ‘xt_ct_tg_check_v0’:
-net/netfilter/xt_CT.c:112:6: warning: ‘ret’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-when building 3.8-rc3 here.
-
-And this time, the warnings are real:
-
-static int xt_ct_tg_check_v0(const struct xt_tgchk_param *par)
-{
-	struct xt_ct_target_info *info = par->targinfo;
-	struct nf_conntrack_tuple t;
-	struct nf_conn *ct;
-	int ret;
-
-	if (info->flags & ~XT_CT_NOTRACK)
-		return -EINVAL;
-
-	if (info->flags & XT_CT_NOTRACK) {
-		ct = nf_ct_untracked_get();
-		atomic_inc(&ct->ct_general.use);
-		goto out;
-	}
-
-#ifndef CONFIG_NF_CONNTRACK_ZONES
-	if (info->zone)
-		goto err1;
-#endif
-...
-
-ret doesn't get initialized and if the first two if-blocks are false and
-CONFIG_NF_CONNTRACK_ZONES is not defined (as is in my case) we do "goto
-err1":
-
-err1:
-        return ret;
-
-which returns an uninitialized 'ret'.
-
-Now, I don't know the code to know whether if (info->zone) is ever true
-but someone better check this before subtle bugs start happening.
-
-Ditto for the xt_ct_tg_check_v1() function.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yours,
+Linus Walleij
