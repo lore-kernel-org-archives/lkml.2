@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab3AJMUz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 07:20:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41523 "EHLO
+	id S1754799Ab3AJMVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 07:21:14 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41520 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754273Ab3AJMS7 (ORCPT
+	by vger.kernel.org with ESMTP id S1754135Ab3AJMS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Jan 2013 07:18:59 -0500
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/9] mfd: wm5102: Mark only extant DSP registers volatile
-Date: Thu, 10 Jan 2013 12:18:45 +0000
-Message-Id: <1357820332-14586-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 4/9] mfd: arizona: Disable control interface reporting for WM5102 and WM5110
+Date: Thu, 10 Jan 2013 12:18:47 +0000
+Message-Id: <1357820332-14586-4-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357820332-14586-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20130110121828.GN20956@opensource.wolfsonmicro.com>
@@ -22,43 +22,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since regmap sometimes uses volatile as a proxy for readable simply
-having a blanket condition can mark too many registers as readable.
+Rather than disabling the error reporting only for earlier revisions
+unconditionally disable it.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/wm5102-tables.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/mfd/arizona-irq.c |   18 ++----------------
+ 1 file changed, 2 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index 4a01192..0317d11 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -1837,9 +1837,6 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
+diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
+index 74713bf..2bec5f0 100644
+--- a/drivers/mfd/arizona-irq.c
++++ b/drivers/mfd/arizona-irq.c
+@@ -176,14 +176,7 @@ int arizona_irq_init(struct arizona *arizona)
+ 		aod = &wm5102_aod;
+ 		irq = &wm5102_irq;
  
- static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
- {
--	if (reg > 0xffff)
--		return true;
--
- 	switch (reg) {
- 	case ARIZONA_SOFTWARE_RESET:
- 	case ARIZONA_DEVICE_REVISION:
-@@ -1884,7 +1881,13 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_MIC_DETECT_3:
- 		return true;
+-		switch (arizona->rev) {
+-		case 0:
+-		case 1:
+-			ctrlif_error = false;
+-			break;
+-		default:
+-			break;
+-		}
++		ctrlif_error = false;
+ 		break;
+ #endif
+ #ifdef CONFIG_MFD_WM5110
+@@ -191,14 +184,7 @@ int arizona_irq_init(struct arizona *arizona)
+ 		aod = &wm5110_aod;
+ 		irq = &wm5110_irq;
+ 
+-		switch (arizona->rev) {
+-		case 0:
+-		case 1:
+-			ctrlif_error = false;
+-			break;
+-		default:
+-			break;
+-		}
++		ctrlif_error = false;
+ 		break;
+ #endif
  	default:
--		return false;
-+		if ((reg >= 0x100000 && reg < 0x106000) ||
-+		    (reg >= 0x180000 && reg < 0x180800) ||
-+		    (reg >= 0x190000 && reg < 0x194800) ||
-+		    (reg >= 0x1a8000 && reg < 0x1a9800))
-+			return true;
-+		else
-+			return false;
- 	}
- }
- 
 -- 
 1.7.10.4
 
