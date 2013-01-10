@@ -1,57 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab3AJCDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 21:03:19 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:53083 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757821Ab3AJCDR (ORCPT
+	id S932722Ab3AJCDw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 21:03:52 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50079 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757898Ab3AJCDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 21:03:17 -0500
-Message-ID: <1357783407.28830.2.camel@gitbox>
-Subject: Re: [PATCH 1/4] arm: vt8500: Add support for Wondermedia
- WM8750/WM8850
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Olof Johansson <olof@lixom.net>,
-        vt8500-wm8505-linux-kernel@googlegroups.com, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Thu, 10 Jan 2013 15:03:27 +1300
-In-Reply-To: <201301092127.05804.arnd@arndb.de>
-References: <1356650452-16559-1-git-send-email-linux@prisktech.co.nz>
-	 <CAOesGMj6XTuW9tPqYnawPvO-wJBd7s5M5xTfdvQcmEioHw=Pnw@mail.gmail.com>
-	 <1357758570.27076.8.camel@gitbox> <201301092127.05804.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 9 Jan 2013 21:03:51 -0500
+X-AuditID: 9c93016f-b7b54ae000000e9e-6c-50ee2184ca3f
+Date: Thu, 10 Jan 2013 11:03:47 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] mm: prevent to add a page to swap if may_writepage
+ is unset
+Message-ID: <20130110020347.GA14685@blaptop>
+References: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+ <1357712474-27595-2-git-send-email-minchan@kernel.org>
+ <20130109161854.67412dcc.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130109161854.67412dcc.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-09 at 21:27 +0000, Arnd Bergmann wrote:
-> On Wednesday 09 January 2013, Tony Prisk wrote:
-> > I'm quite happy to send a pull request if that's what you prefer.
+Hi Andrew,
+
+On Wed, Jan 09, 2013 at 04:18:54PM -0800, Andrew Morton wrote:
+> On Wed,  9 Jan 2013 15:21:13 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > Recently, Luigi reported there are lots of free swap space when
+> > OOM happens. It's easily reproduced on zram-over-swap, where
+> > many instance of memory hogs are running and laptop_mode is enabled.
 > > 
-> > Generally people have just taken the patches straight from email, so
-> > everytime I've done a pull-request I get a reply back saying the patches
-> > have already been applied.
+> > Luigi reported there was no problem when he disabled laptop_mode.
+> > The problem when I investigate problem is following as.
 > > 
-> > Is there some 'rule' around pull-requests vs emailed patches?
+> > try_to_free_pages disable may_writepage if laptop_mode is enabled.
+> > shrink_page_list adds lots of anon pages in swap cache by
+> > add_to_swap, which makes pages Dirty and rotate them to head of
+> > inactive LRU without pageout. If it is repeated, inactive anon LRU
+> > is full of Dirty and SwapCache pages.
+> > 
+> > In case of that, isolate_lru_pages fails because it try to isolate
+> > clean page due to may_writepage == 0.
+> > 
+> > The may_writepage could be 1 only if total_scanned is higher than
+> > writeback_threshold in do_try_to_free_pages but unfortunately,
+> > VM can't isolate anon pages from inactive anon lru list by
+> > above reason and we already reclaimed all file-backed pages.
+> > So it ends up OOM killing.
+> > 
+> > This patch prevents to add a page to swap cache unnecessary when
+> > may_writepage is unset so anoymous lru list isn't full of
+> > Dirty/Swapcache page. So VM can isolate pages from anon lru list,
+> > which ends up setting may_writepage to 1 and could swap out
+> > anon lru pages. When OOM triggers, I confirmed swap space was full.
+> > 
+> > ...
+> >
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -780,6 +780,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  		if (PageAnon(page) && !PageSwapCache(page)) {
+> >  			if (!(sc->gfp_mask & __GFP_IO))
+> >  				goto keep_locked;
+> > +			if (!sc->may_writepage)
+> > +				goto keep_locked;
+> >  			if (!add_to_swap(page))
+> >  				goto activate_locked;
+> >  			may_enter_fs = 1;
 > 
-> Generally, pull requests tend to be less work for us, so I prefer
-> them. In particular, when you add a tag description or a signed
-> tag, that gives automatically puts  nice text into the merge
-> changeset.
-> 
-> > Should patches in pull-requests have Ack'd lines already?
-> 
-> Yes.
-> 
-> 	Arnd
+> I'm not really getting it, and the description is rather hard to follow :(
 
-This is what I thought - and the reason I haven't sent a pull-request
-for the patch's - I haven't had any Ack's :)
+It seems I don't have a talent about description. :(
+I hope it would be better this year. :)
 
-Regards
-Tony P
+> 
+> We should be adding anon pages to swapcache even when laptop_mode is
+> set.  And we should be writing them to swap as well, then reclaiming
+> them.  The only thing laptop_mode shouild do is make the disk spin up
+> less frequently - that doesn't mean "not at all"!
 
+So it seems your rationale is that let's save power in only system has
+enough memory so let's remove may_writepage in reclaim path?
+
+If it is, I love it because I didn't see any number about power saving
+through reclaiming throttling(But surely there was reason to add it)
+and not sure it works well during long time because we have tweaked
+reclaim part too many.
+
+> 
+> So something seems screwed up here and the patch looks like a
+> heavy-handed workaround.  Why aren't these anon pages getting written
+> out in laptop_mode?
+
+Don't know. It was there long time and I don't want to screw it up.
+If we decide paging out in reclaim path regardless of laptop_mode,
+it makes the problem easy without ugly workaround.
+
+Remove may_writepage? If it's too agressive, we can remove it in only
+direct reclaim path.
+
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
