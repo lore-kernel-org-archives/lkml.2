@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab3AJK5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 05:57:12 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:53018 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab3AJK5K (ORCPT
+	id S1753625Ab3AJK5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 05:57:25 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43633 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082Ab3AJK5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 05:57:10 -0500
+	Thu, 10 Jan 2013 05:57:24 -0500
+Date: Thu, 10 Jan 2013 10:57:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] gpio: vt8500: memory cleanup missing
+Message-ID: <20130110105710.GA19944@n2100.arm.linux.org.uk>
+References: <1357163240-23131-1-git-send-email-linux@prisktech.co.nz>
 MIME-Version: 1.0
-In-Reply-To: <1357210020-19876-4-git-send-email-ldewangan@nvidia.com>
-References: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com>
-	<1357210020-19876-4-git-send-email-ldewangan@nvidia.com>
-Date: Thu, 10 Jan 2013 11:57:10 +0100
-Message-ID: <CACRpkdbSW+aj9RSedsAMyF3UtSL+w=0KM+pxc2bGdceSy+rXaw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] gpio: palmas: Add support for Palams GPIO
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: sameo@linux.intel.com, grant.likely@secretlab.ca,
-        akpm@linux-foundation.org, a.zummo@towertech.it,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357163240-23131-1-git-send-email-linux@prisktech.co.nz>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 3, 2013 at 11:46 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+On Thu, Jan 03, 2013 at 10:47:20AM +1300, Tony Prisk wrote:
+> There is also no .remove callback defined. To allow removing the
+> registered chips, I have moved *vtchip to be a static global.
 
-> Add gpio driver for TI Palmas series PMIC. This has 8 gpio which can
-> work as input/output.
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+What?  Why?
 
-This driver seems unnecessary. Can't you just use
-drivers/gpio/gpio-generic.c ?
-
-> +static int palmas_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
-> +{
-> +       struct palmas_gpio *pg = to_palmas_gpio(gc);
-> +       struct palmas *palmas = pg->palmas;
+> +/* Pointer to our array of chips */
+> +static struct vt8500_gpio_chip *vtchip;
 > +
-> +       return palmas_irq_get_virq(palmas, PALMAS_GPIO_0_IRQ + offset);
-> +}
+...
+> +static int vt8500_gpio_remove(struct platform_device *pdev)
+> +{
+> +	int i;
+> +	int ret;
+> +	const struct vt8500_gpio_data *data;
+> +	void __iomem *gpio_base = vtchip[0].base;
+> +	const struct of_device_id *of_id =
+> +				of_match_device(vt8500_gpio_dt_ids, &pdev->dev);
+> +
 
-Why are you implementing this for a driver which does not even expose
-the ability to trigger IRQs? If it's supposed to support IRQs it should
-register a struct irq_chip.
-
-Yours,
-Linus Walleij
+You can get at the vtchip pointer if you put it into the platform device's
+driver data pointer.  That way, you're not artificially limiting this
+driver to just one device, and, with your changes it will go wrong if DT
+ever lists more than one device.
