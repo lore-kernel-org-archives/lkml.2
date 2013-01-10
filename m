@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386Ab3AJJml (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:42:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58572 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab3AJJmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:42:40 -0500
-From: Oliver Neukum <oneukum@suse.de>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        gregkh@linuxfoundation.org, mdharm-usb@one-eyed-alien.net,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: USB autosuspend vs. URB submission
-Date: Thu, 10 Jan 2013 10:42:37 +0100
-Message-ID: <1643419.R9VmOAX4j3@linux-5eaq.site>
-Organization: SUSE
-User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <2664900.viczl5BYBS@avalon>
-References: <20130107204220.GB12363@hansolo.jdub.homelinux.org> <20130108160321.GC12363@hansolo.jdub.homelinux.org> <2664900.viczl5BYBS@avalon>
+	id S1751599Ab3AJJox (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:44:53 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:33212 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab3AJJou convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 04:44:50 -0500
+Date: Thu, 10 Jan 2013 09:44:44 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv2 0/4] clockevents: decouple broadcast mechanism from
+ drivers
+Message-ID: <20130110094435.GA17741@e106331-lin.cambridge.arm.com>
+References: <1357742770-15028-1-git-send-email-mark.rutland@arm.com>
+ <50EDD71A.5030406@codeaurora.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <50EDD71A.5030406@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 10 Jan 2013 09:44:47.0702 (UTC) FILETIME=[20CA2F60:01CDEF17]
+X-MC-Unique: 113011009444903001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 January 2013 00:05:55 Laurent Pinchart wrote:
+On Wed, Jan 09, 2013 at 08:46:18PM +0000, Stephen Boyd wrote:
+> On 01/09/13 06:46, Mark Rutland wrote:
+> > This is an updated version of the series I posted back in December:
+> > http://lists.infradead.org/pipermail/linux-arm-kernel/2012-December/137929.html
+> >
+> > Changes since v1:
+> > * Drop removal of guards in smp.c
+> > * Removed useless evt->evt_handler check in tick_receive_broadcast
+> > * Fix up tick_receive_broadcast when !GENERIC_CLOCKEVENTS_BROADCAST
+> > * Fix checkpatch issues (multi-line strings)
+> >
+> > Thanks go to Stephen Boyd and Santosh Shilimkar for their commments.
+> >
+> > In some SMP systems, cpu-local timers may stop delivering interrupts
+> > when in low power states, or not all CPUs may have local timers. To
+> > support these systems we have a mechanism for broadcasting timer ticks
+> > to other CPUs. This mechanism relies on the struct
+> > clock_event_device::broadcast function pointer, which is a
+> > driver-specific mechanism for broadcasting ticks to other CPUs.
+> >
+> > As the broadcast mechanism is architecture-specific, placing the
+> > broadcast function on struct clock_event_device ties each driver to a
+> > single architecture. Additionally the driver or architecture backend
+> > must handle the routing of broadcast ticks to the correct
+> > clock_event_device, leading to duplication of the list of active
+> > clock_event_devices.
+> >
+> > These patches introduce a generic mechanism for handling the receipt of
+> > timer broadcasts, and an optional architecture-specific broadcast
+> > function which allows drivers to be decoupled from a particular
+> > architecture will retaining support for timer tick broadcasts. These
+> > mechanisms are wired up for the arm port, and have been boot-tested on a
+> > pandaboard.
+> >
+> 
+> For the series:
+> 
+> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
-> I've had a quick look at the trace posted at 
-> https://bugzilla.redhat.com/show_bug.cgi?id=879462 but usbmon only shows URBs 
-> that are successfully submitted. I'm not sure what useful information I could 
-> get from the trace.
+Thanks!
 
-The test is at the very start of usb_submit_urb()
+> 
+> -- 
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> 
 
-        if (!urb || !urb->complete)
-                return -EINVAL;
-        if (urb->hcpriv) { 
-                WARN_ONCE(1, "URB %p submitted while active\n", urb);
-                return -EBUSY;
-        }
-
-usbmon will never see such URBs
-
-I suggest that for debugging you change the WARN_ONCE into a WARN and compare
-the URB pointers of usbmon and dmesg.
-
-In the long run it is probably a good idea to pass duplicated URBs to usbmon by
-a special code path.
-
-	Regards
-		Oliver
+Mark.
 
