@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706Ab3AJEOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 23:14:46 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:42039 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932443Ab3AJEOp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 23:14:45 -0500
-Message-ID: <50EE3FD3.7020105@synopsys.com>
-Date: Thu, 10 Jan 2013 09:43:07 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S932763Ab3AJEPB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 23:15:01 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61294 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757791Ab3AJEPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 23:15:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,441,1355126400"; 
+   d="scan'208";a="272093859"
+Date: Thu, 10 Jan 2013 12:14:57 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFT] regulator: lp8788-buck: Silence build warning
+Message-ID: <20130110041457.GA13949@localhost>
+References: <1357785186.28668.1.camel@phoenix>
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2] sysctl: Enable IA64 "ignore-unaligned-usertrap" to
- be used cross-arch
-References: <50ED7B4B.7080603@synopsys.com> <1357742188-8941-1-git-send-email-vgupta@synopsys.com> <CA+8MBbJNrJYeZoGXt37ki_YCpb7kqiE1toFoBBHrtmnY8a75VA@mail.gmail.com>
-In-Reply-To: <CA+8MBbJNrJYeZoGXt37ki_YCpb7kqiE1toFoBBHrtmnY8a75VA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357785186.28668.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 January 2013 12:25 AM, Tony Luck wrote:
-> Ok. Queued for 3.9 merge window.  It should show up in linux-next in
-> the next day or two.  We'll see if anyone complains about the name
-> SYSCTL_ARCH_UNALIGN_NO_WARN (every time I touch the Kconfig
-> bits it seems that there is some other, better way that we do this now).
->
-> -Tony
 
-Thanks a bunch.
--Vineet
+Thanks for the fix! It works!
+
+Tested-by: Fengguang Wu <fengguang.wu@intel.com> 
+
