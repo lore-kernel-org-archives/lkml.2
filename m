@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab3AJKOq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 05:14:46 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:42016 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab3AJKOm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 05:14:42 -0500
+	id S1753282Ab3AJKPf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 05:15:35 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:27066 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab3AJKPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 05:15:33 -0500
+X-IronPort-AV: E=Sophos;i="4.84,444,1355068800"; 
+   d="scan'208";a="6559375"
+Message-ID: <50EE9175.2060906@cn.fujitsu.com>
+Date: Thu, 10 Jan 2013 18:01:25 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130109191817.GA17321@tuxdriver.com>
-References: <20130109191817.GA17321@tuxdriver.com>
-Date: Thu, 10 Jan 2013 11:14:41 +0100
-Message-ID: <CA+icZUV9+JgZcYKZ4DAoj69D89hF-1cqr_bTpJvfgzWZZJ41kQ@mail.gmail.com>
-Subject: Re: pull request: wireless 2013-01-09
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: davem@davemloft.net, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+To: hpa@zytor.com, rob@landley.net, Greg KH <gregkh@linuxfoundation.org>
+CC: linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Documention/x86: fix arch/x86/include/asm/bootparam.h
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/10 18:03:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/10 18:14:55,
+	Serialize complete at 2013/01/10 18:14:55
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 8:18 PM, John W. Linville <linville@tuxdriver.com> wrote:
-> Dave,
->
-> Please pull this batch of fixes (and a new driver) for the 3.8 stream...
->
-> Included is a mac80211 pull, of which Johannes says the following:
->
-> 'This includes a number of fixes for various pieces of mac80211. I've
-> also included Thomas's memory RMC hash table optimisation since it
-> saves so much memory.'
->
-> Also from Johannes is an iwlwifi pull:
->
-> 'I have two fixes for iwlwifi: one to fix a lost return value that was
-> dropped in a previous patch and could cause "nobody cared" IRQ messages,
-> and one to work around a firmware issue.'
->
-> Amitkumar Karwar brings an mwifiex for a typo in an comparison.
->
-> Bing Zhao gives us an mwifiex fix to properly check the return value
-> from wait_event_interruptible and handle it properly.
->
-> Chen Gang provides a fix to make iwlegacy use strlcpy instead of
-> strncpy, avoiding a potential buffer underflow.
->
-> Julian Wollrath fixes a typo in an error message in rtlwifi.
->
-> Larry Finger brings a b43 fix for a firmware loading problem.
->
-> Nickolai Zeldovich avoids a use-after-free in the mwl8k driver.
->
-> Vladimir Kondratiev brings the last big piece, the new Qualcomm/Atheros
-> wil6210 802.11ad driver.  Since it is for new hardware, I hope that
-> taking it for 3.8 is not a problem.
->
-> Please let me know if there are problems!
->
-> Thanks,
->
-> John
->
-> ---
->
-> The following changes since commit c9be4a5c49cf51cc70a993f004c5bb30067a65ce:
->
->   net: prevent setting ttl=0 via IP_TTL (2013-01-08 17:57:10 -0800)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-davem
->
-> for you to fetch changes up to a9b8a894ad7d0b90b0464c9ac7e8e5c1687edcae:
->
->   Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless into for-davem (2013-01-09 11:01:37 -0500)
->
-> ----------------------------------------------------------------
+This file is now arch/x86/include/uapi/asm/bootparam.h.
 
-Hi John,
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ Documentation/x86/zero-page.txt |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-if I look at for-davem GIT branch (online GitWeb interface) [1], this
-has no tag "master-2013-01-09" like in master branch.
-Comments?
-
-Regards,
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/linville/wireless-next.git;a=shortlog;h=refs/heads/for-davem
+diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
+index cf5437d..9723e2a 100644
+--- a/Documentation/x86/zero-page.txt
++++ b/Documentation/x86/zero-page.txt
+@@ -3,7 +3,7 @@ protocol of kernel. These should be filled by bootloader or 16-bit
+ real-mode setup code of the kernel. References/settings to it mainly
+ are in:
+ 
+-  arch/x86/include/asm/bootparam.h
++  arch/x86/include/uapi/asm/bootparam.h
+ 
+ 
+ Offset	Proto	Name		Meaning
+-- 
+1.7.1
