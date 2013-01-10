@@ -1,655 +1,650 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3AJPdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:33:10 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56708 "EHLO multi.imgtec.com"
+	id S1754637Ab3AJPdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:33:07 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:54492 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754492Ab3AJPcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753910Ab3AJPcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Jan 2013 10:32:54 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v3 20/44] metag: ptrace
-Date: Thu, 10 Jan 2013 15:30:48 +0000
-Message-ID: <1357831872-29451-21-git-send-email-james.hogan@imgtec.com>
+CC: James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH v3 34/44] metag: Various other headers
+Date: Thu, 10 Jan 2013 15:31:02 +0000
+Message-ID: <1357831872-29451-35-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_30
+X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_33
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ptrace interface for metag provides access to some core register
-sets using the PTRACE_GETREGSET and PTRACE_SETREGSET operations. The
-details of the internal context structures is abstracted into user API
-structures to both ease use and allow flexibility to change the internal
-context layouts. Copyin and copyout functions for these register sets
-are exposed to allow signal handling code to use them to copy to and
-from the signal context.
-
-struct user_gp_regs (NT_PRSTATUS) provides access to the core general
-purpose register context.
-
-struct user_cb_regs (NT_METAG_CBUF) provides access to the TXCATCH*
-registers which contains information abuot a memory fault, unaligned
-access error or watchpoint. This can be modified to alter the way the
-fault is replayed on resume ("catch replay"), or to prevent the replay
-taking place.
-
-struct user_rp_state (NT_METAG_RPIPE) provides access to the state of
-the Meta read pipeline which can be used to hide memory latencies in
-hand optimised data loops.
-
-Extended DSP register state, DSP RAM, and hardware breakpoint registers
-aren't yet exposed through ptrace.
+Add the remaining metag header files:
+ - byteorder.h, swab.h (byte order and swapping)
+ - barrier.h, cpu.h. hwthread.h, processor.h (hardware thread related)
+ - bug.h, elf.h, gpio.h, linkage.h, resource.h (other)
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 ---
- arch/metag/include/asm/ptrace.h      |   60 ++++++
- arch/metag/include/uapi/asm/ptrace.h |  113 ++++++++++
- arch/metag/kernel/ptrace.c           |  380 ++++++++++++++++++++++++++++++++++
- include/uapi/linux/elf.h             |    2 +
- 4 files changed, 555 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/ptrace.h
- create mode 100644 arch/metag/include/uapi/asm/ptrace.h
- create mode 100644 arch/metag/kernel/ptrace.c
+ arch/metag/include/asm/barrier.h        |   85 +++++++++++++
+ arch/metag/include/asm/bug.h            |   12 ++
+ arch/metag/include/asm/cpu.h            |   14 ++
+ arch/metag/include/asm/elf.h            |  128 +++++++++++++++++++
+ arch/metag/include/asm/gpio.h           |    4 +
+ arch/metag/include/asm/hwthread.h       |   40 ++++++
+ arch/metag/include/asm/linkage.h        |    7 +
+ arch/metag/include/asm/processor.h      |  202 +++++++++++++++++++++++++++++++
+ arch/metag/include/uapi/asm/byteorder.h |    1 +
+ arch/metag/include/uapi/asm/resource.h  |    7 +
+ arch/metag/include/uapi/asm/swab.h      |   26 ++++
+ 11 files changed, 526 insertions(+), 0 deletions(-)
+ create mode 100644 arch/metag/include/asm/barrier.h
+ create mode 100644 arch/metag/include/asm/bug.h
+ create mode 100644 arch/metag/include/asm/cpu.h
+ create mode 100644 arch/metag/include/asm/elf.h
+ create mode 100644 arch/metag/include/asm/gpio.h
+ create mode 100644 arch/metag/include/asm/hwthread.h
+ create mode 100644 arch/metag/include/asm/linkage.h
+ create mode 100644 arch/metag/include/asm/processor.h
+ create mode 100644 arch/metag/include/uapi/asm/byteorder.h
+ create mode 100644 arch/metag/include/uapi/asm/resource.h
+ create mode 100644 arch/metag/include/uapi/asm/swab.h
 
-diff --git a/arch/metag/include/asm/ptrace.h b/arch/metag/include/asm/ptrace.h
+diff --git a/arch/metag/include/asm/barrier.h b/arch/metag/include/asm/barrier.h
 new file mode 100644
-index 0000000..fcabc18
+index 0000000..c90bfc6
 --- /dev/null
-+++ b/arch/metag/include/asm/ptrace.h
-@@ -0,0 +1,60 @@
-+#ifndef _METAG_PTRACE_H
-+#define _METAG_PTRACE_H
++++ b/arch/metag/include/asm/barrier.h
+@@ -0,0 +1,85 @@
++#ifndef _ASM_METAG_BARRIER_H
++#define _ASM_METAG_BARRIER_H
++
++#include <asm/metag_mem.h>
++
++#define nop()		asm volatile ("NOP")
++#define mb()		wmb()
++#define rmb()		barrier()
++
++#ifdef CONFIG_METAG_META21
++
++/* HTP and above have a system event to fence writes */
++static inline void wr_fence(void)
++{
++	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_FENCE;
++	barrier();
++	*flushptr = 0;
++}
++
++#else /* CONFIG_METAG_META21 */
++
++/*
++ * ATP doesn't have system event to fence writes, so it is necessary to flush
++ * the processor write queues as well as possibly the write combiner (depending
++ * on the page being written).
++ * To ensure the write queues are flushed we do 4 writes to a system event
++ * register (in this case write combiner flush) which will also flush the write
++ * combiner.
++ */
++static inline void wr_fence(void)
++{
++	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_COMBINE_FLUSH;
++	barrier();
++	*flushptr = 0;
++	*flushptr = 0;
++	*flushptr = 0;
++	*flushptr = 0;
++}
++
++#endif /* !CONFIG_METAG_META21 */
++
++static inline void wmb(void)
++{
++	/* flush writes through the write combiner */
++	wr_fence();
++}
++
++#define read_barrier_depends()  do { } while (0)
++
++#ifndef CONFIG_SMP
++#define fence()		do { } while (0)
++#define smp_mb()        barrier()
++#define smp_rmb()       barrier()
++#define smp_wmb()       barrier()
++#else
++
++#ifdef CONFIG_METAG_SMP_WRITE_REORDERING
++/*
++ * Write to the atomic memory unlock system event register (command 0). This is
++ * needed before a write to shared memory in a critical section, to prevent
++ * external reordering of writes before the fence on other threads with writes
++ * after the fence on this thread (and to prevent the ensuing cache-memory
++ * incoherence). It is therefore ineffective if used after and on the same
++ * thread as a write.
++ */
++static inline void fence(void)
++{
++	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_ATOMIC_UNLOCK;
++	barrier();
++	*flushptr = 0;
++}
++#define smp_mb()        fence()
++#define smp_rmb()       fence()
++#define smp_wmb()       barrier()
++#else
++#define fence()		do { } while (0)
++#define smp_mb()        barrier()
++#define smp_rmb()       barrier()
++#define smp_wmb()       barrier()
++#endif
++#endif
++#define smp_read_barrier_depends()     do { } while (0)
++#define set_mb(var, value) do { var = value; smp_mb(); } while (0)
++
++#endif /* _ASM_METAG_BARRIER_H */
+diff --git a/arch/metag/include/asm/bug.h b/arch/metag/include/asm/bug.h
+new file mode 100644
+index 0000000..d04b48c
+--- /dev/null
++++ b/arch/metag/include/asm/bug.h
+@@ -0,0 +1,12 @@
++#ifndef _ASM_METAG_BUG_H
++#define _ASM_METAG_BUG_H
++
++#include <asm-generic/bug.h>
++
++struct pt_regs;
++
++extern const char *trap_name(int trapno);
++extern void die(const char *str, struct pt_regs *regs, long err,
++		unsigned long addr) __attribute__ ((noreturn));
++
++#endif
+diff --git a/arch/metag/include/asm/cpu.h b/arch/metag/include/asm/cpu.h
+new file mode 100644
+index 0000000..decf129
+--- /dev/null
++++ b/arch/metag/include/asm/cpu.h
+@@ -0,0 +1,14 @@
++#ifndef _ASM_METAG_CPU_H
++#define _ASM_METAG_CPU_H
++
++#include <linux/percpu.h>
++
++struct cpuinfo_metag {
++	struct cpu cpu;
++#ifdef CONFIG_SMP
++	unsigned long loops_per_jiffy;
++#endif
++};
++
++DECLARE_PER_CPU(struct cpuinfo_metag, cpu_data);
++#endif /* _ASM_METAG_CPU_H */
+diff --git a/arch/metag/include/asm/elf.h b/arch/metag/include/asm/elf.h
+new file mode 100644
+index 0000000..d63b9d0
+--- /dev/null
++++ b/arch/metag/include/asm/elf.h
+@@ -0,0 +1,128 @@
++#ifndef __ASM_METAG_ELF_H
++#define __ASM_METAG_ELF_H
++
++#define EM_METAG      174
++
++/* Meta relocations */
++#define R_METAG_HIADDR16                 0
++#define R_METAG_LOADDR16                 1
++#define R_METAG_ADDR32                   2
++#define R_METAG_NONE                     3
++#define R_METAG_RELBRANCH                4
++#define R_METAG_GETSETOFF                5
++
++/* Backward compatability */
++#define R_METAG_REG32OP1                 6
++#define R_METAG_REG32OP2                 7
++#define R_METAG_REG32OP3                 8
++#define R_METAG_REG16OP1                 9
++#define R_METAG_REG16OP2                10
++#define R_METAG_REG16OP3                11
++#define R_METAG_REG32OP4                12
++
++#define R_METAG_HIOG                    13
++#define R_METAG_LOOG                    14
++
++/* GNU */
++#define R_METAG_GNU_VTINHERIT           30
++#define R_METAG_GNU_VTENTRY             31
++
++/* PIC relocations */
++#define R_METAG_HI16_GOTOFF             32
++#define R_METAG_LO16_GOTOFF             33
++#define R_METAG_GETSET_GOTOFF           34
++#define R_METAG_GETSET_GOT              35
++#define R_METAG_HI16_GOTPC              36
++#define R_METAG_LO16_GOTPC              37
++#define R_METAG_HI16_PLT                38
++#define R_METAG_LO16_PLT                39
++#define R_METAG_RELBRANCH_PLT           40
++#define R_METAG_GOTOFF                  41
++#define R_METAG_PLT                     42
++#define R_METAG_COPY                    43
++#define R_METAG_JMP_SLOT                44
++#define R_METAG_RELATIVE                45
++#define R_METAG_GLOB_DAT                46
++
++/*
++ * ELF register definitions.
++ */
++
++#include <asm/page.h>
++#include <asm/processor.h>
++#include <asm/ptrace.h>
++#include <asm/user.h>
++
++typedef unsigned long elf_greg_t;
++
++#define ELF_NGREG (sizeof(struct user_gp_regs) / sizeof(elf_greg_t))
++typedef elf_greg_t elf_gregset_t[ELF_NGREG];
++
++typedef unsigned long elf_fpregset_t;
++
++/*
++ * This is used to ensure we don't load something for the wrong architecture.
++ */
++#define elf_check_arch(x) ((x)->e_machine == EM_METAG)
++
++/*
++ * These are used to set parameters in the core dumps.
++ */
++#define ELF_CLASS	ELFCLASS32
++#define ELF_DATA	ELFDATA2LSB
++#define ELF_ARCH	EM_METAG
++
++#define ELF_PLAT_INIT(_r, load_addr)	\
++	do { _r->ctx.AX[0].U0 = 0; } while (0)
++
++#define USE_ELF_CORE_DUMP
++#define CORE_DUMP_USE_REGSET
++#define ELF_EXEC_PAGESIZE	PAGE_SIZE
++
++/* This is the location that an ET_DYN program is loaded if exec'ed.  Typical
++   use of this is to invoke "./ld.so someprog" to test out a new version of
++   the loader.  We need to make sure that it is out of the way of the program
++   that it will "exec", and that there is sufficient room for the brk.  */
++
++#define ELF_ET_DYN_BASE         0x08000000UL
++
++#define ELF_CORE_COPY_REGS(_dest, _regs)			\
++	memcpy((char *)&_dest, (char *)_regs, sizeof(struct pt_regs));
++
++/* This yields a mask that user programs can use to figure out what
++   instruction set this cpu supports.  */
++
++#define ELF_HWCAP	(0)
++
++/* This yields a string that ld.so will use to load implementation
++   specific libraries for optimization.  This is more specific in
++   intent than poking at uname or /proc/cpuinfo.  */
++
++#define ELF_PLATFORM  (NULL)
++
++#define SET_PERSONALITY(ex) \
++	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
++
++#define STACK_RND_MASK (0)
++
++#ifdef CONFIG_METAG_USER_TCM
++
++struct elf32_phdr;
++struct file;
++
++unsigned long __metag_elf_map(struct file *filep, unsigned long addr,
++			      struct elf32_phdr *eppnt, int prot, int type,
++			      unsigned long total_size);
++
++static inline unsigned long metag_elf_map(struct file *filep,
++					  unsigned long addr,
++					  struct elf32_phdr *eppnt, int prot,
++					  int type, unsigned long total_size)
++{
++	return __metag_elf_map(filep, addr, eppnt, prot, type, total_size);
++}
++#define elf_map metag_elf_map
++
++#endif
++
++#endif
+diff --git a/arch/metag/include/asm/gpio.h b/arch/metag/include/asm/gpio.h
+new file mode 100644
+index 0000000..b3799d8
+--- /dev/null
++++ b/arch/metag/include/asm/gpio.h
+@@ -0,0 +1,4 @@
++#ifndef __LINUX_GPIO_H
++#warning Include linux/gpio.h instead of asm/gpio.h
++#include <linux/gpio.h>
++#endif
+diff --git a/arch/metag/include/asm/hwthread.h b/arch/metag/include/asm/hwthread.h
+new file mode 100644
+index 0000000..8f97866
+--- /dev/null
++++ b/arch/metag/include/asm/hwthread.h
+@@ -0,0 +1,40 @@
++/*
++ * Copyright (C) 2008 Imagination Technologies
++ */
++#ifndef __METAG_HWTHREAD_H
++#define __METAG_HWTHREAD_H
++
++#include <linux/bug.h>
++#include <linux/io.h>
++
++#include <asm/metag_mem.h>
++
++#define BAD_HWTHREAD_ID		(0xFFU)
++#define BAD_CPU_ID		(0xFFU)
++
++extern u8 cpu_2_hwthread_id[];
++extern u8 hwthread_id_2_cpu[];
++
++/*
++ * Each hardware thread's Control Unit registers are memory-mapped
++ * and can therefore be accessed by any other hardware thread.
++ *
++ * This helper function returns the memory address where "thread"'s
++ * register "regnum" is mapped.
++ */
++static inline
++void __iomem *__CU_addr(unsigned int thread, unsigned int regnum)
++{
++	unsigned int base, thread_offset, thread_regnum;
++
++	WARN_ON(thread == BAD_HWTHREAD_ID);
++
++	base = T0UCTREG0;	/* Control unit base */
++
++	thread_offset = TnUCTRX_STRIDE * thread;
++	thread_regnum = TXUCTREGn_STRIDE * regnum;
++
++	return (void __iomem *)(base + thread_offset + thread_regnum);
++}
++
++#endif /* __METAG_HWTHREAD_H */
+diff --git a/arch/metag/include/asm/linkage.h b/arch/metag/include/asm/linkage.h
+new file mode 100644
+index 0000000..73bf25b
+--- /dev/null
++++ b/arch/metag/include/asm/linkage.h
+@@ -0,0 +1,7 @@
++#ifndef __ASM_LINKAGE_H
++#define __ASM_LINKAGE_H
++
++#define __ALIGN .p2align 2
++#define __ALIGN_STR ".p2align 2"
++
++#endif
+diff --git a/arch/metag/include/asm/processor.h b/arch/metag/include/asm/processor.h
+new file mode 100644
+index 0000000..b7e2528
+--- /dev/null
++++ b/arch/metag/include/asm/processor.h
+@@ -0,0 +1,202 @@
++/*
++ * Copyright (C) 2005,2006,2007,2008 Imagination Technologies
++ */
++
++#ifndef __ASM_METAG_PROCESSOR_H
++#define __ASM_METAG_PROCESSOR_H
++
++#include <linux/atomic.h>
++
++#include <asm/page.h>
++#include <asm/ptrace.h>
++#include <asm/metag_regs.h>
++
++/*
++ * Default implementation of macro that returns current
++ * instruction pointer ("program counter").
++ */
++#define current_text_addr() ({ __label__ _l; _l: &&_l; })
++
++/* The task stops where the kernel starts */
++#define TASK_SIZE	PAGE_OFFSET
++/* Add an extra page of padding at the top of the stack for the guard page. */
++#define STACK_TOP	(TASK_SIZE - PAGE_SIZE)
++#define STACK_TOP_MAX	STACK_TOP
++
++/* This decides where the kernel will search for a free chunk of vm
++ * space during mmap's.
++ */
++#define TASK_UNMAPPED_BASE	META_MEMORY_BASE
++
++typedef struct {
++	unsigned long seg;
++} mm_segment_t;
++
++#ifdef CONFIG_METAG_FPU
++struct meta_fpu_context {
++	TBICTXEXTFPU fpstate;
++	union {
++		struct {
++			TBICTXEXTBB4 fx8_15;
++			TBICTXEXTFPACC fpacc;
++		} fx8_15;
++		struct {
++			TBICTXEXTFPACC fpacc;
++			TBICTXEXTBB4 unused;
++		} nofx8_15;
++	} extfpstate;
++	bool needs_restore;
++};
++#else
++struct meta_fpu_context {};
++#endif
++
++#ifdef CONFIG_METAG_DSP
++struct meta_ext_context {
++	struct {
++		TBIEXTCTX ctx;
++		TBICTXEXTBB8 bb8;
++		TBIDUAL ax[TBICTXEXTAXX_BYTES / sizeof(TBIDUAL)];
++		TBICTXEXTHL2 hl2;
++		TBICTXEXTTDPR ext;
++		TBICTXEXTRP6 rp;
++	} regs;
++
++	/* DSPRAM A and B save areas. */
++	void *ram[2];
++
++	/* ECH encoded size of DSPRAM save areas. */
++	unsigned int ram_sz[2];
++};
++#else
++struct meta_ext_context {};
++#endif
++
++struct thread_struct {
++	PTBICTX kernel_context;
++	/* A copy of the user process Sig.SaveMask. */
++	unsigned int user_flags;
++	struct meta_fpu_context *fpu_context;
++	void __user *tls_ptr;
++	unsigned short int_depth;
++	unsigned short txdefr_failure;
++	struct meta_ext_context *dsp_context;
++};
++
++#define INIT_THREAD  { \
++	NULL,			/* kernel_context */	\
++	0,			/* user_flags */	\
++	NULL,			/* fpu_context */	\
++	NULL,			/* tls_ptr */		\
++	1,			/* int_depth - we start in kernel */	\
++	0,			/* txdefr_failure */	\
++	NULL,			/* dsp_context */	\
++}
++
++/* Needed to make #define as we are referencing 'current', that is not visible
++ * yet.
++ *
++ * Stack layout is as below.
++
++      argc            argument counter (integer)
++      argv[0]         program name (pointer)
++      argv[1...N]     program args (pointers)
++      argv[argc-1]    end of args (integer)
++      NULL
++      env[0...N]      environment variables (pointers)
++      NULL
++
++ */
++#define start_thread(regs, pc, usp) do {				   \
++	unsigned int *argc = (unsigned int *) bprm->exec;		   \
++	set_fs(USER_DS);						   \
++	current->thread.int_depth = 1;					   \
++	/* Force this process down to user land */			   \
++	regs->ctx.SaveMask = TBICTX_PRIV_BIT;				   \
++	regs->ctx.CurrPC = pc;						   \
++	regs->ctx.AX[0].U0 = usp;					   \
++	regs->ctx.DX[3].U1 = *((int *)argc);			/* argc */ \
++	regs->ctx.DX[3].U0 = (int)((int *)argc + 1);		/* argv */ \
++	regs->ctx.DX[2].U1 = (int)((int *)argc +			   \
++				   regs->ctx.DX[3].U1 + 2);	/* envp */ \
++	regs->ctx.DX[2].U0 = 0;				   /* rtld_fini */ \
++} while (0)
++
++/* Forward declaration, a strange C thing */
++struct task_struct;
++
++/* Free all resources held by a thread. */
++static inline void release_thread(struct task_struct *dead_task)
++{
++}
++
++#define copy_segments(tsk, mm)		do { } while (0)
++#define release_segments(mm)		do { } while (0)
++
++extern void exit_thread(void);
++
++/*
++ * Return saved PC of a blocked thread.
++ */
++#define	thread_saved_pc(tsk)	\
++	((unsigned long)(tsk)->thread.kernel_context->CurrPC)
++#define thread_saved_sp(tsk)	\
++	((unsigned long)(tsk)->thread.kernel_context->AX[0].U0)
++#define thread_saved_fp(tsk)	\
++	((unsigned long)(tsk)->thread.kernel_context->AX[1].U0)
++
++unsigned long get_wchan(struct task_struct *p);
++
++#define	KSTK_EIP(tsk)	((tsk)->thread.kernel_context->CurrPC)
++#define	KSTK_ESP(tsk)	((tsk)->thread.kernel_context->AX[0].U0)
++
++#define user_stack_pointer(regs)        ((regs)->ctx.AX[0].U0)
++
++#define cpu_relax()     barrier()
++
++extern void setup_txprivext(void);
++
++static inline unsigned int hard_processor_id(void)
++{
++	unsigned int id;
++
++	asm volatile ("MOV	%0, TXENABLE\n"
++		      "AND	%0, %0, %1\n"
++		      "LSR	%0, %0, %2\n"
++		      : "=&d" (id)
++		      : "I" (TXENABLE_THREAD_BITS),
++			"K" (TXENABLE_THREAD_S)
++		      );
++
++	return id;
++}
++
++#define OP3_EXIT	0
++
++#define HALT_OK		0
++#define HALT_PANIC	-1
++
++/*
++ * Halt (stop) the hardware thread. This instruction sequence is the
++ * standard way to cause a Meta hardware thread to exit. The exit code
++ * is pushed onto the stack which is interpreted by the debug adapter.
++ */
++static inline void hard_processor_halt(int exit_code)
++{
++	asm volatile ("MOV	D1Ar1, %0\n"
++		      "MOV	D0Ar6, %1\n"
++		      "MSETL	[A0StP],D0Ar6,D0Ar4,D0Ar2\n"
++		      "1:\n"
++		      "SWITCH	#0xC30006\n"
++		      "B		1b\n"
++		      : : "r" (exit_code), "K" (OP3_EXIT));
++}
++
++/* Set these hooks to call SoC specific code to restart/halt/power off. */
++extern void (*soc_restart)(char *cmd);
++extern void (*soc_halt)(void);
++
++extern void show_trace(struct task_struct *tsk, unsigned long *sp,
++		       struct pt_regs *regs);
++
++#endif
+diff --git a/arch/metag/include/uapi/asm/byteorder.h b/arch/metag/include/uapi/asm/byteorder.h
+new file mode 100644
+index 0000000..9558416
+--- /dev/null
++++ b/arch/metag/include/uapi/asm/byteorder.h
+@@ -0,0 +1 @@
++#include <linux/byteorder/little_endian.h>
+diff --git a/arch/metag/include/uapi/asm/resource.h b/arch/metag/include/uapi/asm/resource.h
+new file mode 100644
+index 0000000..526d23c
+--- /dev/null
++++ b/arch/metag/include/uapi/asm/resource.h
+@@ -0,0 +1,7 @@
++#ifndef _UAPI_METAG_RESOURCE_H
++#define _UAPI_METAG_RESOURCE_H
++
++#define _STK_LIM_MAX    (1 << 28)
++#include <asm-generic/resource.h>
++
++#endif /* _UAPI_METAG_RESOURCE_H */
+diff --git a/arch/metag/include/uapi/asm/swab.h b/arch/metag/include/uapi/asm/swab.h
+new file mode 100644
+index 0000000..1076b3a
+--- /dev/null
++++ b/arch/metag/include/uapi/asm/swab.h
+@@ -0,0 +1,26 @@
++#ifndef __ASM_METAG_SWAB_H
++#define __ASM_METAG_SWAB_H
 +
 +#include <linux/compiler.h>
-+#include <uapi/asm/ptrace.h>
-+#include <asm/tbx.h>
++#include <linux/types.h>
++#include <asm-generic/swab.h>
 +
-+#ifndef __ASSEMBLY__
-+
-+/* this struct defines the way the registers are stored on the
-+   stack during a system call. */
-+
-+struct pt_regs {
-+	TBICTX ctx;
-+	TBICTXEXTCB0 extcb0[5];
-+};
-+
-+#define user_mode(regs) (((regs)->ctx.SaveMask & TBICTX_PRIV_BIT) > 0)
-+
-+#define instruction_pointer(regs) ((unsigned long)(regs)->ctx.CurrPC)
-+#define profile_pc(regs) instruction_pointer(regs)
-+
-+#define task_pt_regs(task) \
-+	((struct pt_regs *)(task_stack_page(task) + \
-+			    sizeof(struct thread_info)))
-+
-+#define current_pt_regs() \
-+	((struct pt_regs *)((char *)current_thread_info() + \
-+			    sizeof(struct thread_info)))
-+
-+int syscall_trace_enter(struct pt_regs *regs);
-+void syscall_trace_leave(struct pt_regs *regs);
-+
-+/* copy a struct user_gp_regs out to user */
-+int metag_gp_regs_copyout(const struct pt_regs *regs,
-+			  unsigned int pos, unsigned int count,
-+			  void *kbuf, void __user *ubuf);
-+/* copy a struct user_gp_regs in from user */
-+int metag_gp_regs_copyin(struct pt_regs *regs,
-+			 unsigned int pos, unsigned int count,
-+			 const void *kbuf, const void __user *ubuf);
-+/* copy a struct user_cb_regs out to user */
-+int metag_cb_regs_copyout(const struct pt_regs *regs,
-+			  unsigned int pos, unsigned int count,
-+			  void *kbuf, void __user *ubuf);
-+/* copy a struct user_cb_regs in from user */
-+int metag_cb_regs_copyin(struct pt_regs *regs,
-+			 unsigned int pos, unsigned int count,
-+			 const void *kbuf, const void __user *ubuf);
-+/* copy a struct user_rp_state out to user */
-+int metag_rp_state_copyout(const struct pt_regs *regs,
-+			   unsigned int pos, unsigned int count,
-+			   void *kbuf, void __user *ubuf);
-+/* copy a struct user_rp_state in from user */
-+int metag_rp_state_copyin(struct pt_regs *regs,
-+			  unsigned int pos, unsigned int count,
-+			  const void *kbuf, const void __user *ubuf);
-+
-+#endif /* __ASSEMBLY__ */
-+#endif /* _METAG_PTRACE_H */
-diff --git a/arch/metag/include/uapi/asm/ptrace.h b/arch/metag/include/uapi/asm/ptrace.h
-new file mode 100644
-index 0000000..45d9780
---- /dev/null
-+++ b/arch/metag/include/uapi/asm/ptrace.h
-@@ -0,0 +1,113 @@
-+#ifndef _UAPI_METAG_PTRACE_H
-+#define _UAPI_METAG_PTRACE_H
-+
-+#ifndef __ASSEMBLY__
-+
-+/*
-+ * These are the layouts of the regsets returned by the GETREGSET ptrace call
-+ */
-+
-+/* user_gp_regs::status */
-+
-+/* CBMarker bit (indicates catch state / catch replay) */
-+#define USER_GP_REGS_STATUS_CATCH_BIT		(1 << 22)
-+#define USER_GP_REGS_STATUS_CATCH_S		22
-+/* LSM_STEP field (load/store multiple step) */
-+#define USER_GP_REGS_STATUS_LSM_STEP_BITS	(0x7 << 8)
-+#define USER_GP_REGS_STATUS_LSM_STEP_S		8
-+/* SCC bit (indicates split 16x16 condition flags) */
-+#define USER_GP_REGS_STATUS_SCC_BIT		(1 << 4)
-+#define USER_GP_REGS_STATUS_SCC_S		4
-+
-+/* normal condition flags */
-+/* CF_Z bit (Zero flag) */
-+#define USER_GP_REGS_STATUS_CF_Z_BIT		(1 << 3)
-+#define USER_GP_REGS_STATUS_CF_Z_S		3
-+/* CF_N bit (Negative flag) */
-+#define USER_GP_REGS_STATUS_CF_N_BIT		(1 << 2)
-+#define USER_GP_REGS_STATUS_CF_N_S		2
-+/* CF_V bit (oVerflow flag) */
-+#define USER_GP_REGS_STATUS_CF_V_BIT		(1 << 1)
-+#define USER_GP_REGS_STATUS_CF_V_S		1
-+/* CF_C bit (Carry flag) */
-+#define USER_GP_REGS_STATUS_CF_C_BIT		(1 << 0)
-+#define USER_GP_REGS_STATUS_CF_C_S		0
-+
-+/* split 16x16 condition flags */
-+/* SCF_LZ bit (Low Zero flag) */
-+#define USER_GP_REGS_STATUS_SCF_LZ_BIT		(1 << 3)
-+#define USER_GP_REGS_STATUS_SCF_LZ_S		3
-+/* SCF_HZ bit (High Zero flag) */
-+#define USER_GP_REGS_STATUS_SCF_HZ_BIT		(1 << 2)
-+#define USER_GP_REGS_STATUS_SCF_HZ_S		2
-+/* SCF_HC bit (High Carry flag) */
-+#define USER_GP_REGS_STATUS_SCF_HC_BIT		(1 << 1)
-+#define USER_GP_REGS_STATUS_SCF_HC_S		1
-+/* SCF_LC bit (Low Carry flag) */
-+#define USER_GP_REGS_STATUS_SCF_LC_BIT		(1 << 0)
-+#define USER_GP_REGS_STATUS_SCF_LC_S		0
-+
-+/**
-+ * struct user_gp_regs - User general purpose registers
-+ * @dx:		GP data unit regs (dx[reg][unit] = D{unit:0-1}.{reg:0-7})
-+ * @ax:		GP address unit regs (ax[reg][unit] = A{unit:0-1}.{reg:0-3})
-+ * @pc:		PC register
-+ * @status:	TXSTATUS register (condition flags, LSM_STEP etc)
-+ * @rpt:	TXRPT registers (branch repeat counter)
-+ * @bpobits:	TXBPOBITS register ("branch prediction other" bits)
-+ * @mode:	TXMODE register
-+ * @_pad1:	Reserved padding to make sizeof obviously 64bit aligned
-+ *
-+ * This is the user-visible general purpose register state structure.
-+ *
-+ * It can be accessed through PTRACE_GETREGSET with NT_PRSTATUS.
-+ *
-+ * It is also used in the signal context.
-+ */
-+struct user_gp_regs {
-+	unsigned long dx[8][2];
-+	unsigned long ax[4][2];
-+	unsigned long pc;
-+	unsigned long status;
-+	unsigned long rpt;
-+	unsigned long bpobits;
-+	unsigned long mode;
-+	unsigned long _pad1;
-+};
-+
-+/**
-+ * struct user_cb_regs - User catch buffer registers
-+ * @flags:	TXCATCH0 register (fault flags)
-+ * @addr:	TXCATCH1 register (fault address)
-+ * @data:	TXCATCH2 and TXCATCH3 registers (low and high data word)
-+ *
-+ * This is the user-visible catch buffer register state structure containing
-+ * information about a failed memory access, and allowing the access to be
-+ * modified and replayed.
-+ *
-+ * It can be accessed through PTRACE_GETREGSET with NT_METAG_CBUF.
-+ */
-+struct user_cb_regs {
-+	unsigned long flags;
-+	unsigned long addr;
-+	unsigned long long data;
-+};
-+
-+/**
-+ * struct user_rp_state - User read pipeline state
-+ * @entries:	Read pipeline entries
-+ * @mask:	Mask of valid pipeline entries (RPMask from TXDIVTIME register)
-+ *
-+ * This is the user-visible read pipeline state structure containing the entries
-+ * currently in the read pipeline and the mask of valid entries.
-+ *
-+ * It can be accessed through PTRACE_GETREGSET with NT_METAG_RPIPE.
-+ */
-+struct user_rp_state {
-+	unsigned long long entries[6];
-+	unsigned long mask;
-+};
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* _UAPI_METAG_PTRACE_H */
-diff --git a/arch/metag/kernel/ptrace.c b/arch/metag/kernel/ptrace.c
-new file mode 100644
-index 0000000..47a8828
---- /dev/null
-+++ b/arch/metag/kernel/ptrace.c
-@@ -0,0 +1,380 @@
-+/*
-+ *  Copyright (C) 2005-2012 Imagination Technologies Ltd.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License.  See the file COPYING in the main directory of
-+ * this archive for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/mm.h>
-+#include <linux/errno.h>
-+#include <linux/ptrace.h>
-+#include <linux/user.h>
-+#include <linux/regset.h>
-+#include <linux/tracehook.h>
-+#include <linux/elf.h>
-+#include <linux/uaccess.h>
-+#include <trace/syscall.h>
-+
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/syscalls.h>
-+
-+/*
-+ * user_regset definitions.
-+ */
-+
-+int metag_gp_regs_copyout(const struct pt_regs *regs,
-+			  unsigned int pos, unsigned int count,
-+			  void *kbuf, void __user *ubuf)
++static inline __attribute_const__ __u16 __arch_swab16(__u16 x)
 +{
-+	const void *ptr;
-+	unsigned long data;
-+	int ret;
-+
-+	/* D{0-1}.{0-7} */
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  regs->ctx.DX, 0, 4*16);
-+	if (ret)
-+		goto out;
-+	/* A{0-1}.{0-1} */
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  regs->ctx.AX, 4*16, 4*20);
-+	if (ret)
-+		goto out;
-+	/* A{0-1}.2 */
-+	if (regs->ctx.SaveMask & TBICTX_XEXT_BIT)
-+		ptr = regs->ctx.Ext.Ctx.pExt;
-+	else
-+		ptr = &regs->ctx.Ext.AX2;
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  ptr, 4*20, 4*22);
-+	if (ret)
-+		goto out;
-+	/* A{0-1}.3 */
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  &regs->ctx.AX3, 4*22, 4*24);
-+	if (ret)
-+		goto out;
-+	/* PC */
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  &regs->ctx.CurrPC, 4*24, 4*25);
-+	if (ret)
-+		goto out;
-+	/* TXSTATUS */
-+	data = (unsigned long)regs->ctx.Flags;
-+	if (regs->ctx.SaveMask & TBICTX_CBUF_BIT)
-+		data |= USER_GP_REGS_STATUS_CATCH_BIT;
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  &data, 4*25, 4*26);
-+	if (ret)
-+		goto out;
-+	/* TXRPT, TXBPOBITS, TXMODE */
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  &regs->ctx.CurrRPT, 4*26, 4*29);
-+	if (ret)
-+		goto out;
-+	/* Padding */
-+	ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
-+				       4*29, 4*30);
-+out:
-+	return ret;
++	return __builtin_metag_bswaps(x);
 +}
++#define __arch_swab16 __arch_swab16
 +
-+int metag_gp_regs_copyin(struct pt_regs *regs,
-+			 unsigned int pos, unsigned int count,
-+			 const void *kbuf, const void __user *ubuf)
++static inline __attribute_const__ __u32 __arch_swab32(__u32 x)
 +{
-+	void *ptr;
-+	unsigned long data;
-+	int ret;
-+
-+	/* D{0-1}.{0-7} */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 regs->ctx.DX, 0, 4*16);
-+	if (ret)
-+		goto out;
-+	/* A{0-1}.{0-1} */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 regs->ctx.AX, 4*16, 4*20);
-+	if (ret)
-+		goto out;
-+	/* A{0-1}.2 */
-+	if (regs->ctx.SaveMask & TBICTX_XEXT_BIT)
-+		ptr = regs->ctx.Ext.Ctx.pExt;
-+	else
-+		ptr = &regs->ctx.Ext.AX2;
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 ptr, 4*20, 4*22);
-+	if (ret)
-+		goto out;
-+	/* A{0-1}.3 */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 &regs->ctx.AX3, 4*22, 4*24);
-+	if (ret)
-+		goto out;
-+	/* PC */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 &regs->ctx.CurrPC, 4*24, 4*25);
-+	if (ret)
-+		goto out;
-+	/* TXSTATUS */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 &data, 4*25, 4*26);
-+	if (ret)
-+		goto out;
-+	regs->ctx.Flags = data & 0xffff;
-+	if (data & USER_GP_REGS_STATUS_CATCH_BIT)
-+		regs->ctx.SaveMask |= TBICTX_XCBF_BIT | TBICTX_CBUF_BIT;
-+	else
-+		regs->ctx.SaveMask &= ~TBICTX_CBUF_BIT;
-+	/* TXRPT, TXBPOBITS, TXMODE */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 &regs->ctx.CurrRPT, 4*26, 4*29);
-+out:
-+	return ret;
++	return __builtin_metag_bswap(x);
 +}
++#define __arch_swab32 __arch_swab32
 +
-+static int metag_gp_regs_get(struct task_struct *target,
-+			     const struct user_regset *regset,
-+			     unsigned int pos, unsigned int count,
-+			     void *kbuf, void __user *ubuf)
++static inline __attribute_const__ __u64 __arch_swab64(__u64 x)
 +{
-+	const struct pt_regs *regs = task_pt_regs(target);
-+	return metag_gp_regs_copyout(regs, pos, count, kbuf, ubuf);
++	return __builtin_metag_bswapll(x);
 +}
++#define __arch_swab64 __arch_swab64
 +
-+static int metag_gp_regs_set(struct task_struct *target,
-+			     const struct user_regset *regset,
-+			     unsigned int pos, unsigned int count,
-+			     const void *kbuf, const void __user *ubuf)
-+{
-+	struct pt_regs *regs = task_pt_regs(target);
-+	return metag_gp_regs_copyin(regs, pos, count, kbuf, ubuf);
-+}
-+
-+int metag_cb_regs_copyout(const struct pt_regs *regs,
-+			  unsigned int pos, unsigned int count,
-+			  void *kbuf, void __user *ubuf)
-+{
-+	int ret;
-+
-+	/* TXCATCH{0-3} */
-+	if (regs->ctx.SaveMask & TBICTX_XCBF_BIT)
-+		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+					  regs->extcb0, 0, 4*4);
-+	else
-+		ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
-+					       0, 4*4);
-+	return ret;
-+}
-+
-+int metag_cb_regs_copyin(struct pt_regs *regs,
-+			 unsigned int pos, unsigned int count,
-+			 const void *kbuf, const void __user *ubuf)
-+{
-+	int ret;
-+
-+	/* TXCATCH{0-3} */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 regs->extcb0, 0, 4*4);
-+	return ret;
-+}
-+
-+static int metag_cb_regs_get(struct task_struct *target,
-+			     const struct user_regset *regset,
-+			     unsigned int pos, unsigned int count,
-+			     void *kbuf, void __user *ubuf)
-+{
-+	const struct pt_regs *regs = task_pt_regs(target);
-+	return metag_cb_regs_copyout(regs, pos, count, kbuf, ubuf);
-+}
-+
-+static int metag_cb_regs_set(struct task_struct *target,
-+			     const struct user_regset *regset,
-+			     unsigned int pos, unsigned int count,
-+			     const void *kbuf, const void __user *ubuf)
-+{
-+	struct pt_regs *regs = task_pt_regs(target);
-+	return metag_cb_regs_copyin(regs, pos, count, kbuf, ubuf);
-+}
-+
-+int metag_rp_state_copyout(const struct pt_regs *regs,
-+			   unsigned int pos, unsigned int count,
-+			   void *kbuf, void __user *ubuf)
-+{
-+	unsigned long mask;
-+	u64 *ptr;
-+	int ret, i;
-+
-+	/* Empty read pipeline */
-+	if (!(regs->ctx.SaveMask & TBICTX_CBRP_BIT)) {
-+		ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
-+					       0, 4*13);
-+		goto out;
-+	}
-+
-+	mask = (regs->ctx.CurrDIVTIME & TXDIVTIME_RPMASK_BITS) >>
-+		TXDIVTIME_RPMASK_S;
-+
-+	/* Read pipeline entries */
-+	ptr = (void *)&regs->extcb0[1];
-+	for (i = 0; i < 6; ++i, ++ptr) {
-+		if (mask & (1 << i))
-+			ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+						  ptr, 8*i, 8*(i + 1));
-+		else
-+			ret = user_regset_copyout_zero(&pos, &count, &kbuf,
-+						       &ubuf, 8*i, 8*(i + 1));
-+		if (ret)
-+			goto out;
-+	}
-+	/* Mask of entries */
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  &mask, 4*12, 4*13);
-+out:
-+	return ret;
-+}
-+
-+int metag_rp_state_copyin(struct pt_regs *regs,
-+			  unsigned int pos, unsigned int count,
-+			  const void *kbuf, const void __user *ubuf)
-+{
-+	struct user_rp_state rp;
-+	unsigned long long *ptr;
-+	int ret, i;
-+
-+	/* Read the entire pipeline before making any changes */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 &rp, 0, 4*13);
-+	if (ret)
-+		goto out;
-+
-+	/* Write pipeline entries */
-+	ptr = (void *)&regs->extcb0[1];
-+	for (i = 0; i < 6; ++i, ++ptr)
-+		if (rp.mask & (1 << i))
-+			*ptr = rp.entries[i];
-+
-+	/* Update RPMask in TXDIVTIME */
-+	regs->ctx.CurrDIVTIME &= ~TXDIVTIME_RPMASK_BITS;
-+	regs->ctx.CurrDIVTIME |= (rp.mask << TXDIVTIME_RPMASK_S)
-+				 & TXDIVTIME_RPMASK_BITS;
-+
-+	/* Set/clear flags to indicate catch/read pipeline state */
-+	if (rp.mask)
-+		regs->ctx.SaveMask |= TBICTX_XCBF_BIT | TBICTX_CBRP_BIT;
-+	else
-+		regs->ctx.SaveMask &= ~TBICTX_CBRP_BIT;
-+out:
-+	return ret;
-+}
-+
-+static int metag_rp_state_get(struct task_struct *target,
-+			      const struct user_regset *regset,
-+			      unsigned int pos, unsigned int count,
-+			      void *kbuf, void __user *ubuf)
-+{
-+	const struct pt_regs *regs = task_pt_regs(target);
-+	return metag_rp_state_copyout(regs, pos, count, kbuf, ubuf);
-+}
-+
-+static int metag_rp_state_set(struct task_struct *target,
-+			      const struct user_regset *regset,
-+			      unsigned int pos, unsigned int count,
-+			      const void *kbuf, const void __user *ubuf)
-+{
-+	struct pt_regs *regs = task_pt_regs(target);
-+	return metag_rp_state_copyin(regs, pos, count, kbuf, ubuf);
-+}
-+
-+enum metag_regset {
-+	REGSET_GENERAL,
-+	REGSET_CBUF,
-+	REGSET_READPIPE,
-+};
-+
-+static const struct user_regset metag_regsets[] = {
-+	[REGSET_GENERAL] = {
-+		.core_note_type = NT_PRSTATUS,
-+		.n = ELF_NGREG,
-+		.size = sizeof(long),
-+		.align = sizeof(long long),
-+		.get = metag_gp_regs_get,
-+		.set = metag_gp_regs_set,
-+	},
-+	[REGSET_CBUF] = {
-+		.core_note_type = NT_METAG_CBUF,
-+		.n = sizeof(struct user_cb_regs) / sizeof(long),
-+		.size = sizeof(long),
-+		.align = sizeof(long long),
-+		.get = metag_cb_regs_get,
-+		.set = metag_cb_regs_set,
-+	},
-+	[REGSET_READPIPE] = {
-+		.core_note_type = NT_METAG_RPIPE,
-+		.n = sizeof(struct user_rp_state) / sizeof(long),
-+		.size = sizeof(long),
-+		.align = sizeof(long long),
-+		.get = metag_rp_state_get,
-+		.set = metag_rp_state_set,
-+	},
-+};
-+
-+static const struct user_regset_view user_metag_view = {
-+	.name = "metag",
-+	.e_machine = EM_METAG,
-+	.regsets = metag_regsets,
-+	.n = ARRAY_SIZE(metag_regsets)
-+};
-+
-+const struct user_regset_view *task_user_regset_view(struct task_struct *task)
-+{
-+	return &user_metag_view;
-+}
-+
-+/*
-+ * Called by kernel/ptrace.c when detaching..
-+ *
-+ * Make sure single step bits etc are not set.
-+ */
-+void ptrace_disable(struct task_struct *child)
-+{
-+	/* nothing to do.. */
-+}
-+
-+long arch_ptrace(struct task_struct *child, long request, unsigned long addr,
-+		 unsigned long data)
-+{
-+	int ret;
-+
-+	switch (request) {
-+	default:
-+		ret = ptrace_request(child, request, addr, data);
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+int syscall_trace_enter(struct pt_regs *regs)
-+{
-+	int ret = 0;
-+
-+	if (test_thread_flag(TIF_SYSCALL_TRACE))
-+		ret = tracehook_report_syscall_entry(regs);
-+
-+	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-+		trace_sys_enter(regs, regs->ctx.DX[0].U1);
-+
-+	return ret ? -1 : regs->ctx.DX[0].U1;
-+}
-+
-+void syscall_trace_leave(struct pt_regs *regs)
-+{
-+	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-+		trace_sys_exit(regs, regs->ctx.DX[0].U1);
-+
-+	if (test_thread_flag(TIF_SYSCALL_TRACE))
-+		tracehook_report_syscall_exit(regs, 0);
-+}
-diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
-index 126a817..eb164a2 100644
---- a/include/uapi/linux/elf.h
-+++ b/include/uapi/linux/elf.h
-@@ -395,6 +395,8 @@ typedef struct elf64_shdr {
- #define NT_ARM_TLS	0x401		/* ARM TLS register */
- #define NT_ARM_HW_BREAK	0x402		/* ARM hardware breakpoint registers */
- #define NT_ARM_HW_WATCH	0x403		/* ARM hardware watchpoint registers */
-+#define NT_METAG_CBUF	0x500		/* Metag catch buffer registers */
-+#define NT_METAG_RPIPE	0x501		/* Metag read pipeline state */
- 
- 
- /* Note header in a PT_NOTE section */
++#endif /* __ASM_METAG_SWAB_H */
 -- 
 1.7.7.6
 
