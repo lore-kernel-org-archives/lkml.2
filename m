@@ -1,61 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab3AJIKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 03:10:15 -0500
-Received: from mga09.intel.com ([134.134.136.24]:13936 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932633Ab3AJIKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 03:10:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="244497300"
-Subject: [PATCH] ST_CORE: Error triggered by convert "char" to "int"
-From: channing <chao.bi@intel.com>
-To: alan@linux.intel.com, gregkh@linuxfoundation.org,
-        akpm@linux-foundation.org, pavan_savoy@ti.com
-Cc: chuansheng.liu@intel.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Jan 2013 16:27:29 +0800
-Message-ID: <1357806449.8296.32.camel@bichao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932741Ab3AJIK5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 03:10:57 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:62325 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932648Ab3AJIKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 03:10:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKohpone-pXUjuDsP7r73mP+rzSUUb1oWiu5c+NL8R_WsYoJZg@mail.gmail.com>
+References: <aa10abe640afed8700abf262dbfc9b9c22659b6a.1357729671.git.viresh.kumar@linaro.org>
+	<20130110075422.GA11458@S2101-09.ap.freescale.net>
+	<CAKohpone-pXUjuDsP7r73mP+rzSUUb1oWiu5c+NL8R_WsYoJZg@mail.gmail.com>
+Date: Thu, 10 Jan 2013 16:10:55 +0800
+Message-ID: <CAAQ0ZWTvKcn5qR8_J5hx+qsxHGTJ8rSE41VD6aQhipM6c+CqTA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Simplify __cpufreq_remove_dev()
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, linaro-dev@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10 January 2013 16:05, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> Another thing, can i have a tested-by from you for both my patches ? remove and
+> add dev?
+>
+For both:
 
-When st driver decodes protocol index received from raw data,
-it does a value convert from "char" to "int". Because it's sign
-extension from bit8 to bit32, the "int" value maybe minus, in
-another word, the protocol index might be minus, but driver doesn't
-filter such case and may continue access memory pointed by this
-minus index.
-
-This patch is to change the variable type of index from "int"
-to "unsigned char", so that it avoids do such kind of type
-conversion.
-
-cc: liu chuansheng <chuansheng.liu@intel.com>
-Signed-off-by: channing <chao.bi@intel.com>
----
- drivers/misc/ti-st/st_core.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
-index b90a224..0a14280 100644
---- a/drivers/misc/ti-st/st_core.c
-+++ b/drivers/misc/ti-st/st_core.c
-@@ -240,7 +240,8 @@ void st_int_recv(void *disc_data,
- 	char *ptr;
- 	struct st_proto_s *proto;
- 	unsigned short payload_len = 0;
--	int len = 0, type = 0;
-+	int len = 0;
-+	unsigned char type = 0;
- 	unsigned char *plen;
- 	struct st_data_s *st_gdata = (struct st_data_s *)disc_data;
- 	unsigned long flags;
--- 
-1.7.1
-
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
