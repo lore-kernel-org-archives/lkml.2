@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab3AJPks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:40:48 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:52690 "EHLO multi.imgtec.com"
+	id S1754776Ab3AJPkp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:40:45 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:56708 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754419Ab3AJPcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:32:46 -0500
+	id S1754438Ab3AJPct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:32:49 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v3 21/44] metag: Time keeping
-Date: Thu, 10 Jan 2013 15:30:49 +0000
-Message-ID: <1357831872-29451-22-git-send-email-james.hogan@imgtec.com>
+CC: James Hogan <james.hogan@imgtec.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v3 22/44] metag: Traps
+Date: Thu, 10 Jan 2013 15:30:50 +0000
+Message-ID: <1357831872-29451-23-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
@@ -22,370 +22,1227 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add time keeping code for metag. Meta hardware threads have 2 timers.
-The background timer (TXTIMER) is used as a free-running time base, and
-the interrupt timer (TXTIMERI) is used for the timer interrupt. Both
-counters traditionally count at approximately 1MHz.
+Add trap code for metag. At the lowest level Meta traps (and return from
+interrupt instruction - RTI) simply swap the PC and PCX registers and
+optionally toggle the interrupt status bit (ISTAT). Low level TBX code
+in tbipcx.S handles the core context save, determine the TBX signal
+number based on the core trigger that fired (using the TXSTATI status
+register), and call TBX signal handlers (mostly in traps.c) via a vector
+table.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 ---
- arch/metag/include/asm/clock.h     |   51 +++++++++++
- arch/metag/include/asm/delay.h     |   29 +++++++
- arch/metag/include/asm/mach/arch.h |    4 +
- arch/metag/kernel/clock.c          |   53 ++++++++++++
- arch/metag/kernel/time.c           |  163 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 300 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/clock.h
- create mode 100644 arch/metag/include/asm/delay.h
- create mode 100644 arch/metag/kernel/clock.c
- create mode 100644 arch/metag/kernel/time.c
+ arch/metag/include/asm/switch.h |   22 +
+ arch/metag/include/asm/traps.h  |   47 ++
+ arch/metag/kernel/kick.c        |   94 ++++
+ arch/metag/kernel/tbiunexp.S    |   22 +
+ arch/metag/kernel/traps.c       |  983 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 1168 insertions(+), 0 deletions(-)
+ create mode 100644 arch/metag/include/asm/switch.h
+ create mode 100644 arch/metag/include/asm/traps.h
+ create mode 100644 arch/metag/kernel/kick.c
+ create mode 100644 arch/metag/kernel/tbiunexp.S
+ create mode 100644 arch/metag/kernel/traps.c
 
-diff --git a/arch/metag/include/asm/clock.h b/arch/metag/include/asm/clock.h
+diff --git a/arch/metag/include/asm/switch.h b/arch/metag/include/asm/switch.h
 new file mode 100644
-index 0000000..3e2915a
+index 0000000..53eed0d
 --- /dev/null
-+++ b/arch/metag/include/asm/clock.h
-@@ -0,0 +1,51 @@
++++ b/arch/metag/include/asm/switch.h
+@@ -0,0 +1,22 @@
 +/*
-+ * arch/metag/include/asm/clock.h
-+ *
 + * Copyright (C) 2012 Imagination Technologies Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + */
 +
-+#ifndef _METAG_CLOCK_H_
-+#define _METAG_CLOCK_H_
++#ifndef _ASM_METAG_SWITCH_H
++#define _ASM_METAG_SWITCH_H
 +
-+#include <asm/mach/arch.h>
++/* metag SWITCH codes */
++#define __METAG_SW_IDLE		0x400000	/* idle waiting for trigger */
++#define __METAG_SW_PERM_BREAK	0x400002	/* compiled in breakpoint */
++#define __METAG_SW_SYS_LEGACY	0x440000	/* legacy system calls */
++#define __METAG_SW_SYS		0x440001	/* system calls */
 +
-+/**
-+ * struct meta_clock_desc - Meta Core clock callbacks.
-+ * @get_core_freq:	Get the frequency of the Meta core. If this is NULL, the
-+ *			core frequency will be determined like this:
-+ *			Meta 1: based on loops_per_jiffy.
-+ *			Meta 2: (EXPAND_TIMER_DIV + 1) MHz.
++/* metag SWITCH instruction encoding */
++#define __METAG_SW_ENCODING(TYPE)	(0xaf000000 | (__METAG_SW_##TYPE))
++
++#endif /* _ASM_METAG_SWITCH_H */
+diff --git a/arch/metag/include/asm/traps.h b/arch/metag/include/asm/traps.h
+new file mode 100644
+index 0000000..1f6caf9
+--- /dev/null
++++ b/arch/metag/include/asm/traps.h
+@@ -0,0 +1,47 @@
++/*
++ *  Copyright (C) 2005,2008 Imagination Technologies
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive
++ * for more details.
 + */
-+struct meta_clock_desc {
-+	unsigned long		(*get_core_freq)(void);
++
++#ifndef _METAG_TBIVECTORS_H
++#define _METAG_TBIVECTORS_H
++
++#ifndef __ASSEMBLY__
++
++#include <asm/tbx.h>
++
++typedef TBIRES (*kick_irq_func_t)(TBIRES, int, int, int, PTBI, int *);
++
++extern TBIRES kick_handler(TBIRES, int, int, int, PTBI);
++struct kick_irq_handler {
++	struct list_head list;
++	kick_irq_func_t func;
 +};
 +
-+extern struct meta_clock_desc _meta_clock;
++extern void kick_register_func(struct kick_irq_handler *);
++extern void kick_unregister_func(struct kick_irq_handler *);
 +
-+/*
-+ * Set up the default clock, ensuring all callbacks are valid - only accessible
-+ * during boot.
-+ */
-+void setup_meta_clocks(struct meta_clock_desc *desc);
-+
-+/**
-+ * get_coreclock() - Get the frequency of the Meta core clock.
-+ *
-+ * Returns:	The Meta core clock frequency in Hz.
-+ */
-+static inline unsigned long get_coreclock(void)
++extern void head_end(TBIRES, unsigned long);
++extern TBIRES tail_end_sys(TBIRES, int, int *);
++static inline TBIRES tail_end(TBIRES state)
 +{
-+	/*
-+	 * Use the current clock callback. If set correctly this will provide
-+	 * the most accurate frequency as it can be calculated directly from the
-+	 * PLL configuration. otherwise a default callback will have been set
-+	 * instead.
-+	 */
-+	return _meta_clock.get_core_freq();
++	return tail_end_sys(state, -1, NULL);
 +}
 +
-+#endif /* _METAG_CLOCK_H_ */
-diff --git a/arch/metag/include/asm/delay.h b/arch/metag/include/asm/delay.h
++DECLARE_PER_CPU(PTBI, pTBI);
++extern PTBI pTBI_get(unsigned int);
++
++extern int ret_from_fork(TBIRES arg);
++
++extern int do_page_fault(struct pt_regs *regs, unsigned long address,
++			 unsigned int write_access, unsigned int trapno);
++
++extern TBIRES __TBIUnExpXXX(TBIRES State, int SigNum, int Triggers, int Inst,
++			    PTBI pTBI);
++
++#endif
++
++#endif /* _METAG_TBIVECTORS_H */
+diff --git a/arch/metag/kernel/kick.c b/arch/metag/kernel/kick.c
 new file mode 100644
-index 0000000..9c92f99
+index 0000000..71e08e9
 --- /dev/null
-+++ b/arch/metag/include/asm/delay.h
-@@ -0,0 +1,29 @@
-+#ifndef _METAG_DELAY_H
-+#define _METAG_DELAY_H
++++ b/arch/metag/kernel/kick.c
+@@ -0,0 +1,94 @@
++/*
++ *  Copyright (C) 2009 Imagination Technologies
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive
++ * for more details.
++ *
++ * The Meta KICK interrupt mechanism is generally a useful feature, so
++ * we provide an interface for registering multiple interrupt
++ * handlers. All the registered interrupt handlers are "chained". When
++ * a KICK interrupt is received the first function in the list is
++ * called. If that interrupt handler cannot handle the KICK the next
++ * one is called, then the next until someone handles it (or we run
++ * out of functions). As soon as one function handles the interrupt no
++ * other handlers are called.
++ *
++ * The only downside of chaining interrupt handlers is that each
++ * handler must be able to detect whether the KICK was intended for it
++ * or not.  For example, when the IPI handler runs and it sees that
++ * there are no IPI messages it must not signal that the KICK was
++ * handled, thereby giving the other handlers a chance to run.
++ *
++ * The reason that we provide our own interface for calling KICK
++ * handlers instead of using the generic kernel infrastructure is that
++ * the KICK handlers require access to a CPU's pTBI structure. So we
++ * pass it as an argument.
++ */
++#include <linux/kernel.h>
++#include <linux/mm.h>
++#include <linux/types.h>
++
++#include <asm/traps.h>
 +
 +/*
-+ * Copyright (C) 1993 Linus Torvalds
-+ *
-+ * Delay routines calling functions in arch/metag/lib/delay.c
++ * All accesses/manipulations of kick_handlers_list should be
++ * performed while holding kick_handlers_lock.
 + */
++static DEFINE_SPINLOCK(kick_handlers_lock);
++static LIST_HEAD(kick_handlers_list);
 +
-+/* Undefined functions to get compile-time errors */
-+extern void __bad_udelay(void);
-+extern void __bad_ndelay(void);
-+
-+extern void __udelay(unsigned long usecs);
-+extern void __ndelay(unsigned long nsecs);
-+extern void __const_udelay(unsigned long xloops);
-+extern void __delay(unsigned long loops);
-+
-+/* 0x10c7 is 2**32 / 1000000 (rounded up) */
-+#define udelay(n) (__builtin_constant_p(n) ? \
-+	((n) > 20000 ? __bad_udelay() : __const_udelay((n) * 0x10c7ul)) : \
-+	__udelay(n))
-+
-+/* 0x5 is 2**32 / 1000000000 (rounded up) */
-+#define ndelay(n) (__builtin_constant_p(n) ? \
-+	((n) > 20000 ? __bad_ndelay() : __const_udelay((n) * 5ul)) : \
-+	__ndelay(n))
-+
-+#endif /* _METAG_DELAY_H */
-diff --git a/arch/metag/include/asm/mach/arch.h b/arch/metag/include/asm/mach/arch.h
-index 6845d80..12c5664 100644
---- a/arch/metag/include/asm/mach/arch.h
-+++ b/arch/metag/include/asm/mach/arch.h
-@@ -16,10 +16,13 @@
- 
- #include <linux/stddef.h>
- 
-+#include <asm/clock.h>
-+
- /**
-  * struct machine_desc - Describes a board controlled by a Meta.
-  * @name:		Board/SoC name.
-  * @dt_compat:		Array of device tree 'compatible' strings.
-+ * @clocks:		Clock callbacks.
-  *
-  * @nr_irqs:		Maximum number of IRQs.
-  *			If 0, defaults to NR_IRQS in asm-generic/irq.h.
-@@ -37,6 +40,7 @@
- struct machine_desc {
- 	const char		*name;
- 	const char		**dt_compat;
-+	struct meta_clock_desc	*clocks;
- 
- 	unsigned int		nr_irqs;
- 
-diff --git a/arch/metag/kernel/clock.c b/arch/metag/kernel/clock.c
-new file mode 100644
-index 0000000..defc840
---- /dev/null
-+++ b/arch/metag/kernel/clock.c
-@@ -0,0 +1,53 @@
-+/*
-+ * arch/metag/kernel/clock.c
-+ *
-+ * Copyright (C) 2012 Imagination Technologies Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+
-+#include <asm/param.h>
-+#include <asm/clock.h>
-+
-+struct meta_clock_desc _meta_clock;
-+
-+/* Default machine get_core_freq callback. */
-+static unsigned long get_core_freq_default(void)
++void kick_register_func(struct kick_irq_handler *kh)
 +{
-+#ifdef CONFIG_METAG_META21
++	unsigned long flags;
++
++	spin_lock_irqsave(&kick_handlers_lock, flags);
++
++	list_add_tail(&kh->list, &kick_handlers_list);
++
++	spin_unlock_irqrestore(&kick_handlers_lock, flags);
++}
++
++void kick_unregister_func(struct kick_irq_handler *kh)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&kick_handlers_lock, flags);
++
++	list_del(&kh->list);
++
++	spin_unlock_irqrestore(&kick_handlers_lock, flags);
++}
++
++TBIRES
++kick_handler(TBIRES State, int SigNum, int Triggers, int Inst, PTBI pTBI)
++{
++	struct kick_irq_handler *kh;
++	struct list_head *lh;
++	int handled = 0;
++	TBIRES ret;
++
++	head_end(State, ~INTS_OFF_MASK);
++
++	trace_hardirqs_off();
++
 +	/*
-+	 * Meta 2 cores divide down the core clock for the Meta timers, so we
-+	 * can estimate the core clock from the divider.
++	 * There is no need to disable interrupts here because we
++	 * can't nest KICK interrupts in a KICK interrupt handler.
 +	 */
-+	return (metag_in32(EXPAND_TIMER_DIV) + 1) * 1000000;
++	spin_lock(&kick_handlers_lock);
++
++	list_for_each(lh, &kick_handlers_list) {
++		kh = list_entry(lh, struct kick_irq_handler, list);
++
++		ret = kh->func(State, SigNum, Triggers, Inst, pTBI, &handled);
++		if (handled)
++			break;
++	}
++
++	spin_unlock(&kick_handlers_lock);
++
++	WARN_ON(!handled);
++
++	return tail_end(ret);
++}
+diff --git a/arch/metag/kernel/tbiunexp.S b/arch/metag/kernel/tbiunexp.S
+new file mode 100644
+index 0000000..907bbe0
+--- /dev/null
++++ b/arch/metag/kernel/tbiunexp.S
+@@ -0,0 +1,22 @@
++/* Pass a breakpoint through to Codescape */
++
++#include <asm/tbx.h>
++
++	.text
++        .global	___TBIUnExpXXX
++        .type   ___TBIUnExpXXX,function
++___TBIUnExpXXX:
++	TSTT	D0Ar2,#TBICTX_CRIT_BIT	! Result of nestable int call?
++	BZ	$LTBINormCase		! UnExpXXX at background level
++	MOV	D0Re0,TXMASKI		! Read TXMASKI
++	XOR	TXMASKI,D1Re0,D1Re0	! Turn off BGNDHALT handling!
++	OR	D0Ar2,D0Ar2,D0Re0	! Preserve bits cleared
++$LTBINormCase:
++	MSETL 	[A0StP],D0Ar6,D0Ar4,D0Ar2	! Save args on stack
++	SETL 	[A0StP++],D0Ar2,D1Ar1	! Init area for returned values
++	SWITCH 	#0xC20208		! Total stack frame size 8 Dwords
++					!            write back size 2 Dwords
++	GETL 	D0Re0,D1Re0,[--A0StP]	! Get result
++	SUB 	A0StP,A0StP,#(8*3)	! Recover stack frame
++	MOV 	PC,D1RtP
++        .size   	___TBIUnExpXXX,.-___TBIUnExpXXX
+diff --git a/arch/metag/kernel/traps.c b/arch/metag/kernel/traps.c
+new file mode 100644
+index 0000000..168076b
+--- /dev/null
++++ b/arch/metag/kernel/traps.c
+@@ -0,0 +1,983 @@
++/*
++ *  Meta exception handling.
++ *
++ *  Copyright (C) 2005,2006,2007,2008,2009,2012 Imagination Technologies Ltd.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/sched.h>
++#include <linux/signal.h>
++#include <linux/kernel.h>
++#include <linux/mm.h>
++#include <linux/types.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/ptrace.h>
++#include <linux/module.h>
++#include <linux/kallsyms.h>
++#include <linux/kdebug.h>
++#include <linux/kexec.h>
++#include <linux/unistd.h>
++#include <linux/smp.h>
++#include <linux/slab.h>
++#include <linux/syscalls.h>
++
++#include <asm/bug.h>
++#include <asm/core_reg.h>
++#include <asm/irqflags.h>
++#include <asm/siginfo.h>
++#include <asm/traps.h>
++#include <asm/hwthread.h>
++#include <asm/switch.h>
++#include <asm/user_gateway.h>
++#include <asm/syscall.h>
++#include <asm/syscalls.h>
++
++/* Passing syscall arguments as long long is quicker. */
++typedef unsigned int (*LPSYSCALL) (unsigned long long,
++				   unsigned long long,
++				   unsigned long long);
++
++/*
++ * Users of LNKSET should compare the bus error bits obtained from DEFR
++ * against TXDEFR_LNKSET_SUCCESS only as the failure code will vary between
++ * different cores revisions.
++ */
++#define TXDEFR_LNKSET_SUCCESS 0x02000000
++#define TXDEFR_LNKSET_FAILURE 0x04000000
++
++/*
++ * Our global TBI handle.  Initialised from setup.c/setup_arch.
++ */
++DECLARE_PER_CPU(PTBI, pTBI);
++
++#ifdef CONFIG_SMP
++static DEFINE_PER_CPU(unsigned int, trigger_mask);
 +#else
++unsigned int global_trigger_mask;
++#endif
++
++unsigned long per_cpu__stack_save[NR_CPUS];
++
++static const char * const trap_names[] = {
++	[TBIXXF_SIGNUM_IIF] = "Illegal instruction fault",
++	[TBIXXF_SIGNUM_PGF] = "Privilege violation",
++	[TBIXXF_SIGNUM_DHF] = "Unaligned data access fault",
++	[TBIXXF_SIGNUM_IGF] = "Code fetch general read failure",
++	[TBIXXF_SIGNUM_DGF] = "Data access general read/write fault",
++	[TBIXXF_SIGNUM_IPF] = "Code fetch page fault",
++	[TBIXXF_SIGNUM_DPF] = "Data access page fault",
++	[TBIXXF_SIGNUM_IHF] = "Instruction breakpoint",
++	[TBIXXF_SIGNUM_DWF] = "Read-only data access fault",
++};
++
++const char *trap_name(int trapno)
++{
++	if (trapno >= 0 && trapno < ARRAY_SIZE(trap_names)
++			&& trap_names[trapno])
++		return trap_names[trapno];
++	return "Unknown fault";
++}
++
++static DEFINE_SPINLOCK(die_lock);
++
++void die(const char *str, struct pt_regs *regs, long err,
++	 unsigned long addr)
++{
++	static int die_counter;
++
++	oops_enter();
++
++	spin_lock_irq(&die_lock);
++	console_verbose();
++	bust_spinlocks(1);
++	pr_err("%s: err %04lx (%s) addr %08lx [#%d]\n", str, err & 0xffff,
++	       trap_name(err & 0xffff), addr, ++die_counter);
++
++	print_modules();
++	show_regs(regs);
++
++	pr_err("Process: %s (pid: %d, stack limit = %p)\n", current->comm,
++	       task_pid_nr(current), task_stack_page(current) + THREAD_SIZE);
++
++	bust_spinlocks(0);
++	add_taint(TAINT_DIE);
++	if (kexec_should_crash(current))
++		crash_kexec(regs);
++
++	if (in_interrupt())
++		panic("Fatal exception in interrupt");
++
++	if (panic_on_oops)
++		panic("Fatal exception");
++
++	spin_unlock_irq(&die_lock);
++	oops_exit();
++	do_exit(SIGSEGV);
++}
++
++#ifdef CONFIG_METAG_DSP
++/*
++ * The ECH encoding specifies the size of a DSPRAM as,
++ *
++ *		"slots" / 4
++ *
++ * A "slot" is the size of two DSPRAM bank entries; an entry from
++ * DSPRAM bank A and an entry from DSPRAM bank B. One DSPRAM bank
++ * entry is 4 bytes.
++ */
++#define SLOT_SZ	8
++static inline unsigned int decode_dspram_size(unsigned int size)
++{
++	unsigned int _sz = size & 0x7f;
++
++	return _sz * SLOT_SZ * 4;
++}
++
++static void dspram_save(struct meta_ext_context *dsp_ctx,
++			unsigned int ramA_sz, unsigned int ramB_sz)
++{
++	unsigned int ram_sz[2];
++	int i;
++
++	ram_sz[0] = ramA_sz;
++	ram_sz[1] = ramB_sz;
++
++	for (i = 0; i < 2; i++) {
++		if (ram_sz[i] != 0) {
++			unsigned int sz;
++
++			if (i == 0)
++				sz = decode_dspram_size(ram_sz[i] >> 8);
++			else
++				sz = decode_dspram_size(ram_sz[i]);
++
++			if (dsp_ctx->ram[i] == NULL) {
++				dsp_ctx->ram[i] = kmalloc(sz, GFP_KERNEL);
++
++				if (dsp_ctx->ram[i] == NULL)
++					panic("couldn't save DSP context");
++			} else {
++				if (ram_sz[i] > dsp_ctx->ram_sz[i]) {
++					kfree(dsp_ctx->ram[i]);
++
++					dsp_ctx->ram[i] = kmalloc(sz,
++								  GFP_KERNEL);
++
++					if (dsp_ctx->ram[i] == NULL)
++						panic("couldn't save DSP context");
++				}
++			}
++
++			if (i == 0)
++				__TBIDspramSaveA(ram_sz[i], dsp_ctx->ram[i]);
++			else
++				__TBIDspramSaveB(ram_sz[i], dsp_ctx->ram[i]);
++
++			dsp_ctx->ram_sz[i] = ram_sz[i];
++		}
++	}
++}
++#endif /* CONFIG_METAG_DSP */
++
++/*
++ * Allow interrupts to be nested and save any "extended" register
++ * context state, e.g. DSP regs and RAMs.
++ */
++static void nest_interrupts(TBIRES State, unsigned long mask)
++{
++#ifdef CONFIG_METAG_DSP
++	struct meta_ext_context *dsp_ctx;
++	unsigned int D0_8;
++
 +	/*
-+	 * On Meta 1 we don't know the core clock, but assuming the Meta timer
-+	 * is correct it can be estimated based on loops_per_jiffy.
++	 * D0.8 may contain an ECH encoding. The upper 16 bits
++	 * tell us what DSP resources the current process is
++	 * using. OR the bits into the SaveMask so that
++	 * __TBINestInts() knows what resources to save as
++	 * part of this context.
++	 *
++	 * Don't save the context if we're nesting interrupts in the
++	 * kernel because the kernel doesn't use DSP hardware.
 +	 */
-+	return (loops_per_jiffy * HZ * 5) >> 1;
++	D0_8 = __core_reg_get(D0.8);
++
++	if (D0_8 && (State.Sig.SaveMask & TBICTX_PRIV_BIT)) {
++		State.Sig.SaveMask |= (D0_8 >> 16);
++
++		dsp_ctx = current->thread.dsp_context;
++		if (dsp_ctx == NULL) {
++			dsp_ctx = kzalloc(sizeof(*dsp_ctx), GFP_KERNEL);
++			if (dsp_ctx == NULL)
++				panic("couldn't save DSP context: ENOMEM");
++
++			current->thread.dsp_context = dsp_ctx;
++		}
++
++		current->thread.user_flags |= (D0_8 & 0xffff0000);
++		__TBINestInts(State, &dsp_ctx->regs, mask);
++		dspram_save(dsp_ctx, D0_8 & 0x7f00, D0_8 & 0x007f);
++	} else
++		__TBINestInts(State, NULL, mask);
++#else
++	__TBINestInts(State, NULL, mask);
 +#endif
 +}
 +
-+/**
-+ * setup_meta_clocks() - Set up the Meta clock.
-+ * @desc:	Clock descriptor usually provided by machine description
-+ *
-+ * Ensures all callbacks are valid.
-+ */
-+void __init setup_meta_clocks(struct meta_clock_desc *desc)
++void head_end(TBIRES State, unsigned long mask)
 +{
-+	/* copy callbacks */
-+	if (desc)
-+		_meta_clock = *desc;
++	unsigned int savemask = (unsigned short)State.Sig.SaveMask;
++	unsigned int ctx_savemask = (unsigned short)State.Sig.pCtx->SaveMask;
 +
-+	/* set fallback functions */
-+	if (!_meta_clock.get_core_freq)
-+		_meta_clock.get_core_freq = get_core_freq_default;
-+}
++	if (savemask & TBICTX_PRIV_BIT) {
++		ctx_savemask |= TBICTX_PRIV_BIT;
++		current->thread.user_flags = savemask;
++	}
 +
-diff --git a/arch/metag/kernel/time.c b/arch/metag/kernel/time.c
-new file mode 100644
-index 0000000..40c2f4a
---- /dev/null
-+++ b/arch/metag/kernel/time.c
-@@ -0,0 +1,163 @@
-+/*
-+ * Copyright (C) 2005,2006,2007,2008 Imagination Technologies Ltd.
-+ *
-+ * This file contains the Meta-specific time handling details.
-+ *
-+ */
++	/* Always undo the sleep bit */
++	ctx_savemask &= ~TBICTX_WAIT_BIT;
 +
-+#include <linux/errno.h>
-+#include <linux/sched.h>
-+#include <linux/kernel.h>
-+#include <linux/param.h>
-+#include <linux/time.h>
-+#include <linux/init.h>
-+#include <linux/proc_fs.h>
-+#include <linux/clocksource.h>
-+#include <linux/clockchips.h>
-+#include <linux/interrupt.h>
++	/* Always save the catch buffer and RD pipe if they are dirty */
++	savemask |= TBICTX_XCBF_BIT;
 +
-+#include <asm/clock.h>
-+#include <asm/hwthread.h>
-+#include <asm/core_reg.h>
-+#include <asm/metag_mem.h>
-+#include <asm/tbx.h>
-+
-+#define HARDWARE_FREQ		1000000	/* 1MHz */
-+#define HARDWARE_DIV		1	/* divide by 1 = 1MHz clock */
-+#define HARDWARE_TO_NS_SHIFT	10	/* convert ticks to ns */
-+
-+static unsigned int hwtimer_freq = HARDWARE_FREQ;
-+static DEFINE_PER_CPU(struct clock_event_device, local_clockevent);
-+static DEFINE_PER_CPU(char [11], local_clockevent_name);
-+
-+static int metag_timer_set_next_event(unsigned long delta,
-+				      struct clock_event_device *dev)
-+{
-+	__core_reg_set(TXTIMERI, -delta);
-+	return 0;
-+}
-+
-+static void metag_timer_set_mode(enum clock_event_mode mode,
-+				 struct clock_event_device *evt)
-+{
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_ONESHOT:
-+	case CLOCK_EVT_MODE_RESUME:
-+		break;
-+
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		/* We should disable the IRQ here */
-+		break;
-+
-+	case CLOCK_EVT_MODE_PERIODIC:
-+	case CLOCK_EVT_MODE_UNUSED:
-+		WARN_ON(1);
-+		break;
-+	};
-+}
-+
-+static inline cycle_t txtimer_read(void)
-+{
-+	unsigned int ret;
-+
-+	asm volatile ("MOV %0, TXTIMER\n" : "=r" (ret));
-+	return ret;
-+}
-+
-+static cycle_t metag_clocksource_read(struct clocksource *cs)
-+{
-+	return txtimer_read();
-+}
-+
-+static struct clocksource clocksource_metag = {
-+	.name = "META",
-+	.rating = 200,
-+	.mask = CLOCKSOURCE_MASK(32),
-+	.read = metag_clocksource_read,
-+	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
-+};
-+
-+static irqreturn_t metag_timer_interrupt(int irq, void *dummy)
-+{
-+	struct clock_event_device *evt = &__get_cpu_var(local_clockevent);
-+
-+	evt->event_handler(evt);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct irqaction metag_timer_irq = {
-+	.name = "META core timer",
-+	.handler = metag_timer_interrupt,
-+	.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_PERCPU,
-+};
-+
-+unsigned long long sched_clock(void)
-+{
-+	unsigned long long ticks = txtimer_read();
-+	return ticks << HARDWARE_TO_NS_SHIFT;
-+}
-+
-+void __cpuinit local_timer_setup(unsigned int cpu)
-+{
-+	unsigned int txdivtime;
-+	struct clock_event_device *clk = &per_cpu(local_clockevent, cpu);
-+	char *name = per_cpu(local_clockevent_name, cpu);
-+
-+	txdivtime = __core_reg_get(TXDIVTIME);
-+
-+	txdivtime &= ~TXDIVTIME_DIV_BITS;
-+	txdivtime |= (HARDWARE_DIV & TXDIVTIME_DIV_BITS);
-+
-+	__core_reg_set(TXDIVTIME, txdivtime);
-+
-+	sprintf(name, "META %d", cpu);
-+	clk->name = name;
-+	clk->features = CLOCK_EVT_FEAT_ONESHOT,
-+
-+	clk->rating = 200,
-+	clk->shift = 12,
-+	clk->irq = tbisig_map(TBID_SIGNUM_TRT),
-+	clk->set_mode = metag_timer_set_mode,
-+	clk->set_next_event = metag_timer_set_next_event,
-+
-+	clk->mult = div_sc(hwtimer_freq, NSEC_PER_SEC, clk->shift);
-+	clk->max_delta_ns = clockevent_delta2ns(0x7fffffff, clk);
-+	clk->min_delta_ns = clockevent_delta2ns(0xf, clk);
-+	clk->cpumask = cpumask_of(cpu);
-+
-+	clockevents_register_device(clk);
-+
-+	/*
-+	 * For all non-boot CPUs we need to synchronize our free
-+	 * running clock (TXTIMER) with the boot CPU's clock.
-+	 *
-+	 * While this won't be accurate, it should be close enough.
++	/* Only save the catch and RD if we have not already done so.
++	 * Note - the RD bits are in the pCtx only, and not in the
++	 * State.SaveMask.
 +	 */
-+	if (cpu) {
-+		unsigned int thread0 = cpu_2_hwthread_id[0];
-+		unsigned long val;
++	if ((savemask & TBICTX_CBUF_BIT) ||
++	    (ctx_savemask & TBICTX_CBRP_BIT)) {
++		/* Have we already saved the buffers though?
++		 * - See TestTrack 5071 */
++		if (ctx_savemask & TBICTX_XCBF_BIT) {
++			/* Strip off the bits so the call to __TBINestInts
++			 * won't save the buffers again. */
++			savemask &= ~TBICTX_CBUF_BIT;
++			ctx_savemask &= ~TBICTX_CBRP_BIT;
++		}
++	}
 +
-+		val = core_reg_read(TXUCT_ID, TXTIMER_REGNUM, thread0);
++#ifdef CONFIG_METAG_META21
++	{
++		unsigned int depth, txdefr;
 +
-+		asm volatile ("MOV TXTIMER, %0\n" : : "r" (val));
++		/*
++		 * Save TXDEFR state.
++		 *
++		 * The process may have been interrupted after a LNKSET, but
++		 * before it could read the DEFR state, so we mustn't lose that
++		 * state or it could end up retrying an atomic operation that
++		 * succeeded.
++		 *
++		 * All interrupts are disabled at this point so we
++		 * don't need to perform any locking. We must do this
++		 * dance before we use LNKGET or LNKSET.
++		 */
++		BUG_ON(current->thread.int_depth > HARDIRQ_BITS);
++
++		depth = current->thread.int_depth++;
++
++		asm volatile ("MOV %0, TXDEFR" : "=r" (txdefr));
++
++		txdefr &= TXDEFR_BUS_STATE_BITS;
++		if (txdefr & TXDEFR_LNKSET_SUCCESS)
++			current->thread.txdefr_failure &= ~(1 << depth);
++		else
++			current->thread.txdefr_failure |= (1 << depth);
++	}
++#endif
++
++	State.Sig.SaveMask = savemask;
++	State.Sig.pCtx->SaveMask = ctx_savemask;
++
++	nest_interrupts(State, mask);
++
++#ifdef CONFIG_METAG_POISON_CATCH_BUFFERS
++	/* Poison the catch registers.  This shows up any mistakes we have
++	 * made in their handling MUCH quicker.
++	 */
++	__core_reg_set(TXCATCH0, 0x87650021);
++	__core_reg_set(TXCATCH1, 0x87654322);
++	__core_reg_set(TXCATCH2, 0x87654323);
++	__core_reg_set(TXCATCH3, 0x87654324);
++#endif /* CONFIG_METAG_POISON_CATCH_BUFFERS */
++}
++
++TBIRES tail_end_sys(TBIRES State, int syscall, int *restart)
++{
++	struct pt_regs *regs = (struct pt_regs *)State.Sig.pCtx;
++	unsigned long flags;
++
++	local_irq_disable();
++
++	if (user_mode(regs)) {
++		flags = current_thread_info()->flags;
++		if (flags & _TIF_WORK_MASK &&
++		    do_work_pending(regs, flags, syscall)) {
++			*restart = 1;
++			return State;
++		}
++
++#ifdef CONFIG_METAG_FPU
++		if (current->thread.fpu_context &&
++		    current->thread.fpu_context->needs_restore) {
++			__TBICtxFPURestore(State, current->thread.fpu_context);
++			/*
++			 * Clearing this bit ensures the FP unit is not made
++			 * active again unless it is used.
++			 */
++			State.Sig.SaveMask &= ~TBICTX_FPAC_BIT;
++			current->thread.fpu_context->needs_restore = false;
++		}
++		State.Sig.TrigMask |= TBI_TRIG_BIT(TBID_SIGNUM_DFR);
++#endif
++	}
++
++	/* TBI will turn interrupts back on at some point. */
++	if (!irqs_disabled_flags((unsigned long)State.Sig.TrigMask))
++		trace_hardirqs_on();
++
++#ifdef CONFIG_METAG_DSP
++	/*
++	 * If we previously saved an extended context then restore it
++	 * now. Otherwise, clear D0.8 because this process is not
++	 * using DSP hardware.
++	 */
++	if (State.Sig.pCtx->SaveMask & TBICTX_XEXT_BIT) {
++		unsigned int D0_8;
++		struct meta_ext_context *dsp_ctx = current->thread.dsp_context;
++
++		/* Make sure we're going to return to userland. */
++		BUG_ON(current->thread.int_depth != 1);
++
++		if (dsp_ctx->ram_sz[0] > 0)
++			__TBIDspramRestoreA(dsp_ctx->ram_sz[0],
++					    dsp_ctx->ram[0]);
++		if (dsp_ctx->ram_sz[1] > 0)
++			__TBIDspramRestoreB(dsp_ctx->ram_sz[1],
++					    dsp_ctx->ram[1]);
++
++		State.Sig.SaveMask |= State.Sig.pCtx->SaveMask;
++		__TBICtxRestore(State, current->thread.dsp_context);
++		D0_8 = __core_reg_get(D0.8);
++		D0_8 |= current->thread.user_flags & 0xffff0000;
++		D0_8 |= (dsp_ctx->ram_sz[1] | dsp_ctx->ram_sz[0]) & 0xffff;
++		__core_reg_set(D0.8, D0_8);
++	} else
++		__core_reg_set(D0.8, 0);
++#endif /* CONFIG_METAG_DSP */
++
++#ifdef CONFIG_METAG_META21
++	{
++		unsigned int depth, txdefr;
++
++		/*
++		 * If there hasn't been a LNKSET since the last LNKGET then the
++		 * link flag will be set, causing the next LNKSET to succeed if
++		 * the addresses match. The two LNK operations may not be a pair
++		 * (e.g. see atomic_read()), so the LNKSET should fail.
++		 * We use a conditional-never LNKSET to clear the link flag
++		 * without side effects.
++		 */
++		asm volatile("LNKSETDNV [D0Re0],D0Re0");
++
++		depth = --current->thread.int_depth;
++
++		BUG_ON(user_mode(regs) && depth);
++
++		asm volatile ("MOV %0, TXDEFR\n" : "=r" (txdefr));
++
++		txdefr &= ~TXDEFR_BUS_STATE_BITS;
++
++		/* Do we need to restore a failure code into TXDEFR? */
++		if (current->thread.txdefr_failure & (1 << depth))
++			txdefr |= (TXDEFR_LNKSET_FAILURE | TXDEFR_BUS_TRIG_BIT);
++		else
++			txdefr |= (TXDEFR_LNKSET_SUCCESS | TXDEFR_BUS_TRIG_BIT);
++
++		asm volatile ("MOV TXDEFR, %0\n" : : "r" (txdefr));
++	}
++#endif
++	return State;
++}
++
++#ifdef CONFIG_SMP
++/*
++ * If we took an interrupt in the middle of __kuser_get_tls then we need
++ * to rewind the PC to the start of the function in case the process
++ * gets migrated to another thread (SMP only) and it reads the wrong tls
++ * data.
++ */
++static void restart_critical_section(TBIRES State)
++{
++	unsigned long get_tls_start;
++	unsigned long get_tls_end;
++
++	get_tls_start = (unsigned long)__kuser_get_tls -
++		(unsigned long)&__user_gateway_start;
++
++	get_tls_start += USER_GATEWAY_PAGE;
++
++	get_tls_end = (unsigned long)__kuser_get_tls_end -
++		(unsigned long)&__user_gateway_start;
++
++	get_tls_end += USER_GATEWAY_PAGE;
++
++	if ((State.Sig.pCtx->CurrPC >= get_tls_start) &&
++	    (State.Sig.pCtx->CurrPC < get_tls_end))
++		State.Sig.pCtx->CurrPC = get_tls_start;
++}
++#else
++/*
++ * If we took an interrupt in the middle of
++ * __kuser_cmpxchg then we need to rewind the PC to the
++ * start of the function.
++ */
++static void restart_critical_section(TBIRES State)
++{
++	unsigned long cmpxchg_start;
++	unsigned long cmpxchg_end;
++
++	cmpxchg_start = (unsigned long)__kuser_cmpxchg -
++		(unsigned long)&__user_gateway_start;
++
++	cmpxchg_start += USER_GATEWAY_PAGE;
++
++	cmpxchg_end = (unsigned long)__kuser_cmpxchg_end -
++		(unsigned long)&__user_gateway_start;
++
++	cmpxchg_end += USER_GATEWAY_PAGE;
++
++	if ((State.Sig.pCtx->CurrPC >= cmpxchg_start) &&
++	    (State.Sig.pCtx->CurrPC < cmpxchg_end))
++		State.Sig.pCtx->CurrPC = cmpxchg_start;
++}
++#endif
++
++TBIRES trigger_handler(TBIRES State, int SigNum, int Triggers, int Inst,
++		       PTBI pTBI)
++{
++	head_end(State, ~INTS_OFF_MASK);
++
++	/* If we interrupted user code handle any critical sections. */
++	if (State.Sig.SaveMask & TBICTX_PRIV_BIT)
++		restart_critical_section(State);
++
++	trace_hardirqs_off();
++
++	do_IRQ(SigNum, (struct pt_regs *)State.Sig.pCtx);
++
++	return tail_end(State);
++}
++
++static unsigned int load_fault(PTBICTXEXTCB0 pbuf)
++{
++	return pbuf->CBFlags & TXCATCH0_READ_BIT;
++}
++
++static unsigned long fault_address(PTBICTXEXTCB0 pbuf)
++{
++	return pbuf->CBAddr;
++}
++
++static void unhandled_fault(struct pt_regs *regs, unsigned long addr,
++			    int signo, int code, int trapno)
++{
++	if (user_mode(regs)) {
++		siginfo_t info;
++
++		if (show_unhandled_signals && unhandled_signal(current, signo)
++		    && printk_ratelimit()) {
++
++			pr_info("pid %d unhandled fault: pc 0x%08x, addr 0x%08lx, trap %d (%s)\n",
++				current->pid, regs->ctx.CurrPC, addr,
++				trapno, trap_name(trapno));
++			print_vma_addr(" in ", regs->ctx.CurrPC);
++			print_vma_addr(" rtp in ", regs->ctx.DX[4].U1);
++			printk("\n");
++			show_regs(regs);
++		}
++
++		info.si_signo = signo;
++		info.si_errno = 0;
++		info.si_code = code;
++		info.si_addr = (__force void __user *)addr;
++		info.si_trapno = trapno;
++		force_sig_info(signo, &info, current);
++	} else {
++		die("Oops", regs, trapno, addr);
 +	}
 +}
 +
-+void __init time_init(void)
++static int handle_data_fault(PTBICTXEXTCB0 pcbuf, struct pt_regs *regs,
++			     unsigned int data_address, int trapno)
 +{
-+	/*
-+	 * On Meta 2 SoCs, the actual frequency of the timer is based on the
-+	 * Meta core clock speed divided by an integer, so it is only
-+	 * approximately 1MHz. Calculating the real frequency here drastically
-+	 * reduces clock skew on these SoCs.
-+	 */
-+#ifdef CONFIG_METAG_META21
-+	hwtimer_freq = get_coreclock() / (metag_in32(EXPAND_TIMER_DIV) + 1);
-+#endif
-+	clocksource_register_hz(&clocksource_metag, hwtimer_freq);
++	int ret;
 +
-+	setup_irq(tbisig_map(TBID_SIGNUM_TRT), &metag_timer_irq);
++	ret = do_page_fault(regs, data_address, !load_fault(pcbuf), trapno);
 +
-+	local_timer_setup(smp_processor_id());
++	return ret;
 +}
++
++static unsigned long get_inst_fault_address(struct pt_regs *regs)
++{
++	return regs->ctx.CurrPC;
++}
++
++TBIRES fault_handler(TBIRES State, int SigNum, int Triggers,
++		     int Inst, PTBI pTBI)
++{
++	struct pt_regs *regs = (struct pt_regs *)State.Sig.pCtx;
++	PTBICTXEXTCB0 pcbuf = (PTBICTXEXTCB0)&regs->extcb0;
++	unsigned long data_address;
++
++	head_end(State, ~INTS_OFF_MASK);
++
++	/* Hardware breakpoint or data watch */
++	if ((SigNum == TBIXXF_SIGNUM_IHF) ||
++	    ((SigNum == TBIXXF_SIGNUM_DHF) &&
++	     (pcbuf[0].CBFlags & (TXCATCH0_WATCH1_BIT |
++				  TXCATCH0_WATCH0_BIT)))) {
++		State = __TBIUnExpXXX(State, SigNum, Triggers, Inst,
++				      pTBI);
++		return tail_end(State);
++	}
++
++	local_irq_enable();
++
++	data_address = fault_address(pcbuf);
++
++	switch (SigNum) {
++	case TBIXXF_SIGNUM_IGF:
++		/* 1st-level entry invalid (instruction fetch) */
++	case TBIXXF_SIGNUM_IPF: {
++		/* 2nd-level entry invalid (instruction fetch) */
++		unsigned long addr = get_inst_fault_address(regs);
++		do_page_fault(regs, addr, 0, SigNum);
++		break;
++	}
++
++	case TBIXXF_SIGNUM_DGF:
++		/* 1st-level entry invalid (data access) */
++	case TBIXXF_SIGNUM_DPF:
++		/* 2nd-level entry invalid (data access) */
++	case TBIXXF_SIGNUM_DWF:
++		/* Write to read only page */
++		handle_data_fault(pcbuf, regs, data_address, SigNum);
++		break;
++
++	case TBIXXF_SIGNUM_IIF:
++		/* Illegal instruction */
++		unhandled_fault(regs, regs->ctx.CurrPC, SIGILL, ILL_ILLOPC,
++				SigNum);
++		break;
++
++	case TBIXXF_SIGNUM_DHF:
++		/* Unaligned access */
++		unhandled_fault(regs, data_address, SIGBUS, BUS_ADRALN,
++				SigNum);
++		break;
++	case TBIXXF_SIGNUM_PGF:
++		/* Privilege violation */
++		unhandled_fault(regs, data_address, SIGSEGV, SEGV_ACCERR,
++				SigNum);
++		break;
++	default:
++		BUG();
++		break;
++	}
++
++	return tail_end(State);
++}
++
++static bool switch_is_syscall(unsigned int inst)
++{
++	return inst == __METAG_SW_ENCODING(SYS);
++}
++
++static bool switch_is_legacy_syscall(unsigned int inst)
++{
++	return inst == __METAG_SW_ENCODING(SYS_LEGACY);
++}
++
++static bool switch_is_idle(unsigned int inst)
++{
++	return inst == __METAG_SW_ENCODING(IDLE);
++}
++
++static inline void step_over_switch(struct pt_regs *regs, unsigned int inst)
++{
++	regs->ctx.CurrPC += 4;
++}
++
++static inline int test_syscall_work(void)
++{
++	return current_thread_info()->flags & _TIF_WORK_SYSCALL_MASK;
++}
++
++TBIRES switch1_handler(TBIRES State, int SigNum, int Triggers,
++		       int Inst, PTBI pTBI)
++{
++	struct pt_regs *regs = (struct pt_regs *)State.Sig.pCtx;
++	unsigned int sysnumber;
++	unsigned long long a1_a2, a3_a4, a5_a6;
++	LPSYSCALL syscall_entry;
++	int restart;
++
++	head_end(State, ~INTS_OFF_MASK);
++
++	/*
++	 * If this is not a syscall SWITCH it could be a breakpoint or a
++	 * low power request (system syscall).
++	 */
++	if (!switch_is_syscall(Inst)) {
++		if (switch_is_idle(Inst) && !user_mode(regs)) {
++			regs->ctx.SaveMask |= TBICTX_WAIT_BIT;
++			step_over_switch(regs, Inst);
++		} else {
++			/*
++			 * Alert the user if they're trying to use legacy system
++			 * calls. This suggests they need to update their C
++			 * library and build against up to date kernel headers.
++			 */
++			if (switch_is_legacy_syscall(Inst))
++				pr_warn_once("WARNING: A legacy syscall was made. Your userland needs updating.\n");
++			/*
++			 * We don't know how to handle the SWITCH and cannot
++			 * safely ignore it, so treat all unknown switches
++			 * (including breakpoints) as traps.
++			 */
++			force_sig(SIGTRAP, current);
++		}
++		return tail_end(State);
++	}
++
++	local_irq_enable();
++
++restart_syscall:
++	restart = 0;
++	sysnumber = regs->ctx.DX[0].U1;
++
++	if (test_syscall_work())
++		sysnumber = syscall_trace_enter(regs);
++
++	/* Skip over the SWITCH instruction - or you just get 'stuck' on it! */
++	step_over_switch(regs, Inst);
++
++	if (sysnumber >= __NR_syscalls) {
++		pr_debug("unknown syscall number: %d\n", sysnumber);
++		syscall_entry = (LPSYSCALL) sys_ni_syscall;
++	} else {
++		syscall_entry = (LPSYSCALL) sys_call_table[sysnumber];
++	}
++
++	/* Use 64bit loads for speed. */
++	a5_a6 = *(unsigned long long *)&regs->ctx.DX[1];
++	a3_a4 = *(unsigned long long *)&regs->ctx.DX[2];
++	a1_a2 = *(unsigned long long *)&regs->ctx.DX[3];
++
++	/* here is the actual call to the syscall handler functions */
++	regs->ctx.DX[0].U0 = syscall_entry(a1_a2, a3_a4, a5_a6);
++
++	if (test_syscall_work())
++		syscall_trace_leave(regs);
++
++	State = tail_end_sys(State, sysnumber, &restart);
++	/* Handlerless restarts shouldn't go via userland */
++	if (restart)
++		goto restart_syscall;
++	return State;
++}
++
++TBIRES switchx_handler(TBIRES State, int SigNum, int Triggers,
++		       int Inst, PTBI pTBI)
++{
++	struct pt_regs *regs = (struct pt_regs *)State.Sig.pCtx;
++
++	/*
++	 * This can be caused by any user process simply executing an unusual
++	 * SWITCH instruction. If there's no DA, __TBIUnExpXXX will cause the
++	 * thread to stop, so signal a SIGTRAP instead.
++	 */
++	head_end(State, ~INTS_OFF_MASK);
++	if (user_mode(regs))
++		force_sig(SIGTRAP, current);
++	else
++		State = __TBIUnExpXXX(State, SigNum, Triggers, Inst, pTBI);
++	return tail_end(State);
++}
++
++#ifdef CONFIG_METAG_META21
++TBIRES fpe_handler(TBIRES State, int SigNum, int Triggers, int Inst, PTBI pTBI)
++{
++	struct pt_regs *regs = (struct pt_regs *)State.Sig.pCtx;
++	unsigned int error_state = Triggers;
++	siginfo_t info;
++
++	head_end(State, ~INTS_OFF_MASK);
++
++	local_irq_enable();
++
++	info.si_signo = SIGFPE;
++
++	if (error_state & TXSTAT_FPE_INVALID_BIT)
++		info.si_code = FPE_FLTINV;
++	else if (error_state & TXSTAT_FPE_DIVBYZERO_BIT)
++		info.si_code = FPE_FLTDIV;
++	else if (error_state & TXSTAT_FPE_OVERFLOW_BIT)
++		info.si_code = FPE_FLTOVF;
++	else if (error_state & TXSTAT_FPE_UNDERFLOW_BIT)
++		info.si_code = FPE_FLTUND;
++	else if (error_state & TXSTAT_FPE_INEXACT_BIT)
++		info.si_code = FPE_FLTRES;
++	else
++		info.si_code = 0;
++	info.si_errno = 0;
++	info.si_addr = (__force void __user *)regs->ctx.CurrPC;
++	force_sig_info(SIGFPE, &info, current);
++
++	return tail_end(State);
++}
++#endif
++
++#ifdef CONFIG_METAG_SUSPEND_MEM
++struct traps_context {
++	PTBIAPIFN fnSigs[TBID_SIGNUM_MAX + 1];
++};
++
++static struct traps_context *metag_traps_context;
++
++int traps_save_context(void)
++{
++	unsigned long cpu = smp_processor_id();
++	PTBI _pTBI = per_cpu(pTBI, cpu);
++	struct traps_context *context;
++
++	context = kzalloc(sizeof(*context), GFP_ATOMIC);
++	if (!context)
++		return -ENOMEM;
++
++	memcpy(context->fnSigs, (void *)_pTBI->fnSigs, sizeof(context->fnSigs));
++
++	metag_traps_context = context;
++	return 0;
++}
++
++int traps_restore_context(void)
++{
++	unsigned long cpu = smp_processor_id();
++	PTBI _pTBI = per_cpu(pTBI, cpu);
++	struct traps_context *context = metag_traps_context;
++
++	metag_traps_context = NULL;
++
++	memcpy((void *)_pTBI->fnSigs, context->fnSigs, sizeof(context->fnSigs));
++
++	kfree(context);
++	return 0;
++}
++#endif
++
++#ifdef CONFIG_SMP
++unsigned int get_trigger_mask(void)
++{
++	unsigned long cpu = smp_processor_id();
++	return per_cpu(trigger_mask, cpu);
++}
++
++static void set_trigger_mask(unsigned int mask)
++{
++	unsigned long cpu = smp_processor_id();
++	per_cpu(trigger_mask, cpu) = mask;
++}
++#else
++static void set_trigger_mask(unsigned int mask)
++{
++	global_trigger_mask = mask;
++}
++#endif
++
++void __cpuinit per_cpu_trap_init(unsigned long cpu)
++{
++	TBIRES int_context;
++	unsigned int thread = cpu_2_hwthread_id[cpu];
++
++	set_trigger_mask(TBI_INTS_INIT(thread) | /* interrupts */
++			 TBI_TRIG_BIT(TBID_SIGNUM_LWK) | /* low level kick */
++			 TBI_TRIG_BIT(TBID_SIGNUM_SW1) |
++			 TBI_TRIG_BIT(TBID_SIGNUM_SWS));
++
++	/* non-priv - use current stack */
++	int_context.Sig.pCtx = NULL;
++	/* Start with interrupts off */
++	int_context.Sig.TrigMask = INTS_OFF_MASK;
++	int_context.Sig.SaveMask = 0;
++
++	/* And call __TBIASyncTrigger() */
++	__TBIASyncTrigger(int_context);
++}
++
++void __init trap_init(void)
++{
++	unsigned long cpu = smp_processor_id();
++	PTBI _pTBI = per_cpu(pTBI, cpu);
++
++	_pTBI->fnSigs[TBID_SIGNUM_XXF] = fault_handler;
++	_pTBI->fnSigs[TBID_SIGNUM_SW0] = switchx_handler;
++	_pTBI->fnSigs[TBID_SIGNUM_SW1] = switch1_handler;
++	_pTBI->fnSigs[TBID_SIGNUM_SW2] = switchx_handler;
++	_pTBI->fnSigs[TBID_SIGNUM_SW3] = switchx_handler;
++	_pTBI->fnSigs[TBID_SIGNUM_SWK] = kick_handler;
++
++#ifdef CONFIG_METAG_META21
++	_pTBI->fnSigs[TBID_SIGNUM_DFR] = __TBIHandleDFR;
++	_pTBI->fnSigs[TBID_SIGNUM_FPE] = fpe_handler;
++#endif
++
++	per_cpu_trap_init(cpu);
++}
++
++void tbi_startup_interrupt(int irq)
++{
++	unsigned long cpu = smp_processor_id();
++	PTBI _pTBI = per_cpu(pTBI, cpu);
++
++	BUG_ON(irq > TBID_SIGNUM_MAX);
++
++	/* For TR1 and TR2, the thread id is encoded in the irq number */
++	if (irq >= TBID_SIGNUM_T10 && irq < TBID_SIGNUM_TR3)
++		cpu = hwthread_id_2_cpu[(irq - TBID_SIGNUM_T10) % 4];
++
++	set_trigger_mask(get_trigger_mask() | TBI_TRIG_BIT(irq));
++
++	_pTBI->fnSigs[irq] = trigger_handler;
++}
++
++void tbi_shutdown_interrupt(int irq)
++{
++	unsigned long cpu = smp_processor_id();
++	PTBI _pTBI = per_cpu(pTBI, cpu);
++
++	BUG_ON(irq > TBID_SIGNUM_MAX);
++
++	set_trigger_mask(get_trigger_mask() & ~TBI_TRIG_BIT(irq));
++
++	_pTBI->fnSigs[irq] = __TBIUnExpXXX;
++}
++
++int ret_from_fork(TBIRES arg)
++{
++	struct task_struct *prev = arg.Switch.pPara;
++	struct task_struct *tsk = current;
++	struct pt_regs *regs = task_pt_regs(tsk);
++	int (*fn)(void *);
++	TBIRES Next;
++
++	schedule_tail(prev);
++
++	if (tsk->flags & PF_KTHREAD) {
++		fn = (void *)regs->ctx.DX[4].U1;
++		BUG_ON(!fn);
++
++		fn((void *)regs->ctx.DX[3].U1);
++	}
++
++	if (test_syscall_work())
++		syscall_trace_leave(regs);
++
++	preempt_disable();
++
++	Next.Sig.TrigMask = get_trigger_mask();
++	Next.Sig.SaveMask = 0;
++	Next.Sig.pCtx = &regs->ctx;
++
++	set_gateway_tls(current->thread.tls_ptr);
++
++	preempt_enable_no_resched();
++
++	/* And interrupts should come back on when we resume the real usermode
++	 * code. Call __TBIASyncResume()
++	 */
++	__TBIASyncResume(tail_end(Next));
++	/* ASyncResume should NEVER return */
++	BUG();
++	return 0;
++}
++
++void show_trace(struct task_struct *tsk, unsigned long *sp,
++		struct pt_regs *regs)
++{
++	unsigned long addr;
++#ifdef CONFIG_FRAME_POINTER
++	unsigned long fp, fpnew;
++	unsigned long stack;
++#endif
++
++	if (regs && user_mode(regs))
++		return;
++
++	printk("\nCall trace: ");
++#ifdef CONFIG_KALLSYMS
++	printk("\n");
++#endif
++
++	if (!tsk)
++		tsk = current;
++
++#ifdef CONFIG_FRAME_POINTER
++	if (regs) {
++		print_ip_sym(regs->ctx.CurrPC);
++		fp = regs->ctx.AX[1].U0;
++	} else {
++		asm volatile ("MOV %0, A0FrP\n" : "=da" (fp));
++	}
++
++	/* detect when the frame pointer has been used for other purposes and
++	 * doesn't point to the stack (it may point completely elsewhere which
++	 * kstack_end may not detect).
++	 */
++	stack = (unsigned long)task_stack_page(tsk);
++	while (fp >= stack && fp + 8 <= stack + THREAD_SIZE) {
++		addr = __raw_readl((unsigned long *)(fp + 4)) - 4;
++		if (kernel_text_address(addr))
++			print_ip_sym(addr);
++		else
++			break;
++		/* stack grows up, so frame pointers must decrease */
++		fpnew = __raw_readl((unsigned long *)(fp + 0));
++		if (fpnew >= fp)
++			break;
++		fp = fpnew;
++	}
++#else
++	while (!kstack_end(sp)) {
++		addr = (*sp--) - 4;
++		if (kernel_text_address(addr))
++			print_ip_sym(addr);
++	}
++#endif
++
++	printk("\n");
++
++	debug_show_held_locks(tsk);
++}
++
++void show_stack(struct task_struct *tsk, unsigned long *sp)
++{
++	if (!tsk)
++		tsk = current;
++	if (tsk == current)
++		sp = (unsigned long *)current_stack_pointer;
++	else
++		sp = (unsigned long *)tsk->thread.kernel_context->AX[0].U0;
++
++	show_trace(tsk, sp, NULL);
++}
++
++void dump_stack(void)
++{
++	show_stack(NULL, NULL);
++}
++EXPORT_SYMBOL(dump_stack);
 -- 
 1.7.7.6
 
