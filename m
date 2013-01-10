@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3AJJ1I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:27:08 -0500
+	id S1753110Ab3AJJ1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:27:42 -0500
 Received: from mga09.intel.com ([134.134.136.24]:43416 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779Ab3AJJYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:24:32 -0500
+	id S1752478Ab3AJJYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 04:24:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="244528127"
+   d="scan'208";a="244528115"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3 8/8] serial: 8250_dw: Enable DMA support with ACPI
-Date: Thu, 10 Jan 2013 11:25:12 +0200
-Message-Id: <1357809912-25790-9-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCHv3 7/8] serial: 8250: Add support for dmaengine
+Date: Thu, 10 Jan 2013 11:25:11 +0200
+Message-Id: <1357809912-25790-8-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357809912-25790-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1357809912-25790-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -23,107 +23,435 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With ACPI 5.0 we can use the FixedDMA Resource Descriptor to
-extract the needed information for DMA support.
+Add support for dmaengine API. The drivers can implement the
+struct uart_8250_dma member in struct uart_8250_port and
+8250.c can take care of the rest.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
- drivers/tty/serial/8250/8250_dw.c |   65 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
+ drivers/tty/serial/8250/8250.c     |   31 +++++-
+ drivers/tty/serial/8250/8250.h     |   50 +++++++++
+ drivers/tty/serial/8250/8250_dma.c |  213 ++++++++++++++++++++++++++++++++++++
+ drivers/tty/serial/8250/Kconfig    |    8 ++
+ drivers/tty/serial/8250/Makefile   |    1 +
+ include/linux/serial_8250.h        |    4 +
+ 6 files changed, 304 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/tty/serial/8250/8250_dma.c
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index f6eeff0..ceacf5e 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -27,6 +27,8 @@
- #include <linux/slab.h>
- #include <linux/acpi.h>
+diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+index da3f828..f952993 100644
+--- a/drivers/tty/serial/8250/8250.c
++++ b/drivers/tty/serial/8250/8250.c
+@@ -1335,7 +1335,9 @@ static void serial8250_start_tx(struct uart_port *port)
+ 	struct uart_8250_port *up =
+ 		container_of(port, struct uart_8250_port, port);
  
-+#include "8250.h"
-+
- /* Offsets for the DesignWare specific registers */
- #define DW_UART_USR	0x1f /* UART Status Register */
- #define DW_UART_CPR	0xf4 /* Component Parameter Register */
-@@ -143,9 +145,64 @@ static int dw8250_probe_of(struct uart_port *p)
- 	return 0;
- }
+-	if (!(up->ier & UART_IER_THRI)) {
++	if (up->dma && !serial8250_tx_dma(up)) {
++		return;
++	} else if (!(up->ier & UART_IER_THRI)) {
+ 		up->ier |= UART_IER_THRI;
+ 		serial_port_out(port, UART_IER, up->ier);
  
-+static bool dw8250_acpi_dma_filter(struct dma_chan *chan, void *parm)
-+{
-+	return chan->chan_id == *(int *)parm;
-+}
+@@ -1536,6 +1538,7 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
+ 	unsigned long flags;
+ 	struct uart_8250_port *up =
+ 		container_of(port, struct uart_8250_port, port);
++	int dma_err = 0;
+ 
+ 	if (iir & UART_IIR_NO_INT)
+ 		return 0;
+@@ -1546,8 +1549,13 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
+ 
+ 	DEBUG_INTR("status = %x...", status);
+ 
+-	if (status & (UART_LSR_DR | UART_LSR_BI))
+-		status = serial8250_rx_chars(up, status);
++	if (status & (UART_LSR_DR | UART_LSR_BI)) {
++		if (up->dma)
++			dma_err = serial8250_rx_dma(up, iir);
 +
-+static acpi_status
-+dw8250_acpi_walk_resource(struct acpi_resource *res, void *data)
-+{
-+	struct uart_port		*p = data;
-+	struct uart_8250_port		*port;
-+	struct uart_8250_dma		*dma;
-+	struct acpi_resource_fixed_dma	*fixed_dma;
-+	struct dma_slave_config		*slave;
-+
-+	port = container_of(p, struct uart_8250_port, port);
-+
-+	switch (res->type) {
-+	case ACPI_RESOURCE_TYPE_FIXED_DMA:
-+		fixed_dma = &res->data.fixed_dma;
-+
-+		/* TX comes first */
-+		if (!port->dma) {
-+			dma = devm_kzalloc(p->dev, sizeof(*dma), GFP_KERNEL);
-+			if (!dma)
-+				return AE_NO_MEMORY;
-+
-+			port->dma = dma;
-+			slave = &dma->txconf;
-+
-+			slave->direction	= DMA_MEM_TO_DEV;
-+			slave->dst_addr_width	= DMA_SLAVE_BUSWIDTH_1_BYTE;
-+			slave->slave_id		= fixed_dma->request_lines;
-+
-+			dma->tx_chan_id		= fixed_dma->channels;
-+			dma->tx_param		= &dma->tx_chan_id;
-+			dma->fn			= dw8250_acpi_dma_filter;
-+		} else {
-+			dma = port->dma;
-+			slave = &dma->rxconf;
-+
-+			slave->direction	= DMA_DEV_TO_MEM;
-+			slave->src_addr_width	= DMA_SLAVE_BUSWIDTH_1_BYTE;
-+			slave->slave_id		= fixed_dma->request_lines;
-+
-+			dma->rx_chan_id		= fixed_dma->channels;
-+			dma->rx_param		= &dma->rx_chan_id;
++		if (!up->dma || dma_err)
++			status = serial8250_rx_chars(up, status);
++	}
+ 	serial8250_modem_status(up);
+ 	if (status & UART_LSR_THRE)
+ 		serial8250_tx_chars(up);
+@@ -2190,6 +2198,18 @@ dont_test_tx_en:
+ 	up->msr_saved_flags = 0;
+ 
+ 	/*
++	 * Request DMA channels for both RX and TX.
++	 */
++	if (up->dma) {
++		retval = serial8250_request_dma(up);
++		if (retval) {
++			pr_warn_ratelimited("ttyS%d - failed to request DMA\n",
++					    serial_index(port));
++			up->dma = NULL;
 +		}
-+
-+		break;
 +	}
 +
-+	return AE_OK;
++	/*
+ 	 * Finally, enable interrupts.  Note: Modem status interrupts
+ 	 * are set via set_termios(), which will be occurring imminently
+ 	 * anyway, so we don't enable them here.
+@@ -2222,6 +2242,9 @@ static void serial8250_shutdown(struct uart_port *port)
+ 	up->ier = 0;
+ 	serial_port_out(port, UART_IER, 0);
+ 
++	if (up->dma)
++		serial8250_release_dma(up);
++
+ 	spin_lock_irqsave(&port->lock, flags);
+ 	if (port->flags & UPF_FOURPORT) {
+ 		/* reset interrupts on the AST Fourport board */
+@@ -3286,6 +3309,8 @@ int serial8250_register_8250_port(struct uart_8250_port *up)
+ 			uart->dl_read = up->dl_read;
+ 		if (up->dl_write)
+ 			uart->dl_write = up->dl_write;
++		if (up->dma)
++			uart->dma = up->dma;
+ 
+ 		if (serial8250_isa_config != NULL)
+ 			serial8250_isa_config(0, &uart->port,
+diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
+index 3b4ea84..363d549 100644
+--- a/drivers/tty/serial/8250/8250.h
++++ b/drivers/tty/serial/8250/8250.h
+@@ -12,6 +12,35 @@
+  */
+ 
+ #include <linux/serial_8250.h>
++#include <linux/dmaengine.h>
++
++struct uart_8250_dma {
++	dma_filter_fn		fn;
++	void			*rx_param;
++	void			*tx_param;
++
++	int			rx_chan_id;
++	int			tx_chan_id;
++
++	struct dma_slave_config	rxconf;
++	struct dma_slave_config	txconf;
++
++	struct dma_chan		*rxchan;
++	struct dma_chan		*txchan;
++
++	dma_addr_t		rx_addr;
++	dma_addr_t		tx_addr;
++
++	dma_cookie_t		rx_cookie;
++	dma_cookie_t		tx_cookie;
++
++	void			*rx_buf;
++
++	size_t			rx_size;
++	size_t			tx_size;
++
++	unsigned char		tx_running:1;
++};
+ 
+ struct old_serial_port {
+ 	unsigned int uart;
+@@ -142,3 +171,24 @@ static inline int is_omap1510_8250(struct uart_8250_port *pt)
+ 	return 0;
+ }
+ #endif
++
++#ifdef CONFIG_SERIAL_8250_DMA
++extern int serial8250_tx_dma(struct uart_8250_port *);
++extern int serial8250_rx_dma(struct uart_8250_port *, unsigned int iir);
++extern int serial8250_request_dma(struct uart_8250_port *);
++extern void serial8250_release_dma(struct uart_8250_port *);
++#else
++static inline int serial8250_tx_dma(struct uart_8250_port *p)
++{
++	return -1;
++}
++static inline int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
++{
++	return -1;
++}
++static inline int serial8250_request_dma(struct uart_8250_port *p)
++{
++	return -1;
++}
++static inline void serial8250_release_dma(struct uart_8250_port *p) { }
++#endif
+diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
+new file mode 100644
+index 0000000..95516a1
+--- /dev/null
++++ b/drivers/tty/serial/8250/8250_dma.c
+@@ -0,0 +1,213 @@
++/*
++ * 8250_dma.c - DMA Engine API support for 8250.c
++ *
++ * Copyright (C) 2013 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++#include <linux/tty.h>
++#include <linux/tty_flip.h>
++#include <linux/serial_reg.h>
++#include <linux/dma-mapping.h>
++
++#include "8250.h"
++
++static void __dma_tx_complete(void *param)
++{
++	struct uart_8250_port	*p = param;
++	struct uart_8250_dma	*dma = p->dma;
++	struct circ_buf		*xmit = &p->port.state->xmit;
++
++	dma->tx_running = 0;
++
++	dma_sync_single_for_cpu(dma->txchan->device->dev, dma->tx_addr,
++				UART_XMIT_SIZE, DMA_TO_DEVICE);
++
++	xmit->tail += dma->tx_size;
++	xmit->tail &= UART_XMIT_SIZE - 1;
++	p->port.icount.tx += dma->tx_size;
++
++	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
++		uart_write_wakeup(&p->port);
++
++	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&p->port)) {
++		serial8250_tx_dma(p);
++		uart_write_wakeup(&p->port);
++	}
 +}
 +
- static int dw8250_probe_acpi(struct uart_port *p)
- {
- 	const struct acpi_device_id *id;
-+	acpi_status status;
- 	u32 reg;
- 
- 	id = acpi_match_device(p->dev->driver->acpi_match_table, p->dev);
-@@ -158,6 +215,14 @@ static int dw8250_probe_acpi(struct uart_port *p)
- 	p->regshift = 2;
- 	p->uartclk = (unsigned int)id->driver_data;
- 
-+	status = acpi_walk_resources(ACPI_HANDLE(p->dev), METHOD_NAME__CRS,
-+				     dw8250_acpi_walk_resource, p);
-+	if (ACPI_FAILURE(status)) {
-+		dev_err_ratelimited(p->dev, "%s failed \"%s\"\n", __func__,
-+				    acpi_format_exception(status));
++static void __dma_rx_complete(void *param)
++{
++	struct uart_8250_port	*p = param;
++	struct uart_8250_dma	*dma = p->dma;
++	struct tty_struct	*tty = p->port.state->port.tty;
++	struct dma_tx_state	state;
++
++	dma_sync_single_for_cpu(dma->rxchan->device->dev, dma->rx_addr,
++				dma->rx_size, DMA_FROM_DEVICE);
++
++	dmaengine_tx_status(dma->rxchan, dma->rx_cookie, &state);
++	dmaengine_terminate_all(dma->rxchan);
++
++	tty_insert_flip_string(tty, dma->rx_buf, dma->rx_size - state.residue);
++	p->port.icount.rx += dma->rx_size - state.residue;
++
++	tty_flip_buffer_push(tty);
++}
++
++int serial8250_tx_dma(struct uart_8250_port *p)
++{
++	struct uart_8250_dma		*dma = p->dma;
++	struct circ_buf			*xmit = &p->port.state->xmit;
++	struct dma_async_tx_descriptor	*desc;
++
++	if (dma->tx_running) {
++		uart_write_wakeup(&p->port);
++		return -EBUSY;
++	}
++
++	dma->tx_size = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
++
++	desc = dmaengine_prep_slave_single(dma->txchan,
++					   dma->tx_addr + xmit->tail,
++					   dma->tx_size, DMA_MEM_TO_DEV,
++					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++	if (!desc)
++		return -EBUSY;
++
++	dma->tx_running = 1;
++
++	desc->callback = __dma_tx_complete;
++	desc->callback_param = p;
++
++	dma->tx_cookie = dmaengine_submit(desc);
++
++	dma_sync_single_for_device(dma->txchan->device->dev, dma->tx_addr,
++				   UART_XMIT_SIZE, DMA_TO_DEVICE);
++
++	dma_async_issue_pending(dma->txchan);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(serial8250_tx_dma);
++
++int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
++{
++	struct uart_8250_dma		*dma = p->dma;
++	struct dma_async_tx_descriptor	*desc;
++	struct dma_tx_state		state;
++	int				dma_status;
++
++	/*
++	 * If RCVR FIFO trigger level was not reached, complete the transfer and
++	 * let 8250.c copy the remaining data.
++	 */
++	if ((iir & 0x3f) == UART_IIR_RX_TIMEOUT) {
++		dma_status = dmaengine_tx_status(dma->rxchan, dma->rx_cookie,
++						&state);
++		if (dma_status == DMA_IN_PROGRESS) {
++			dmaengine_pause(dma->rxchan);
++			__dma_rx_complete(p);
++		}
++		return -ETIMEDOUT;
++	}
++
++	desc = dmaengine_prep_slave_single(dma->rxchan, dma->rx_addr,
++					   dma->rx_size, DMA_DEV_TO_MEM,
++					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++	if (!desc)
++		return -EBUSY;
++
++	desc->callback = __dma_rx_complete;
++	desc->callback_param = p;
++
++	dma->rx_cookie = dmaengine_submit(desc);
++
++	dma_sync_single_for_device(dma->rxchan->device->dev, dma->rx_addr,
++				   dma->rx_size, DMA_FROM_DEVICE);
++
++	dma_async_issue_pending(dma->rxchan);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(serial8250_rx_dma);
++
++int serial8250_request_dma(struct uart_8250_port *p)
++{
++	struct uart_8250_dma	*dma = p->dma;
++	dma_cap_mask_t		mask;
++
++	dma->rxconf.src_addr = p->port.mapbase + UART_RX;
++	dma->txconf.dst_addr = p->port.mapbase + UART_TX;
++
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_SLAVE, mask);
++
++	/* Get a channel for RX */
++	dma->rxchan = dma_request_channel(mask, dma->fn, dma->rx_param);
++	if (!dma->rxchan)
++		return -ENODEV;
++
++	dmaengine_slave_config(dma->rxchan, &dma->rxconf);
++
++	/* Get a channel for TX */
++	dma->txchan = dma_request_channel(mask, dma->fn, dma->tx_param);
++	if (!dma->txchan) {
++		dma_release_channel(dma->rxchan);
 +		return -ENODEV;
 +	}
 +
- 	/* Fix Haswell issue where the clocks do not get enabled */
- 	if (!strcmp(id->id, "INT33C4") || !strcmp(id->id, "INT33C5")) {
- 		reg = readl(p->membase + LPSS_PRV_CLOCK_PARAMS);
++	dmaengine_slave_config(dma->txchan, &dma->txconf);
++
++	/* RX buffer */
++	if (!dma->rx_size)
++		dma->rx_size = PAGE_SIZE;
++
++	dma->rx_buf = dma_alloc_coherent(dma->rxchan->device->dev, dma->rx_size,
++					&dma->rx_addr, GFP_KERNEL);
++	if (!dma->rx_buf) {
++		dma_release_channel(dma->rxchan);
++		dma_release_channel(dma->txchan);
++		return -ENOMEM;
++	}
++
++	/* TX buffer */
++	dma->tx_addr = dma_map_single(dma->txchan->device->dev,
++					p->port.state->xmit.buf,
++					UART_XMIT_SIZE,
++					DMA_TO_DEVICE);
++
++	dev_dbg_ratelimited(p->port.dev, "got both dma channels\n");
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(serial8250_request_dma);
++
++void serial8250_release_dma(struct uart_8250_port *p)
++{
++	struct uart_8250_dma *dma = p->dma;
++
++	if (!dma)
++		return;
++
++	/* Release RX resources */
++	dmaengine_terminate_all(dma->rxchan);
++	dma_free_coherent(dma->rxchan->device->dev, dma->rx_size, dma->rx_buf,
++			  dma->rx_addr);
++	dma_release_channel(dma->rxchan);
++	dma->rxchan = NULL;
++
++	/* Release TX resources */
++	dmaengine_terminate_all(dma->txchan);
++	dma_unmap_single(dma->txchan->device->dev, dma->tx_addr,
++			 UART_XMIT_SIZE, DMA_TO_DEVICE);
++	dma_release_channel(dma->txchan);
++	dma->txchan = NULL;
++	dma->tx_running = 0;
++
++	dev_dbg_ratelimited(p->port.dev, "dma channels released\n");
++}
++EXPORT_SYMBOL_GPL(serial8250_release_dma);
+diff --git a/drivers/tty/serial/8250/Kconfig b/drivers/tty/serial/8250/Kconfig
+index 11adff1..2748125 100644
+--- a/drivers/tty/serial/8250/Kconfig
++++ b/drivers/tty/serial/8250/Kconfig
+@@ -84,6 +84,14 @@ config SERIAL_8250_GSC
+ 	depends on SERIAL_8250 && GSC
+ 	default SERIAL_8250
+ 
++config SERIAL_8250_DMA
++	bool "DMA support for 16550 compatible UART controllers" if EXPERT
++	depends on SERIAL_8250 && DMADEVICES=y
++	default SERIAL_8250
++	help
++	  This builds DMA support that can be used with 8250/16650
++	  compatible UART controllers that support DMA signaling.
++
+ config SERIAL_8250_PCI
+ 	tristate "8250/16550 PCI device support" if EXPERT
+ 	depends on SERIAL_8250 && PCI
+diff --git a/drivers/tty/serial/8250/Makefile b/drivers/tty/serial/8250/Makefile
+index 108fe7f..a23838a 100644
+--- a/drivers/tty/serial/8250/Makefile
++++ b/drivers/tty/serial/8250/Makefile
+@@ -5,6 +5,7 @@
+ obj-$(CONFIG_SERIAL_8250)		+= 8250_core.o
+ 8250_core-y				:= 8250.o
+ 8250_core-$(CONFIG_SERIAL_8250_PNP)	+= 8250_pnp.o
++8250_core-$(CONFIG_SERIAL_8250_DMA)	+= 8250_dma.o
+ obj-$(CONFIG_SERIAL_8250_GSC)		+= 8250_gsc.o
+ obj-$(CONFIG_SERIAL_8250_PCI)		+= 8250_pci.o
+ obj-$(CONFIG_SERIAL_8250_HP300)		+= 8250_hp300.o
+diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
+index c490d20..af47a8a 100644
+--- a/include/linux/serial_8250.h
++++ b/include/linux/serial_8250.h
+@@ -59,6 +59,8 @@ enum {
+ 	PLAT8250_DEV_SM501,
+ };
+ 
++struct uart_8250_dma;
++
+ /*
+  * This should be used by drivers which want to register
+  * their own 8250 ports without registering their own
+@@ -91,6 +93,8 @@ struct uart_8250_port {
+ #define MSR_SAVE_FLAGS UART_MSR_ANY_DELTA
+ 	unsigned char		msr_saved_flags;
+ 
++	struct uart_8250_dma	*dma;
++
+ 	/* 8250 specific callbacks */
+ 	int			(*dl_read)(struct uart_8250_port *);
+ 	void			(*dl_write)(struct uart_8250_port *, int);
 -- 
 1.7.10.4
 
