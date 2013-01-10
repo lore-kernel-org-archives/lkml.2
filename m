@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab3AJRFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 12:05:49 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:53873 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab3AJRFr (ORCPT
+	id S1754118Ab3AJRIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 12:08:23 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:60710 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab3AJRIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 12:05:47 -0500
+	Thu, 10 Jan 2013 12:08:22 -0500
+Message-ID: <50EF0324.9060004@mvista.com>
+Date: Thu, 10 Jan 2013 21:06:28 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130110121922.GF23008@liondog.tnic>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-9-git-send-email-yinghai@kernel.org>
-	<20130107155544.GD29449@x1.alien8.de>
-	<CAE9FiQXcP9E-RXre_NKf-SU454nT9K39f1GsVVroV1TFxPgQ7g@mail.gmail.com>
-	<20130110121922.GF23008@liondog.tnic>
-Date: Thu, 10 Jan 2013 09:05:46 -0800
-X-Google-Sender-Auth: Aheo9CuelsdvVtiVGpIrCin2r7o
-Message-ID: <CAE9FiQV9i2D319soGWyS-NwcEM2HH2gzbh_UjxmoijH0z+0mWQ@mail.gmail.com>
-Subject: Re: [PATCH v7u1 08/31] x86, 64bit: early #PF handler set page table
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org
+To: Roger Quadros <rogerq@ti.com>
+CC: balbi@ti.com, gregkh@linuxfoundation.org, sameo@linux.intel.com,
+        tony@atomide.com, kishon@ti.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 04/14] usb: phy: nop: Handle power supply regulator for
+ the PHY
+References: <1357836694-30788-1-git-send-email-rogerq@ti.com> <1357836694-30788-5-git-send-email-rogerq@ti.com>
+In-Reply-To: <1357836694-30788-5-git-send-email-rogerq@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 4:19 AM, Borislav Petkov <bp@alien8.de> wrote:
-> This is not how SOB chaining works:
->
-> SOB: Author
-> SOB: Handler - this is you, who has added it to the patchset
-> SOB: Committer - maintainer
->
-> You need to read Documentation/SubmittingPatches if there's still things
-> unclear.
+Hello.
 
-Really don't know what you are doing here.
+On 01/10/2013 07:51 PM, Roger Quadros wrote:
 
-We did that before for a long time.
+> We use "vcc" as the supply name for the PHY's power supply.
+> The power supply will be enabled during .init() and disabled
+> during .shutdown()
 
-During reviewing some patches, Linus or HPA or Eric has better idea
-and drafted some patch,
-without their Signed-offs.
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  drivers/usb/otg/nop-usb-xceiv.c |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
 
-then first version submitter will continue the debugging and testing
-and make the patch working.
+> diff --git a/drivers/usb/otg/nop-usb-xceiv.c b/drivers/usb/otg/nop-usb-xceiv.c
+> index 163f972..1c6db10 100644
+> --- a/drivers/usb/otg/nop-usb-xceiv.c
+> +++ b/drivers/usb/otg/nop-usb-xceiv.c
+[...]
+> @@ -70,6 +72,11 @@ static int nop_init(struct usb_phy *phy)
+>  {
+>  	struct nop_usb_xceiv *nop = dev_get_drvdata(phy->dev);
+>  
+> +	if (nop->vcc) {
+> +		if (regulator_enable(nop->vcc))
+> +			dev_err(phy->dev, "Failed to enable power\n");
+> +	}
 
-At last the submit the patch with authorship from Linus or HPA or Eric.
+   Could be collapsed into single *if*.
 
-So at that time how can the Signed-off from them?
+> +
+>  	if (nop->clk)
+>  		clk_enable(nop->clk);
+>  
+> @@ -82,6 +89,11 @@ static void nop_shutdown(struct usb_phy *phy)
+>  
+>  	if (nop->clk)
+>  		clk_disable(nop->clk);
+> +
+> +	if (nop->vcc) {
+> +		if (regulator_disable(nop->vcc))
+> +			dev_err(phy->dev, "Failed to disable power\n");
+> +	}
 
-And there are commits in the upstream does not have Signed-off from the Author.
+   Same here.
 
-Thanks
+WBR, Sergei
 
-Yinghai
