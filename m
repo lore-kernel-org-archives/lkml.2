@@ -1,129 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab3AJLkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 06:40:46 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:50200 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063Ab3AJLko convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 06:40:44 -0500
-Date: Thu, 10 Jan 2013 11:40:44 +0000
-From: Morten Rasmussen <Morten.Rasmussen@arm.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "bp@alien8.de" <bp@alien8.de>, "pjt@google.com" <pjt@google.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 15/22] sched: log the cpu utilization at rq
-Message-ID: <20130110114044.GE2046@e103034-lin>
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
- <1357375071-11793-16-git-send-email-alex.shi@intel.com>
+	id S1753794Ab3AJLnM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 06:43:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7422 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753413Ab3AJLnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 06:43:10 -0500
+Date: Thu, 10 Jan 2013 12:42:54 +0100
+From: Anton Arapov <anton@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [RFC PATCH v2 4/4] uretprobes: invoke return probe handlers
+Message-ID: <20130110114254.GA12964@bandura.brq.redhat.com>
+References: <1357730692-3928-1-git-send-email-anton@redhat.com>
+ <1357730692-3928-5-git-send-email-anton@redhat.com>
+ <20130109162842.GD27722@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1357375071-11793-16-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 10 Jan 2013 11:40:40.0702 (UTC) FILETIME=[5119C9E0:01CDEF27]
-X-MC-Unique: 113011011404301701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130109162842.GD27722@redhat.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 08:37:44AM +0000, Alex Shi wrote:
-> The cpu's utilization is to measure how busy is the cpu.
->         util = cpu_rq(cpu)->avg.runnable_avg_sum
->                 / cpu_rq(cpu)->avg.runnable_avg_period;
+On Wed, Jan 09, 2013 at 05:28:42PM +0100, Oleg Nesterov wrote:
+> On 01/09, Anton Arapov wrote:
+> >
+> >  static void handle_swbp(struct pt_regs *regs)
+> >  {
+> >  	struct uprobe *uprobe;
+> > +	struct xol_area *area;
+> >  	unsigned long bp_vaddr;
+> >  	int uninitialized_var(is_swbp);
+> >  
+> >  	bp_vaddr = uprobe_get_swbp_addr(regs);
+> > -	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
+> > +	area = get_xol_area();
 > 
-> Since the util is no more than 1, we use its percentage value in later
-> caculations. And set the the FULL_UTIL as 99%.
+> No, we do not need to allocate xol area here.
 > 
-> In later power aware scheduling, we are sensitive for how busy of the
-> cpu, not how weight of its load. As to power consuming, it is more
-> related with busy time, not the load weight.
+> > +	if (area) {
+> > +		if (bp_vaddr == area->vaddr) {
+> > +			handle_rp_swbp(regs);
 > 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/debug.c | 1 +
->  kernel/sched/fair.c  | 4 ++++
->  kernel/sched/sched.h | 4 ++++
->  3 files changed, 9 insertions(+)
+> Can't understand... this should check bp_vaddr == rp_trampoline_vaddr ?
 > 
-> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-> index 2cd3c1b..e4035f7 100644
-> --- a/kernel/sched/debug.c
-> +++ b/kernel/sched/debug.c
-> @@ -318,6 +318,7 @@ do {									\
->  
->  	P(ttwu_count);
->  	P(ttwu_local);
-> +	P(util);
->  
->  #undef P
->  #undef P64
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index ee015b8..7bfbd69 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1495,8 +1495,12 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
->  
->  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
->  {
-> +	u32 period;
->  	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
->  	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
-> +
-> +	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
-> +	rq->util = rq->avg.runnable_avg_sum * 100 / period;
+> Again, unless you remove rp_trampoline_vaddr altogether.
 
-The existing tg->runnable_avg and cfs_rq->tg_runnable_contrib variables
-both holds
-rq->avg.runnable_avg_sum / rq->avg.runnable_avg_period scaled by
-NICE_0_LOAD (1024). Why not use one of the existing variables instead of
-introducing a new one?
+yeah, forgot to correct this chunk before I sent it here. I was working on
+xol_get_trampoline_slot removal as you suggested.
 
-Morten
+thanks for valuable comments, seems you are okay with approach to add
+rp_handler into uprobe_consumer struct.
 
->  }
->  
->  /* Add the load generated by se into cfs_rq's child load-average */
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 66b08a1..3c6e803 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -350,6 +350,9 @@ extern struct root_domain def_root_domain;
->  
->  #endif /* CONFIG_SMP */
->  
-> +/* Take as full load, if the cpu percentage util is up to 99 */
-> +#define FULL_UTIL	99
-> +
->  /*
->   * This is the main, per-CPU runqueue data structure.
->   *
-> @@ -481,6 +484,7 @@ struct rq {
->  #endif
->  
->  	struct sched_avg avg;
-> +	unsigned int util;
->  };
->  
->  static inline int cpu_of(struct rq *rq)
-> -- 
-> 1.7.12
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Anton.
