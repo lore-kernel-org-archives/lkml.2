@@ -1,98 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927Ab3AJI2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 03:28:19 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:57254 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab3AJI2R (ORCPT
+	id S1752167Ab3AJI3P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 03:29:15 -0500
+Received: from mga03.intel.com ([143.182.124.21]:40604 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751565Ab3AJI3O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 03:28:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <50EE4B84.5080205@jp.fujitsu.com>
-References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
-	<1356456367-14660-1-git-send-email-handai.szj@taobao.com>
-	<20130102104421.GC22160@dhcp22.suse.cz>
-	<CAFj3OHXKyMO3gwghiBAmbowvqko-JqLtKroX2kzin1rk=q9tZg@mail.gmail.com>
-	<50EA7860.6030300@jp.fujitsu.com>
-	<CAFj3OHXMgRG6u2YoM7y5WuPo2ZNA1yPmKRV29FYj9B6Wj_c6Lw@mail.gmail.com>
-	<50EE247B.6090405@jp.fujitsu.com>
-	<CAFj3OHW=n22veXzR27qfc+10t-nETU=B78NULPXrEDT1S-KsOw@mail.gmail.com>
-	<50EE4B84.5080205@jp.fujitsu.com>
-Date: Thu, 10 Jan 2013 16:28:16 +0800
-Message-ID: <CAFj3OHXbfW+ubBhGNpy9ZcyUQvpKwssRvyjK5k=CM9sqQE9r4g@mail.gmail.com>
-Subject: Re: [PATCH V3 4/8] memcg: add per cgroup dirty pages accounting
-From: Sha Zhengju <handai.szj@gmail.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
-        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
-        dchinner@redhat.com, Sha Zhengju <handai.szj@taobao.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 10 Jan 2013 03:29:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
+   d="scan'208";a="242188151"
+Message-ID: <1357806538.31620.214.camel@smile>
+Subject: Re: [resend][PATCH 00/16] dw_dmac related patchset
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>
+Date: Thu, 10 Jan 2013 10:28:58 +0200
+In-Reply-To: <20130109154411.GU19691@intel.com>
+References: <20130108155423.GJ19691@intel.com>
+	 <1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <20130109154411.GU19691@intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 1:03 PM, Kamezawa Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> (2013/01/10 13:26), Sha Zhengju wrote:
->
->> But this method also has its pros and cons(e.g. need lock nesting). So
->> I doubt whether the following is able to deal with these issues all
->> together:
->> (CPU-A does "page stat accounting" and CPU-B does "move")
->>
->>               CPU-A                            CPU-B
->>
->> move_lock_mem_cgroup()
->> memcg = pc->mem_cgroup
->> SetPageDirty(page)
->> move_unlock_mem_cgroup()
->>                                        move_lock_mem_cgroup()
->>                                        if (PageDirty) {
->>                                                 old_memcg->nr_dirty --;
->>                                                 new_memcg->nr_dirty ++;
->>                                         }
->>                                         pc->mem_cgroup = new_memcg
->>                                         move_unlock_mem_cgroup()
->>
->> memcg->nr_dirty ++
->>
->>
->> For CPU-A, we save pc->mem_cgroup in a temporary variable just before
->> SetPageDirty inside move_lock and then update stats if the page is set
->> PG_dirty successfully. But CPU-B may do "moving" in advance that
->> "old_memcg->nr_dirty --" will make old_memcg->nr_dirty incorrect but
->> soon CPU-A will do "memcg->nr_dirty ++" at the heels that amend the
->> stats.
->> However, there is a potential problem that old_memcg->nr_dirty  may be
->> minus in a very short period but not a big issue IMHO.
->>
->
-> IMHO, this will work. Please take care of that the recorded memcg will not
-> be invalid pointer when you update the nr_dirty later.
-> (Maybe RCU will protect it.)
->
-Yes, there're 3 places to change pc->mem_cgroup: charge & uncharge &
-move_account. "charge" has no race with stat updater and "uncharge"
-doesn't reset pc->mem_cgroup directly, also "move_account" is just the
-one we are handling, so they may do no harm here. Meanwhile, invalid
-pointer made by cgroup deletion may also be avoided by RCU. Yet it's a
-rough conclusion by quick look...
+On Wed, 2013-01-09 at 07:44 -0800, Vinod Koul wrote: 
+> On Wed, Jan 09, 2013 at 10:16:59AM +0200, Andy Shevchenko wrote:
+> > There is a patchset against dw_dmac driver. It has been resent for Vinod to
+> > review after he returned back from vacation and holidays. That's why there is
+> > no Cc list.
+> Applied these:
+> 21fe3c5 dma: dw_dmac: add dwc_chan_pause and dwc_chan_resume
+> f5c6a7d dw_dmac: update tx_node_active in dwc_do_single_block
+> 21e93c1 dw_dmac: remove redundant check
+> cbd6531 dw_dmac: check for mapping errors
+> 123de54 dw_dmac: absence of pdata isn't critical when autocfg is set
+> 
+> 2, 9, 11(after fixing changelog) failed, possibly due to dependecy in series
 
-> _If_ this method can handle "nesting" problem clearer and make
-> implementation
-> simpler, please go ahead. To be honest, I'm not sure how the code will be
-> until
-Okay, later I'll try to propose the patch.
+It sounds strange. I just rebased against your recent next branch, and
+it went fine.
 
-> seeing the patch. Hmm, why you write SetPageDirty() here rather than
-> TestSetPageDirty()....
->
-No particular reason...TestSetPageDirty() may be more precise... : )
+Anyway, I'll submit v2 soon with changed name of the function and fixed
+changelogs.
 
+> 
+> > 
+> > Andy Shevchenko (15):
+> >   dw_dmac: call .probe after we have a device in place
+> >   dw_dmac: absence of pdata isn't critical when autocfg is set
+> >   dmaengine: introduce is_slave_xfer function
+> >   dma: at_hdmac: check direction properly for cyclic transfers
+> >   dma: dw_dmac: check direction properly in dw_dma_cyclic_prep
+> >   dma: ep93xx_dma: reuse is_slave_xfer helper
+> >   dma: ipu_idmac: reuse is_slave_xfer helper
+> >   dma: ste_dma40: reuse is_slave_xfer helper
+> >   dw_dmac: store direction in the custom channel structure
+> >   dw_dmac: make usage of dw_dma_slave optional
+> >   dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
+> >   dw_dmac: check for mapping errors
+> >   dw_dmac: remove redundant check
+> >   dw_dmac: update tx_node_active in dwc_do_single_block
+> >   dma: dw_dmac: add dwc_chan_pause and dwc_chan_resume
+> > 
+> > Heikki Krogerus (1):
+> >   dma: dw_dmac: clear suspend bit during termination
+> > 
+> >  drivers/dma/at_hdmac.c      |   10 +--
+> >  drivers/dma/dw_dmac.c       |  152 +++++++++++++++++++++++++++++--------------
+> >  drivers/dma/dw_dmac_regs.h  |   17 +++--
+> >  drivers/dma/ep93xx_dma.c    |    3 +-
+> >  drivers/dma/ipu/ipu_idmac.c |    2 +-
+> >  drivers/dma/ste_dma40.c     |    2 +-
+> >  include/linux/dmaengine.h   |    5 ++
+> >  7 files changed, 123 insertions(+), 68 deletions(-)
+> > 
+> > -- 
+> > 1.7.10.4
+> > 
 
 -- 
-Thanks,
-Sha
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
