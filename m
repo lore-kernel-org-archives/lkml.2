@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab3AJBT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 20:19:26 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:60200 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932323Ab3AJBTY (ORCPT
+	id S932606Ab3AJBVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 20:21:20 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:46593 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932323Ab3AJBVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 20:19:24 -0500
+	Wed, 9 Jan 2013 20:21:19 -0500
+From: Bing Zhao <bzhao@marvell.com>
+To: Dan Williams <dcbw@redhat.com>, Lubomir Rintel <lkundrak@v3.sk>
+CC: David Woodhouse <dwmw2@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
+        "libertas-dev@lists.infradead.org" <libertas-dev@lists.infradead.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 9 Jan 2013 17:20:46 -0800
+Subject: RE: sd8688 firmware location
+Thread-Topic: sd8688 firmware location
+Thread-Index: Ac3uuq/5nS79KVprSkeEnUej1e6k2gAEoYiw
+Message-ID: <477F20668A386D41ADCC57781B1F70430D13FDBA55@SC-VEXCH1.marvell.com>
+References: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
+ <1357771504.12030.59.camel@dcbw.foobar.com>
+In-Reply-To: <1357771504.12030.59.camel@dcbw.foobar.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <b94cdc$83e88b@fmsmga001.fm.intel.com>
-References: <20130108223611.GA19672@kroah.com>
-	<20130109003824.GA21075@kroah.com>
-	<CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com>
-	<20130109042533.GA9164@kroah.com>
-	<CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com>
-	<50ED1C12.2090608@gmail.com>
-	<50EDC8A1.30307@oracle.com>
-	<50EDCF14.4080101@oracle.com>
-	<20130110004025.GB11605@kroah.com>
-	<b94cdc$83e88b@fmsmga001.fm.intel.com>
-Date: Thu, 10 Jan 2013 11:19:24 +1000
-Message-ID: <CAPM=9tx=EjeyGzvJtpYwrM4VEGR3drpFv2RdUKSBao4dj-VrOg@mail.gmail.com>
-Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
-From: Dave Airlie <airlied@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Lijo Antony <lijo.kernel@gmail.com>, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0A1LKbC011821
 
-On Thu, Jan 10, 2013 at 11:07 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Wed, 9 Jan 2013 16:40:25 -0800, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Wed, Jan 09, 2013 at 02:12:04PM -0600, Dave Kleikamp wrote:
->> > On 01/09/2013 01:44 PM, Dave Kleikamp wrote:
->> > >
->> > > I can easily reproduce it running glxgears on 3.8-rc1 or 3.8-rc2.
->> > >
->> > > 00:02.0 VGA compatible controller [0300]: Intel Corporation Core
->> > > Processor Integrated Graphics Controller [8086:0046] (rev 02)
->> > >
->> > > Thinkpad T410
->> > >
->> > > Shaggy
->> >
->> > Daniel's patch:
->> >
->> > drm/i915: Revert shrinker changes from "Track unbound pages"
->> >
->> > fixes the problem for me.
->>
->> After an afternoon of multiple kernel builds and other stressful things,
->> it looks like it fixes it for me as well.  Chris, this will be going to
->> Linus soon, right?
->
-> Daniel will send it on. I hope before he does so, he will clarify the
-> changelog to note that it is just papering over the issue. If the
-> conjecture is right, it will not prevent that path from triggering the
-> hang, nor does it prevent other eviction paths from potentially causing
-> the same issue.
+Hi Dan,
 
-In this case since the issue was papered over all the kernel up until
-3.7, I think repapering is the answer for now. I have a novel idea
-maybe someone could spend some time working out what is broken in
-private on a test box instead of making everyone who runs 3.7 and 3.8
-on ILK deal with it. I of course know this won't happen and I'll be
-reverting patches from you guys that cause Ironlake flakyness for
-ever.
+> > btmrvl_sdio and libertas_sdio both use firmware files sd8688.bin and
+> > sd8688_helper.bin. In linux-firmware, they're present in libertas/ tree and
+> > (since 3d32a58b) libertas_sdio perfers loading it from there, while it is able
+> > to fallback to load it from linux-firmware root. btmrvl_sdio, on the other hand
+> > only looks in the root and ends up not being successful.
+> >
+> > Obviously, there are two solutions to the problem -- either teach btmrvl_sdio
+> > to look into libertas/, or move the files in linux-firmware tree. I don't
+> > really have a strong preference, though it probably makes less sense to keep in
+> > in libertas/, since the bluetooth hardware is not really marketed as "Libertas."
+> >
+> > I'm following up with patches to linux and linux-firmware and I'd be very
+> > thankful if you could pick one (not both of them).
+> 
+> So the BT part and the wifi part have different SDIO IDs; are they
+> actually connected separately to the SDIO bus?  Or is the chip only in
+> one mode at one time or something like that?  Is there a problem with
+> having both libertas and btmrvl loaded at the same time since they're
+> essentially the same chip?
 
-Dave.
+SD8688 is a combo chip with different device IDs for WLAN (function 1) and BT (function 2). WLAN + BT together are connected to the bus with a single SDIO interface. Both libertas and btmrvl drivers can be loaded at the same time, and WLAN & BT functions work concurrently. Of course the SDIO bus is shared between WLAN and BT.
+
+The firmware image can be downloaded from host to device by either libertas or btmrvl driver whoever becomes the winner from firmware downloading perspective.
+
+Regards,
+Bing
+
+> 
+> I don't really mind moving stuff to mrvl/ out of libertas/ for these
+> devices, but I do want some backwards compat code in libertas for that.
+> Unless, of course, Marcel was talking about symlinks in the
+> linux-firmware git tree, which would be fine with me.  The important
+> point is that simply updating your linux-firmware package or install or
+> whatever *should not* result in a failed firmware load.
+> 
+> Dan
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
