@@ -1,49 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab3AJNHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 08:07:12 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36757 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753551Ab3AJNHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 08:07:10 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: linux-next: manual merge of the pm tree with the pci tree
-Date: Thu, 10 Jan 2013 14:12:55 +0100
-Message-ID: <3580741.9uNSi7V1RO@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130110112836.19126ca740c8e13a15860dc0@canb.auug.org.au>
-References: <20130110112836.19126ca740c8e13a15860dc0@canb.auug.org.au>
+	id S1754843Ab3AJNH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 08:07:57 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:46416 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759Ab3AJNHy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 08:07:54 -0500
+X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jan 2013 08:07:54 EST
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20130108173119.5e59fac2@annuminas.surriel.com>
+References: <20130108172632.1126898a@annuminas.surriel.com>
+	<20130108173119.5e59fac2@annuminas.surriel.com>
+Date: Thu, 10 Jan 2013 05:01:24 -0800
+Message-ID: <CANN689H1eb_h-eX3wiEMczrA9hrX7C9zgwWzg0N7w_UcHHA2MA@mail.gmail.com>
+Subject: Re: [PATCH 4/5] x86,smp: keep spinlock delay values per hashed
+ spinlock address
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, eric.dumazet@gmail.com,
+        lwoodman@redhat.com, jeremy@goop.org,
+        Jan Beulich <JBeulich@novell.com>, knoel@redhat.com,
+        chegu_vinod@hp.com, raghavendra.kt@linux.vnet.ibm.com,
+        mingo@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jan 8, 2013 at 2:31 PM, Rik van Riel <riel@redhat.com> wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+>
+> Eric Dumazet found a regression with the first version of the spinlock
+> backoff code, in a workload where multiple spinlocks were contended,
+> each having a different wait time.
+>
+> This patch has multiple delay values per cpu, indexed on a hash
+> of the lock address, to avoid that problem.
+>
+> Eric Dumazet wrote:
+>
+> I did some tests with your patches with following configuration :
+>
+> tc qdisc add dev eth0 root htb r2q 1000 default 3
+> (to force a contention on qdisc lock, even with a multi queue net
+> device)
+>
+> and 24 concurrent "netperf -t UDP_STREAM -H other_machine -- -m 128"
+>
+> Machine : 2 Intel(R) Xeon(R) CPU X5660  @ 2.80GHz
+> (24 threads), and a fast NIC (10Gbps)
+>
+> Resulting in a 13 % regression (676 Mbits -> 595 Mbits)
+>
+> In this workload we have at least two contended spinlocks, with
+> different delays. (spinlocks are not held for the same duration)
+>
+> It clearly defeats your assumption of a single per cpu delay being OK :
+> Some cpus are spinning too long while the lock was released.
+>
+> We might try to use a hash on lock address, and an array of 16 different
+> delays so that different spinlocks have a chance of not sharing the same
+> delay.
+>
+> With following patch, I get 982 Mbits/s with same bench, so an increase
+> of 45 % instead of a 13 % regression.
 
-On Thursday, January 10, 2013 11:28:36 AM Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> Today's linux-next merge of the pm tree got a conflict in
-> drivers/acpi/pci_root.c between commit 3c449ed00759 ("PCI/ACPI: Reserve
-> firmware-allocated resources for hot-added root buses") from the pci tree
-> and commit 47525cda88f5 ("ACPI / PCI: Fold acpi_pci_root_start() into
-> acpi_pci_root_add()") from the pm tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+Note that these results were with your v1 proposal. With v3 proposal,
+on a slightly different machine (2 socket sandybridge) with a similar
+NIC, I am not seeing the regression when not using the hash table. I
+think this is because v3 got more conservative about mixed spinlock
+hold times, and converges towards the shortest of the hold times in
+that case.
 
-Thanks for the fixup and please carry it for now (the conflict should go away
-when Bjorn pulls from my acpi-scan branch).
+> -       unsigned delay = __this_cpu_read(spinlock_delay);
+> +       u32 hash = hash32_ptr(lock);
+> +       u32 slot = hash_32(hash, DELAY_HASH_SHIFT);
+> +       struct delay_entry *ent = &__get_cpu_var(spinlock_delay[slot]);
+> +       u32 delay = (ent->hash == hash) ? ent->delay : MIN_SPINLOCK_DELAY;
 
-Thanks,
-Rafael
+I think we should actually always use ent->delay here. My reasoning is
+that I think the base algorithm (from the previous patch) should have
+robustness against mixed spinlock hold times. We can't rely on
+detecting hash collisions to protect us against varying hold times,
+because this case could happen even with a single spinlock. So we need
+to make sure the base algorithm is robust and converges towards using
+the shorter of the spinlock hold times; if we have that then forcing a
+reset to MIN_SPINLOCK_DELAY only hurts since it reduces the delay
+below what is otherwise necessary.
 
+
+Other than that:
+Reviewed-by: Michel Lespinasse <walken@google.com>
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
