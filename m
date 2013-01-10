@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932420Ab3AJHLo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 02:11:44 -0500
-Received: from mga11.intel.com ([192.55.52.93]:64721 "EHLO mga11.intel.com"
+	id S932447Ab3AJHOU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 02:14:20 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:40086 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160Ab3AJHLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 02:11:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,442,1355126400"; 
-   d="scan'208";a="272133555"
-Date: Thu, 10 Jan 2013 15:12:23 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/5] kfifo: remove unnecessary type check
-Message-ID: <20130110071223.GE304@yliu-dev.sh.intel.com>
-References: <1357657073-27352-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1357657073-27352-2-git-send-email-yuanhan.liu@linux.intel.com>
- <1357681864.27255.5.camel@wall-e>
- <20130109023503.GC304@yliu-dev.sh.intel.com>
- <1357745379.11538.4.camel@wall-e>
+	id S1752171Ab3AJHOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 02:14:17 -0500
+Message-ID: <50EE6A48.7060307@parallels.com>
+Date: Thu, 10 Jan 2013 11:14:16 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357745379.11538.4.camel@wall-e>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <rientjes@google.com>,
+        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <cl@linux.com>, <minchan.kim@gmail.com>,
+        <kosaki.motohiro@jp.fujitsu.com>, <isimatu.yasuaki@jp.fujitsu.com>,
+        <wujianguo@huawei.com>, <wency@cn.fujitsu.com>, <hpa@zytor.com>,
+        <linfeng@cn.fujitsu.com>, <laijs@cn.fujitsu.com>, <mgorman@suse.de>,
+        <yinghai@kernel.org>, <x86@kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-acpi@vger.kernel.org>, <linux-s390@vger.kernel.org>,
+        <linux-sh@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
+        <cmetcalf@tilera.com>, <sparclinux@vger.kernel.org>
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com> <20130109142314.1ce04a96.akpm@linux-foundation.org> <50EE24A4.8020601@cn.fujitsu.com>
+In-Reply-To: <50EE24A4.8020601@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 04:29:39PM +0100, Stefani Seibold wrote:
-> Am Mittwoch, den 09.01.2013, 10:35 +0800 schrieb Yuanhan Liu:
-> > On Tue, Jan 08, 2013 at 10:51:04PM +0100, Stefani Seibold wrote:
-> > > Am Dienstag, den 08.01.2013, 22:57 +0800 schrieb Yuanhan Liu:
-> > > > Firstly, this kind of type check doesn't work. It does something similar
-> > > > as following:
-> > > > 	void * __dummy = NULL;
-> > > > 	__buf = __dummy;
-> > > > 
-> > > > __dummy is defined as void *. Thus it will not trigger warnings as
-> > > > expected.
-> > > > 
-> > > > Second, we don't need that kind of check. Since the prototype
-> > > > of __kfifo_out is:
-> > > > 	unsigned int __kfifo_out(struct __kfifo *fifo,  void *buf, unsigned int len)
-> > > > 
-> > > > buf is defined as void *, so we don't need do the type check. Remove it.
-> > > > 
-> > > 
-> > > Thats wrong.
-> > > 
-> > > First the type checking will be used in kfifo_put() and kfifo_in() for
-> > > const types to check if the passed type of the data can converted to the
-> > > fifo element type. 
-> > 
-> > Hi Stefani,
-> > 
-> > Yes, I see now. After rechecking the code, I found that this kind of
-> > type checking only works for those static defined kifo by
-> > DECLARE/DEFINE_KFIFO. As the ptrtype is the same as the data type:
-> > 
-> >     /* the 4th argument "type" is "ptrtype" */
-> >     #define STRUCT_KFIFO(type, size) struct __STRUCT_KFIFO(type, size, 0, type)
-> > 
-> >     #define DECLARE_KFIFO(fifo, type, size) STRUCT_KFIFO(type, size) fifo
-> > 
-> > While, for those kfifo dynamically allocated, the type checking will not
-> > work as expected then as ptrtype is always "void":
-> > 
-> >     struct kfifo __STRUCT_KFIFO_PTR(unsigned char, 0, void);
-> > 
+On 01/10/2013 06:17 AM, Tang Chen wrote:
+>>> Note: if the memory provided by the memory device is used by the
+>>> kernel, it
+>>> can't be offlined. It is not a bug.
+>>
+>> Right.  But how often does this happen in testing?  In other words,
+>> please provide an overall description of how well memory hot-remove is
+>> presently operating.  Is it reliable?  What is the success rate in
+>> real-world situations?
 > 
-> You should avoid using struct kfifo, as you can read in kfifo.h this is
-> only for compatibility reason.
+> We test the hot-remove functionality mostly with movable_online used.
+> And the memory used by kernel is not allowed to be removed.
 
-Well, the fact is struct kfifo is used far more widely than
-DECLARE/DEFINE_KFIFO; say above 50 vs less than 10.
+Can you try doing this using cpusets configured to hardwall ?
+It is my understanding that the object allocators will try hard not to
+allocate anything outside the walls defined by cpuset. Which means that
+if you have one process per node, and they are hardwalled, your kernel
+memory will be spread evenly among the machine. With a big enough load,
+they should eventually be present in all blocks.
 
-Thanks.
-
-	--yliu
-> 
-> If you use the macro DECLARE_KFIFO_PTR(), DECLARE_KFIFO() or
-> DEFINE_KFIFO() instead.
-> 
-> Have a look at the examples files in the samples/kfifo directory.
-> 
-> - Stefani
-> 
+Another question I have for you: Have you considering calling
+shrink_slab to try to deplete the caches and therefore free at least
+slab memory in the nodes that can't be offlined? Is it relevant?
