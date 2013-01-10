@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796Ab3AJJ4r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:56:47 -0500
-Received: from mga03.intel.com ([143.182.124.21]:62697 "EHLO mga03.intel.com"
+	id S1751895Ab3AJJ6o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:58:44 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59057 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab3AJJ4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:56:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="189694476"
-Date: Thu, 10 Jan 2013 12:00:13 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, eric.y.miao@gmail.com,
-        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from
- platform data
-Message-ID: <20130110100012.GK13897@intel.com>
-References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
- <50EC90C3.2090604@intel.com>
- <20130109105107.GT13897@intel.com>
- <4864369.rBqnVsbbLM@vostro.rjw.lan>
+	id S1751331Ab3AJJ6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 04:58:41 -0500
+Message-ID: <50EE90B6.2060308@ti.com>
+Date: Thu, 10 Jan 2013 10:58:14 +0100
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4864369.rBqnVsbbLM@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: kishon <kishon@ti.com>
+CC: Aaro Koskinen <aaro.koskinen@iki.fi>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3 0/3] ARM: dts: omap: add dt data for MUSB
+References: <1348047128-25692-1-git-send-email-kishon@ti.com> <505A8BAB.2020004@ti.com> <20121227183524.GB7097@blackmetal.musicnaut.iki.fi> <50EE5D61.1020307@ti.com>
+In-Reply-To: <50EE5D61.1020307@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 10:52:12PM +0100, Rafael J. Wysocki wrote:
-> 
-> > Other problem is that this setup needs manual maintenance as we can't get
-> > the configuration from ACPI.
-> 
-> So we just happen to know what the rate is supposed to be?  What's the source
-> of that information?
+Hi Kishon,
 
-We get it from the LPSS specs. On lynxpoint the LPSS clock is 100MHz.
+On 01/10/2013 07:19 AM, kishon wrote:
+> On Friday 28 December 2012 12:05 AM, Aaro Koskinen wrote:
+>> Hi,
+>>
+>> On Thu, Sep 20, 2012 at 05:21:15AM +0200, Benoit Cousson wrote:
+>>> On 09/19/2012 11:32 AM, Kishon Vijay Abraham I wrote:
+>>>> This patch series adds dt data to get MUSB working in omap4 and omap3
+>>>>
+>>>> Changes from v2:
+>>>> * Changes the subject of all the patches to include "ARM: dts:"
+>>>> * Added reg property and interrupt property for "usb_otg_hs".
+>>>> Previously these
+>>>>    were obtained from ti,hwmods property.
+>>>> * Rebased on
+>>>>   
+>>>> git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git
+>>>> devel-dt
+>>>>
+>>>> Changes from v1:
+>>>> Just removed the omap-usb2 dt data and sent that as a separate patch.
+>>>>
+>>>> Kishon Vijay Abraham I (3):
+>>>>    ARM: dts: Add twl6030-usb data
+>>>>    ARM: dts: Add twl4030-usb data
+>>>>    ARM: dts: omap: Add usb_otg and glue data
+>>>
+>>> Thanks for the update. I've just pulled the series for 3.7.
+>>
+>> I wonder what happened to the patch #3 (Add usb_otg and glue data)
+>> of this series? Why was it dropped? I cannot see it in 3.7 or 3.8-rc1.
+
+I don't remember the context, can you repost it rebased on 3.8-rc2? Did
+it generate some discussion at that time?
+
+Benoit
+
