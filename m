@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab3AJJbv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:31:51 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:17910 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751386Ab3AJJbt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:31:49 -0500
-X-IronPort-AV: E=Sophos;i="4.84,443,1355094000"; 
-   d="scan'208";a="189230568"
-Date: Thu, 10 Jan 2013 10:31:46 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Paul Mundt <lethal@linux-sh.org>
-cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: clk dereference in arch/sh/kernel/cpufreq.c
-In-Reply-To: <20130110085923.GA7785@linux-sh.org>
-Message-ID: <alpine.DEB.2.02.1301101031290.2063@localhost6.localdomain6>
-References: <alpine.DEB.2.02.1301031038030.1989@hadrien> <20130110085923.GA7785@linux-sh.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753226Ab3AJJc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:32:26 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:54767 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751386Ab3AJJcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 04:32:25 -0500
+Message-ID: <50EE8A89.4010801@ti.com>
+Date: Thu, 10 Jan 2013 15:01:53 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Kishon Vijay Abraham I <kishon@ti.com>, <b-cousson@ti.com>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <arnd@arndb.de>, <balbi@ti.com>,
+        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: dts: omap: Add omap-usb2 dt data
+References: <1348050772-27819-1-git-send-email-kishon@ti.com> <1348050772-27819-3-git-send-email-kishon@ti.com>
+In-Reply-To: <1348050772-27819-3-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jan 2013, Paul Mundt wrote:
+Hi Benoit,
 
-> On Thu, Jan 03, 2013 at 10:40:20AM +0100, Julia Lawall wrote:
-> > There has been a discussion recently about how the result of get_clk
-> > should be an opaque handle, not a value that can be dereferenced:
-> > 
-> > https://lkml.org/lkml/2012/12/20/105
-> > 
-> > There is such a dereference in arch/sh/kernel/cpufreq.c, in the function
-> > sh_cpufreq_cpu_init:
-> > 
-> > freq_table = cpuclk->nr_freqs ? cpuclk->freq_table : NULL;
-> > 
-> > It was not obvious to me, however, what API function should be used
-> > instead, so I am just reporting the (potential) problem.
-> > 
-> In this case we would have to add some new API for fetching the frequency
-> table associated with the struct clk, which is reasonably
-> straightforward. It's not obvious how a private API vs deref of a type we
-> have a private definition for is any better or worse, though. This code
-> is not aimed at the common struct clk in any event.
+On Wednesday 19 September 2012 04:02 PM, Kishon Vijay Abraham I wrote:
+> Add omap-usb2 data node in omap4 device tree file. Since omap-usb2 is
+> connected to ocp2scp, omap-usb2 dt data is added as a child node
+> of ocp2scp.
+>
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 
-OK, maybe it should just be left as is?
+This patch is also missing in mainline :-(
 
-julia
+Thanks
+Kishon
+
+> ---
+>   arch/arm/boot/dts/omap4.dtsi |    5 +++++
+>   1 file changed, 5 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+> index 4fbb9dc..28eaddc 100644
+> --- a/arch/arm/boot/dts/omap4.dtsi
+> +++ b/arch/arm/boot/dts/omap4.dtsi
+> @@ -303,6 +303,11 @@
+>   			#size-cells = <1>;
+>   			ranges;
+>   			ti,hwmods = "ocp2scp_usb_phy";
+> +			usb2phy@4a0ad080 {
+> +				compatible = "ti,omap-usb2";
+> +				reg = <0x4a0ad080 0x58>,
+> +				      <0x4a002300 0x4>; /* TO BE REMOVED: SCM */
+> +			};
+>   		};
+>   	};
+>   };
+>
+
