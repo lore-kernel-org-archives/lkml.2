@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab3AJMu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 07:50:27 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13781 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753849Ab3AJMuZ convert rfc822-to-8bit (ORCPT
+	id S1754903Ab3AJMvM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 07:51:12 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:52297 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754090Ab3AJMvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 07:50:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="272230356"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
-        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
-        "wni@nvidia.com" <wni@nvidia.com>
-Subject: RE: [PATCH 5/9] Thermal: Create 'mapX' sysfs node for a zone
-Thread-Topic: [PATCH 5/9] Thermal: Create 'mapX' sysfs node for a zone
-Thread-Index: AQHN7Kc0wktJ5VkW802wf9egZXpmhZg94uGAgASkYCA=
-Date: Thu, 10 Jan 2013 12:50:20 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59258F6C@BGSMSX101.gar.corp.intel.com>
-References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
- <1357542806-20449-6-git-send-email-durgadoss.r@intel.com>
- <20130107192129.GA4465@kroah.com>
-In-Reply-To: <20130107192129.GA4465@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Jan 2013 07:51:10 -0500
 MIME-Version: 1.0
+In-Reply-To: <1357730128-23018-2-git-send-email-fabio.porcedda@gmail.com>
+References: <1357730128-23018-1-git-send-email-fabio.porcedda@gmail.com> <1357730128-23018-2-git-send-email-fabio.porcedda@gmail.com>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
+Date: Thu, 10 Jan 2013 13:50:48 +0100
+Message-ID: <CAHkwnC8bmDxZdy=xos6AnG1vPDtGhGF6S8FYFfbdKG9vrHCnYw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] driver core: add helper macro for platform_driver_probe()
+ boilerplate
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
-> owner@vger.kernel.org] On Behalf Of Greg KH
-> Sent: Tuesday, January 08, 2013 12:51 AM
-> To: R, Durgadoss
-> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> eduardo.valentin@ti.com; hongbo.zhang@linaro.org; wni@nvidia.com
-> Subject: Re: [PATCH 5/9] Thermal: Create 'mapX' sysfs node for a zone
-> 
-> On Mon, Jan 07, 2013 at 12:43:22PM +0530, Durgadoss R wrote:
-> > This patch creates a thermal map sysfs node under
-> > /sys/class/thermal/zoneX/. This contains
-> > entries named map0, map1 .. mapN. Each map has the
-> > following space separated values:
-> > trip_type sensor_name cdev_name trip_mask weights
-> 
-> sysfs file are always "one value per file".  This seems to violate that
-> rule, so please rework this.
+Hi Greg,
+I'm sorry, In the previous email I used your wrong email address,
+in this email I've used your correct email address.
 
-These values together represent the binding information of
-sensors and cooling devices in a zone. That's why we put
-them in a single file.
+Best regards
+Fabio Porcedda
 
->From our previous discussion, I understand we can support
-a lot of nodes in sysfs. So, I will work with Rui to see how we can
-split this in a meaningful way.
+On Wed, Jan 9, 2013 at 12:15 PM, Fabio Porcedda
+<fabio.porcedda@gmail.com> wrote:
+> For simple modules that contain a single platform_driver without any
+> additional setup code then ends up being a block of duplicated
+> boilerplate.  This patch adds a new macro,
+> module_platform_driver_probe(), which replaces the
+> module_init()/module_exit() registrations with template functions.
+>
+> This macro use the same idea of module_platform_driver().
+>
+> This macro is useful to stop the misuse of module_platform_driver() for
+> removing the platform_driver_probe() boilerplate.
+>
+> Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
 
-Something like:
-map0_trip_type
-map0_sensor_name
-map0_cdev_name
-map0_mask
-etc..
+Cc: Greg Kroah-Hartman (linuxfoundation.org)
 
-Rui, What do you think ?
-
-Thanks,
-Durga
+> ---
+>  include/linux/platform_device.h | 18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+>
+> diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+> index a9ded9a..c082c71 100644
+> --- a/include/linux/platform_device.h
+> +++ b/include/linux/platform_device.h
+> @@ -204,6 +204,24 @@ static inline void platform_set_drvdata(struct platform_device *pdev, void *data
+>         module_driver(__platform_driver, platform_driver_register, \
+>                         platform_driver_unregister)
+>
+> +/* module_platform_driver_probe() - Helper macro for drivers that don't do
+> + * anything special in module init/exit.  This eliminates a lot of
+> + * boilerplate.  Each module may only use this macro once, and
+> + * calling it replaces module_init() and module_exit()
+> + */
+> +#define module_platform_driver_probe(__platform_driver, __platform_probe) \
+> +static int __init __platform_driver##_init(void) \
+> +{ \
+> +       return platform_driver_probe(&(__platform_driver), \
+> +                                    __platform_probe);    \
+> +} \
+> +module_init(__platform_driver##_init); \
+> +static void __exit __platform_driver##_exit(void) \
+> +{ \
+> +       platform_driver_unregister(&(__platform_driver)); \
+> +} \
+> +module_exit(__platform_driver##_exit);
+> +
+>  extern struct platform_device *platform_create_bundle(struct platform_driver *driver,
+>                                         int (*probe)(struct platform_device *),
+>                                         struct resource *res, unsigned int n_res,
+> --
+> 1.8.0.3
+>
