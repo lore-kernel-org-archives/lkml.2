@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab3AJJkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:40:18 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44549 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab3AJJkR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:40:17 -0500
-Date: Thu, 10 Jan 2013 10:40:06 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Laurent Navet <laurent.navet@gmail.com>, ben-linux@fluff.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: i2c-nforce2: fix coding style issues
-Message-ID: <20130110094006.GA2628@pengutronix.de>
-References: <1357764624-32134-1-git-send-email-laurent.navet@gmail.com>
- <20130110093255.5353fb31@endymion.delvare>
- <CAH7P7NjdKsWjttmWyKxttm=rJDAErZxe7+Zf_oaSCx6Pmc1GWw@mail.gmail.com>
- <20130110102148.3260760e@endymion.delvare>
+	id S1751386Ab3AJJml (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:42:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58572 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800Ab3AJJmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 04:42:40 -0500
+From: Oliver Neukum <oneukum@suse.de>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        gregkh@linuxfoundation.org, mdharm-usb@one-eyed-alien.net,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: USB autosuspend vs. URB submission
+Date: Thu, 10 Jan 2013 10:42:37 +0100
+Message-ID: <1643419.R9VmOAX4j3@linux-5eaq.site>
+Organization: SUSE
+User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <2664900.viczl5BYBS@avalon>
+References: <20130107204220.GB12363@hansolo.jdub.homelinux.org> <20130108160321.GC12363@hansolo.jdub.homelinux.org> <2664900.viczl5BYBS@avalon>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
-Content-Disposition: inline
-In-Reply-To: <20130110102148.3260760e@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 10 January 2013 00:05:55 Laurent Pinchart wrote:
 
---8t9RHnE3ZwKMSgU+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> I've had a quick look at the trace posted at 
+> https://bugzilla.redhat.com/show_bug.cgi?id=879462 but usbmon only shows URBs 
+> that are successfully submitted. I'm not sure what useful information I could 
+> get from the trace.
 
-> Wolfram, it would be great if you could update your tree to avoid that
-> kind of issue.
+The test is at the very start of usb_submit_urb()
 
-Done now. Sorry for the inconvenience.
+        if (!urb || !urb->complete)
+                return -EINVAL;
+        if (urb->hcpriv) { 
+                WARN_ONCE(1, "URB %p submitted while active\n", urb);
+                return -EBUSY;
+        }
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+usbmon will never see such URBs
 
---8t9RHnE3ZwKMSgU+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+I suggest that for debugging you change the WARN_ONCE into a WARN and compare
+the URB pointers of usbmon and dmesg.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+In the long run it is probably a good idea to pass duplicated URBs to usbmon by
+a special code path.
 
-iEYEARECAAYFAlDujHYACgkQD27XaX1/VRtxXQCfQR9wyLOFxeSDeUxnN4jftBxk
-jGgAn1IEo5SyTXx8Sv0z7YgqCLBz/hrV
-=tW/y
------END PGP SIGNATURE-----
+	Regards
+		Oliver
 
---8t9RHnE3ZwKMSgU+--
