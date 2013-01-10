@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab3AJIez (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 03:34:55 -0500
-Received: from mail.free-electrons.com ([94.23.32.191]:50282 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab3AJIex (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 03:34:53 -0500
-Date: Thu, 10 Jan 2013 09:34:47 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 00/14] Rewrite Tegra PCIe driver
-Message-ID: <20130110093447.646ed07c@skate>
-In-Reply-To: <20130110065537.GC15212@avionic-0098.adnet.avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
-	<20130109222517.3c590553@skate>
-	<20130110065537.GC15212@avionic-0098.adnet.avionic-design.de>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753208Ab3AJIgF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 03:36:05 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:44521 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091Ab3AJIgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 03:36:02 -0500
+Message-ID: <50EE7D75.8080100@parallels.com>
+Date: Thu, 10 Jan 2013 12:36:05 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, <rientjes@google.com>,
+        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <cl@linux.com>, <minchan.kim@gmail.com>,
+        <kosaki.motohiro@jp.fujitsu.com>, <isimatu.yasuaki@jp.fujitsu.com>,
+        <wujianguo@huawei.com>, <wency@cn.fujitsu.com>, <hpa@zytor.com>,
+        <linfeng@cn.fujitsu.com>, <laijs@cn.fujitsu.com>, <mgorman@suse.de>,
+        <yinghai@kernel.org>, <x86@kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-acpi@vger.kernel.org>, <linux-s390@vger.kernel.org>,
+        <linux-sh@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
+        <cmetcalf@tilera.com>, <sparclinux@vger.kernel.org>
+Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com> <20130109142314.1ce04a96.akpm@linux-foundation.org> <50EE24A4.8020601@cn.fujitsu.com> <50EE6A48.7060307@parallels.com> <50EE6E50.3040609@jp.fujitsu.com> <50EE73DE.30208@parallels.com> <50EE7A6B.7020005@jp.fujitsu.com>
+In-Reply-To: <50EE7A6B.7020005@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Thierry Reding,
 
-On Thu, 10 Jan 2013 07:55:37 +0100, Thierry Reding wrote:
-
-> The reason is that with the latest bindings the matching of root ports
-> to device tree nodes works as-is and nothing else indicates that the
-> emulated host bridge is actually required to make any of this work. So
-> in order not to introduce unneeded code I've left it out for now. If
-> somebody decides that we actually need this host bridge (for standards
-> compliance or whatnot) it could easily be added back.
-
-Ok.
-
-> However, before the emulated bridge implementation can be merged I think
-> the PCI ID issue needs to be resolved.
-
-Indeed. I am not sure yet how to solve that, though.
-
-> > So, I instantiate one unique emulated Host Bridge, and then one
-> > emulated PCI-to-PCI Bridge for each PCIe interface that I have.
+> If it's configure as ZONE_NORMAL, you need to pray for offlining memory.
 > 
-> Oh dear, that's even worse than on Tegra. The Marvell hardware doesn't
-> even expose the root ports as PCI devices on the bus?
+> AFAIK, IBM's ppc? has 16MB section size. So, some of sections can be
+> offlined
+> even if they are configured as ZONE_NORMAL. For them, placement of offlined
+> memory is not important because it's virtualized by LPAR, they don't try
+> to remove DIMM, they just want to increase/decrease amount of memory.
+> It's an another approach.
+> 
+> But here, we(fujitsu) tries to remove a system board/DIMM.
+> So, configuring the whole memory of a node as ZONE_MOVABLE and tries to
+> guarantee
+> DIMM as removable.
+> 
+>>> IMHO, I don't think shrink_slab() can kill all objects in a node even
+>>> if they are some caches. We need more study for doing that.
+>>>
+>>
+>> Indeed, shrink_slab can only kill cached objects. They, however, are
+>> usually a very big part of kernel memory. I wonder though if in case of
+>> failure, it is worth it to try at least one shrink pass before you
+>> give up.
+>>
+> 
+> Yeah, now, his (our) approach is never allowing kernel memory on a node
+> to be
+> hot-removed by ZONE_MOVABLE. So, shrink_slab()'s effect will not be seen.
 
-My understanding is that no, it doesn't, but I am still figuring out
-many things in this PCIe topic.
+Ok, that clarifies it to me.
+> 
+> If other brave guys tries to use ZONE_NORMAL for hot-pluggable DIMM, I see,
+> it's worth triying.
+> 
+I was under the impression that this was being done in here.
 
-> I suppose that in your case it really makes sense because you already
-> need the emulated PCI-to-PCI bridges and therefore adding an emulated
-> host bridge doesn't add much. As I said, for Tegra everything still
-> works without, so I didn't see a reason to add needless code.
+> How about checking the target memsection is in NORMAL or in MOVABLE at
+> hot-removing ? If NORMAL, shrink_slab() will be worth to be called.
+> 
+Yes, this is what I meant. I think there is value investigating this,
+since for a lot of workloads, a lot of the kernel memory will consist of
+shrinkable cached memory. It would provide you with the same level of
+guarantees (zero), but can improve the success  rate (this is, of
+course, a guess)
 
-Ok, thanks!
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+> BTW, shrink_slab() is now node/zone aware ? If not, fixing that first will
+> be better direction I guess.
+> 
+It is not upstream, but there are patches for this that I am already
+using in my private tree.
+
+
