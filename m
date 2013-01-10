@@ -1,161 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab3AJRcu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 12:32:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30685 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755050Ab3AJRcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 12:32:47 -0500
-Date: Thu, 10 Jan 2013 15:26:57 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 5/5] KVM: x86: improve reexecute_instruction
-Message-ID: <20130110172657.GA24703@amt.cnet>
-References: <50EBBE54.1040007@linux.vnet.ibm.com>
- <50EBBEEC.2060100@linux.vnet.ibm.com>
+	id S1755377Ab3AJRdj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 12:33:39 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:37542 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719Ab3AJRdi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 12:33:38 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin (hpa@zytor.com)" <hpa@zytor.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+CC: "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: [RFC][PATCH v7 0/2]trace,x86: irq vector tracepoint support
+Thread-Topic: [RFC][PATCH v7 0/2]trace,x86: irq vector tracepoint support
+Thread-Index: Ac3vV1mL8i3mSwBQRw+edh4jLezwfg==
+Date: Thu, 10 Jan 2013 17:32:41 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3D260@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EBBEEC.2060100@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-01-10_08:2013-01-10,2013-01-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1301100141
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 02:38:36PM +0800, Xiao Guangrong wrote:
-> The current reexecute_instruction can not well detect the failed instruction
-> emulation. It allows guest to retry all the instructions except it accesses
-> on error pfn
-> 
-> For example, some cases are nested-write-protect - if the page we want to
-> write is used as PDE but it chains to itself. Under this case, we should
-> stop the emulation and report the case to userspace
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    7 +++++++
->  arch/x86/kvm/paging_tmpl.h      |   27 ++++++++++++++++++++-------
->  arch/x86/kvm/x86.c              |    8 +++++++-
->  3 files changed, 34 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index c431b33..d6ab8d2 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -502,6 +502,13 @@ struct kvm_vcpu_arch {
->  		u64 msr_val;
->  		struct gfn_to_hva_cache data;
->  	} pv_eoi;
-> +
-> +	/*
-> +	 * Indicate whether the access faults on its page table in guest
-> +	 * which is set when fix page fault and used to detect unhandeable
-> +	 * instruction.
-> +	 */
-> +	bool write_fault_to_shadow_pgtable;
->  };
-> 
->  struct kvm_lpage_info {
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 67b390d..df50560 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -497,26 +497,34 @@ out_gpte_changed:
->   * created when kvm establishes shadow page table that stop kvm using large
->   * page size. Do it early can avoid unnecessary #PF and emulation.
->   *
-> + * @write_fault_to_shadow_pgtable will return true if the fault gfn is
-> + * currently used as its page table.
-> + *
->   * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
->   * since the PDPT is always shadowed, that means, we can not use large page
->   * size to map the gfn which is used as PDPT.
->   */
->  static bool
->  FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
-> -			      struct guest_walker *walker, int user_fault)
-> +			      struct guest_walker *walker, int user_fault,
-> +			      bool *write_fault_to_shadow_pgtable)
->  {
->  	int level;
->  	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
-> +	bool self_changed = false;
-> 
->  	if (!(walker->pte_access & ACC_WRITE_MASK ||
->  	      (!is_write_protection(vcpu) && !user_fault)))
->  		return false;
-> 
-> -	for (level = walker->level; level <= walker->max_level; level++)
-> -		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
-> -			return true;
-> +	for (level = walker->level; level <= walker->max_level; level++) {
-> +		gfn_t gfn = walker->gfn ^ walker->table_gfn[level - 1];
-> +
-> +		self_changed |= !(gfn & mask);
-> +		*write_fault_to_shadow_pgtable |= !gfn;
-> +	}
-> 
-> -	return false;
-> +	return self_changed;
->  }
-> 
->  /*
-> @@ -544,7 +552,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
->  	int level = PT_PAGE_TABLE_LEVEL;
->  	int force_pt_level;
->  	unsigned long mmu_seq;
-> -	bool map_writable;
-> +	bool map_writable, is_self_change_mapping;
-> 
->  	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
-> 
-> @@ -572,9 +580,14 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
->  		return 0;
->  	}
-> 
-> +	vcpu->arch.write_fault_to_shadow_pgtable = false;
-> +
-> +	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu,
-> +	      &walker, user_fault, &vcpu->arch.write_fault_to_shadow_pgtable);
-> +
->  	if (walker.level >= PT_DIRECTORY_LEVEL)
->  		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
-> -		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
-> +		   || is_self_change_mapping;
->  	else
->  		force_pt_level = 1;
->  	if (!force_pt_level) {
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 6f13e03..2957012 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -4810,7 +4810,13 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t cr2)
->  	 * guest to let CPU execute the instruction.
->  	 */
->  	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
-> -	return true;
-> +
-> +	/*
-> +	 * If the access faults on its page table, it can not
-> +	 * be fixed by unprotecting shadow page and it should
-> +	 * be reported to userspace.
-> +	 */
-> +	return !vcpu->arch.write_fault_to_shadow_pgtable;
->  }
+Change log 
 
-This sounds wrong: only reporting emulation failure in case 
-of a write fault to shadow pagetable? 
+ v6 -> v7
+ - Divide into two patches to make a code review easier.
+   Summery of each patch is as follows.
+    - Patch 1/2
+      - Add an irq_vector tracing infrastructure.
+      - Create idt_table for tracing. It is refactored to avoid duplicating
+        existing logic.
+      - Duplicate new irq handlers inserted tracepoints.
 
-The current pattern is sane:
+    - Patch 2/2
+      - Share a common logic among irq handlers to make them
+        manageable and readable.
 
-if (condition_1 which allows reexecution is true)
-	return true;
+ v5 -> v6
+ - Rebased to 3.7
 
-if (condition_2 which allows reexecution is true)
-	return true;
-...
-	return false;
+ v4 -> v5
+ - Rebased to 3.6.0
 
-Applied 1-2.
+ - Introduce a logic switching IDT at enabling/disabling TP time 
+   so that a time penalty makes a zero when tracepoints are disabled.
+   This IDT is created only when CONFIG_TRACEPOINTS is enabled.
+
+ - Remove arch_irq_vector_entry/exit and add followings again
+   so that we can add each tracepoint in a generic way.
+   - error_apic_vector
+   - thermal_apic_vector
+   - threshold_apic_vector
+   - spurious_apic_vector
+   - x86_platform_ipi_vector
+
+ - Drop nmi tracepoints to begin with apic interrupts and discuss a logic switching
+   IDT first.
+
+ - Move irq_vectors.h in the directory of arch/x86/include/asm/trace because
+   I'm not sure if a logic switching IDT is sharable with other architectures.
+
+ v3 -> v4
+ - Add a latency measurement of each tracepoint
+ - Rebased to 3.6-rc6
+
+ v2 -> v3
+ - Remove an invalidate_tlb_vector event because it was replaced by a call function vector
+   in a following commit.
+   http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=52aec3308db85f4e9f5c8b9f5dc4fbd0138c6fa4
+
+ v1 -> v2
+ - Modify variable name from irq to vector.
+ - Merge arch-specific tracepoints below to an arch_irq_vector_entry/exit.
+   - error_apic_vector
+   - thermal_apic_vector
+   - threshold_apic_vector
+   - spurious_apic_vector
+   - x86_platform_ipi_vector
+
+[Purpose of this patch]
+
+As Vaibhav explained in the thread below, tracepoints for irq vectors
+are useful.
+
+http://www.spinics.net/lists/mm-commits/msg85707.html
+
+<snip>
+The current interrupt traces from irq_handler_entry and irq_handler_exit
+provide when an interrupt is handled.  They provide good data about when
+the system has switched to kernel space and how it affects the currently
+running processes.
+
+There are some IRQ vectors which trigger the system into kernel space,
+which are not handled in generic IRQ handlers.  Tracing such events gives
+us the information about IRQ interaction with other system events.
+
+The trace also tells where the system is spending its time.  We want to
+know which cores are handling interrupts and how they are affecting other
+processes in the system.  Also, the trace provides information about when
+the cores are idle and which interrupts are changing that state.
+<snip>
+
+On the other hand, my usecase is tracing just local timer event and 
+getting a value of instruction pointer.
+
+I suggested to add an argument local timer event to get instruction pointer before.
+But there is another way to get it with external module like systemtap.
+So, I don't need to add any argument to irq vector tracepoints now.
+
+[Patch Description]
+
+Vaibhav's patch shared a trace point ,irq_vector_entry/irq_vector_exit, in all events.
+But there is an above use case to trace specific irq_vector rather than tracing all events.
+In this case, we are concerned about overhead due to unwanted events.
+
+This patch adds following tracepoints instead of introducing irq_vector_entry/exit.
+so that we can enable them independently.
+   - local_timer_vector
+   - reschedule_vector
+   - call_function_vector
+   - call_function_single_vector 
+   - irq_work_entry_vector
+   - error_apic_vector
+   - thermal_apic_vector
+   - threshold_apic_vector
+   - spurious_apic_vector
+   - x86_platform_ipi_vector
+
+Please see descriptions in each patch.
+
+Seiji Aguchi (2):
+  [RFC][PATCH v7 1/2] trace,x86: add x86 irq vector tracepoints
+  [RFC][PATCH v7 2/2] trace,x86: code-sharing between non-trace and trace irq handlers
+
+ arch/x86/include/asm/desc.h              |   31 ++++++-
+ arch/x86/include/asm/entry_arch.h        |    5 +-
+ arch/x86/include/asm/hw_irq.h            |   16 +++
+ arch/x86/include/asm/trace/irq_vectors.h |  154 ++++++++++++++++++++++++++++++
+ arch/x86/kernel/Makefile                 |    1 +
+ arch/x86/kernel/apic/apic.c              |   71 +++++++++++---
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   24 ++++-
+ arch/x86/kernel/cpu/mcheck/threshold.c   |   24 ++++-
+ arch/x86/kernel/entry_32.S               |   12 ++-
+ arch/x86/kernel/entry_64.S               |   27 ++++-
+ arch/x86/kernel/head_64.S                |    6 +
+ arch/x86/kernel/irq.c                    |   31 ++++--
+ arch/x86/kernel/irq_work.c               |   24 ++++-
+ arch/x86/kernel/smp.c                    |   65 +++++++++++--
+ arch/x86/kernel/tracepoint.c             |   61 ++++++++++++
+ include/linux/hardirq.h                  |   25 +++++
+ include/xen/events.h                     |    3 +
+ 17 files changed, 526 insertions(+), 54 deletions(-)
+
