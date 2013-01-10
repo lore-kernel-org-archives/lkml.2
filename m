@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab3AJRcm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 12:32:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58356 "EHLO mx1.redhat.com"
+	id S1755335Ab3AJRcu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 12:32:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30685 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722Ab3AJRcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 12:32:41 -0500
-Date: Thu, 10 Jan 2013 15:30:36 -0200
+	id S1755050Ab3AJRcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 12:32:47 -0500
+Date: Thu, 10 Jan 2013 15:26:57 -0200
 From: Marcelo Tosatti <mtosatti@redhat.com>
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
 Subject: Re: [PATCH v5 5/5] KVM: x86: improve reexecute_instruction
-Message-ID: <20130110173036.GB24703@amt.cnet>
+Message-ID: <20130110172657.GA24703@amt.cnet>
 References: <50EBBE54.1040007@linux.vnet.ibm.com>
  <50EBBEEC.2060100@linux.vnet.ibm.com>
 MIME-Version: 1.0
@@ -144,9 +144,18 @@ On Tue, Jan 08, 2013 at 02:38:36PM +0800, Xiao Guangrong wrote:
 > +	 */
 > +	return !vcpu->arch.write_fault_to_shadow_pgtable;
 >  }
-> 
->  static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
 
-Also should make sure vcpu->arch.write_fault_to_shadow_pgtable is never
-reused. Say, clean when exiting x86_emulate_instruction?
+This sounds wrong: only reporting emulation failure in case 
+of a write fault to shadow pagetable? 
 
+The current pattern is sane:
+
+if (condition_1 which allows reexecution is true)
+	return true;
+
+if (condition_2 which allows reexecution is true)
+	return true;
+...
+	return false;
+
+Applied 1-2.
