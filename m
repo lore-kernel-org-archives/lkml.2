@@ -1,120 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab3AJSGm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 13:06:42 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:20265 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab3AJSGk (ORCPT
+	id S1755512Ab3AJSQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 13:16:26 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:45098 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777Ab3AJSQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 13:06:40 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-d9-50ef032f01a7
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Joerg Roedel'" <joro@8bytes.org>
-Cc: "'Cho KyongHo'" <pullip.cho@samsung.com>,
-        "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        "'Hyunwoong Kim'" <khw0178.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>
-References: <003301cde30b$c584c2d0$508e4870$%cho@samsung.com>
- <032401cde783$485ae1a0$d910a4e0$@samsung.com>
- <20130110171844.GA2650@8bytes.org>
-In-reply-to: <20130110171844.GA2650@8bytes.org>
-Subject: RE: [PATCH v6 00/12] iommu/exynos: Fixes and Enhancements of System
- MMU driver with DT
-Date: Thu, 10 Jan 2013 10:06:24 -0800
-Message-id: <026e01cdef5d$364fd150$a2ef73f0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQFIekVXHKw0ow7bnqULS98EzrZJiAHrktOYAWxAehSZMvzAIA==
-Content-language: en-us
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zY1195vcBBv+3yFpc3jWHzWLG+X1M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGXs6RcvOCtUcfrfU7YGxve8XYycHBICJhKTd3QyQdhi
-	EhfurWcDsYUEljFK7P6tB1NzY9km5i5GLqD4dEaJF5PuM0E4fxklfpx9AdbBJqAhcfj9M3YQ
-	W0RARaLl3A9mEJtZYBezxNRzEhANkxglJk3aygKS4BTQl2j7PRWsSFggUWL1hZ1AUzk4WARU
-	JXZ224GEeQUsJS5cns8KYQtK/Jh8jwVippbE+p3HmSBseYnNa94yQ1yqILHj7GtGkDEiAk4S
-	81f6Q5SIS0x68BDsNBYBAYlvkw+xgJRICMhKbDoA9peEwCp2iUsLV7NBjJGUOLjiBssERolZ
-	SDbPQrJ5FpLNs5CsWMDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjJMKkdzCuarA4xCjA
-	wajEw6vl+y5AiDWxrLgy9xCjBAezkghvywKgEG9KYmVValF+fFFpTmrxIUYfoMsnMkuJJucD
-	oz+vJN7Q2NjEzMTUxNzS1NwUh7CSOC/jqScBQgLpiSWp2ampBalFMOOYODilGhhLzPL9JWXk
-	tjC3H5zDWhe/8928ytzWk4555xMl4uvZJULeb2BY5PdAiPHqlEwry6Wns/T2lPyc9CX8yamt
-	58VKjzc+8jw40SvQeavUgurm9BuP7t6O/H7oxkx196lBe8+ouG71UJnnFyp0VyT/jd7S7XUN
-	GR9kZ16a6tll3fnZo/1/o+lF4WQlluKMREMt5qLiRACzb5TO3QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t9jQV195vcBBtfXiVtc3jWHzWLG+X1M
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm7OkXLzgrVHH6
-	31O2Bsb3vF2MnBwSAiYSN5ZtYoawxSQu3FvP1sXIxSEkMJ1R4sWk+0wQzl9GiR9nX7CBVLEJ
-	aEgcfv+MHcQWEVCRaDn3A6ybWWAXs8TUcxIQDZMYJSZN2soCkuAU0Jdo+z0VrEhYIFFi9YWd
-	QFM5OFgEVCV2dtuBhHkFLCUuXJ7PCmELSvyYfI8FYqaWxPqdx5kgbHmJzWveQl2qILHj7GtG
-	kDEiAk4S81f6Q5SIS0x68JB9AqPQLCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswt
-	Ls1L10vOz93ECI7gZ9I7GFc1WBxiFOBgVOLh1fJ9FyDEmlhWXJl7iFGCg1lJhLdlAVCINyWx
-	siq1KD++qDQntfgQow/QnxOZpUST84HJJa8k3tDYxMzI0sjMwsjE3ByHsJI4L+OpJwFCAumJ
-	JanZqakFqUUw45g4OKUaGBM+6bas+bu423Trno27P0X9P1G4+KbOpcyreknvQj2X1lQWbGK4
-	867PTP2C3rvJf4te7vDe6ubOJlWx76/Rg+5TB79tkdUTc9v8LlOr4qFQ1nGXPfoKHn2Tcoss
-	e6ebC1SsEmEw8A6Km3/q5/+5KWvNLtccfyv+p3aPcewqX/+alCk3D+hyGimxFGckGmoxFxUn
-	AgBmd2/FDQMAAA==
-X-CFilter-Loop: Reflected
+	Thu, 10 Jan 2013 13:16:24 -0500
+Message-ID: <50EF056B.4040803@linux.vnet.ibm.com>
+Date: Fri, 11 Jan 2013 02:16:11 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 5/5] KVM: x86: improve reexecute_instruction
+References: <50EBBE54.1040007@linux.vnet.ibm.com> <50EBBEEC.2060100@linux.vnet.ibm.com> <20130110173036.GB24703@amt.cnet>
+In-Reply-To: <20130110173036.GB24703@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13011018-9574-0000-0000-0000061FCB79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'Joerg Roedel' wrote:
+On 01/11/2013 01:30 AM, Marcelo Tosatti wrote:
+> On Tue, Jan 08, 2013 at 02:38:36PM +0800, Xiao Guangrong wrote:
+>> The current reexecute_instruction can not well detect the failed instruction
+>> emulation. It allows guest to retry all the instructions except it accesses
+>> on error pfn
+>>
+>> For example, some cases are nested-write-protect - if the page we want to
+>> write is used as PDE but it chains to itself. Under this case, we should
+>> stop the emulation and report the case to userspace
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/include/asm/kvm_host.h |    7 +++++++
+>>  arch/x86/kvm/paging_tmpl.h      |   27 ++++++++++++++++++++-------
+>>  arch/x86/kvm/x86.c              |    8 +++++++-
+>>  3 files changed, 34 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index c431b33..d6ab8d2 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -502,6 +502,13 @@ struct kvm_vcpu_arch {
+>>  		u64 msr_val;
+>>  		struct gfn_to_hva_cache data;
+>>  	} pv_eoi;
+>> +
+>> +	/*
+>> +	 * Indicate whether the access faults on its page table in guest
+>> +	 * which is set when fix page fault and used to detect unhandeable
+>> +	 * instruction.
+>> +	 */
+>> +	bool write_fault_to_shadow_pgtable;
+>>  };
+>>
+>>  struct kvm_lpage_info {
+>> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+>> index 67b390d..df50560 100644
+>> --- a/arch/x86/kvm/paging_tmpl.h
+>> +++ b/arch/x86/kvm/paging_tmpl.h
+>> @@ -497,26 +497,34 @@ out_gpte_changed:
+>>   * created when kvm establishes shadow page table that stop kvm using large
+>>   * page size. Do it early can avoid unnecessary #PF and emulation.
+>>   *
+>> + * @write_fault_to_shadow_pgtable will return true if the fault gfn is
+>> + * currently used as its page table.
+>> + *
+>>   * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
+>>   * since the PDPT is always shadowed, that means, we can not use large page
+>>   * size to map the gfn which is used as PDPT.
+>>   */
+>>  static bool
+>>  FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
+>> -			      struct guest_walker *walker, int user_fault)
+>> +			      struct guest_walker *walker, int user_fault,
+>> +			      bool *write_fault_to_shadow_pgtable)
+>>  {
+>>  	int level;
+>>  	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
+>> +	bool self_changed = false;
+>>
+>>  	if (!(walker->pte_access & ACC_WRITE_MASK ||
+>>  	      (!is_write_protection(vcpu) && !user_fault)))
+>>  		return false;
+>>
+>> -	for (level = walker->level; level <= walker->max_level; level++)
+>> -		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
+>> -			return true;
+>> +	for (level = walker->level; level <= walker->max_level; level++) {
+>> +		gfn_t gfn = walker->gfn ^ walker->table_gfn[level - 1];
+>> +
+>> +		self_changed |= !(gfn & mask);
+>> +		*write_fault_to_shadow_pgtable |= !gfn;
+>> +	}
+>>
+>> -	return false;
+>> +	return self_changed;
+>>  }
+>>
+>>  /*
+>> @@ -544,7 +552,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+>>  	int level = PT_PAGE_TABLE_LEVEL;
+>>  	int force_pt_level;
+>>  	unsigned long mmu_seq;
+>> -	bool map_writable;
+>> +	bool map_writable, is_self_change_mapping;
+>>
+>>  	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
+>>
+>> @@ -572,9 +580,14 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+>>  		return 0;
+>>  	}
+>>
+>> +	vcpu->arch.write_fault_to_shadow_pgtable = false;
+>> +
+>> +	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu,
+>> +	      &walker, user_fault, &vcpu->arch.write_fault_to_shadow_pgtable);
+>> +
+>>  	if (walker.level >= PT_DIRECTORY_LEVEL)
+>>  		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
+>> -		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
+>> +		   || is_self_change_mapping;
+>>  	else
+>>  		force_pt_level = 1;
+>>  	if (!force_pt_level) {
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 6f13e03..2957012 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -4810,7 +4810,13 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t cr2)
+>>  	 * guest to let CPU execute the instruction.
+>>  	 */
+>>  	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+>> -	return true;
+>> +
+>> +	/*
+>> +	 * If the access faults on its page table, it can not
+>> +	 * be fixed by unprotecting shadow page and it should
+>> +	 * be reported to userspace.
+>> +	 */
+>> +	return !vcpu->arch.write_fault_to_shadow_pgtable;
+>>  }
+>>
+>>  static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
 > 
-> On Mon, Dec 31, 2012 at 10:18:46AM -0800, Kukjin Kim wrote:
-> > Cho KyongHo wrote:
-> 
-> > > Diffstats:
-> > >  arch/arm/boot/dts/exynos5250-smdk5250.dts  |    2 +-
-> > >  arch/arm/boot/dts/exynos5250.dtsi          |   27 +-
-> > >  arch/arm/mach-exynos/Kconfig               |    5 -
-> > >  arch/arm/mach-exynos/Makefile              |    1 -
-> > >  arch/arm/mach-exynos/clock-exynos4.c       |   41 +-
-> > >  arch/arm/mach-exynos/clock-exynos4210.c    |    9 +-
-> > >  arch/arm/mach-exynos/clock-exynos4212.c    |   23 +-
-> > >  arch/arm/mach-exynos/clock-exynos5.c       |   87 +-
-> > >  arch/arm/mach-exynos/dev-sysmmu.c          |  274 ------
-> > >  arch/arm/mach-exynos/include/mach/sysmmu.h |   66 --
-> > >  arch/arm/mach-exynos/mach-exynos4-dt.c     |   34 +
-> > >  arch/arm/mach-exynos/mach-exynos5-dt.c     |   30 +
-> > >  drivers/iommu/Kconfig                      |    2 +-
-> > >  drivers/iommu/Makefile                     |    2 +-
-> > >  drivers/iommu/exynos-iommu.c               | 1477
-> +++++++++++++++++++++--
-> > > -----
-> > >  15 files changed, 1284 insertions(+), 796 deletions(-)
-> >
-> > Joerg, it's time to merge this. If you don't mind, let me pick up this
-whole
-> > series into Samsung tree because this touches many Samsung stuff.
-> 
-> Well, looking at the diffstat the IOMMU changes are a lot larger than
-> the exynos ones. So I think this should go through the IOMMU tree once
-> the latest review comments are fixed.
-> 
-If so, too many ugly merge conflicts will be happened when Linus merges for
-v3.9 because the legacy(current) exynos clock stuff is going away in Samsung
-tree and as I said, this touches Samsung stuff widely. Of course, Stephen
-should complain the conflicts between your tree and mine once you apply this
-whole series in your -next before Linus' merge for v3.9. I believe, you
-don't want it.
+> Also should make sure vcpu->arch.write_fault_to_shadow_pgtable is never
+> reused. Say, clean when exiting x86_emulate_instruction?
 
-You know, we have several options to avoid it. When you take this series in
-your tree, you can provide topic branch for me. Or this series should be
-separated for arch/arm/ and drivers/ for both trees, then only drivers/iommu
-changes should be picked up in your tree. I'm OK both, let me know which one
-you would prefer or other way.
+Yes, it is more clear.
 
-BTW, KyongHo, you need to update the clock changes for exynos-iommu against
-on exynos common clock stuff. 
+But i am thinking if it is really needed because 'cr2' is only valid when it
+is called on page fault path, vcpu->arch.write_fault_to_shadow_pgtable is reset
+at the beginning of page-fault path.
 
-Thanks.
+For other paths, cr2 is always 0 which is always 'NULL' pointer and not mapped
+on guest, reexecute_instruction will always return true:
 
-- Kukjin 
+		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
+
+		/*
+		 * If the mapping is invalid in guest, let cpu retry
+		 * it to generate fault.
+		 */
+		if (gpa == UNMAPPED_GVA)
+			return true;
 
