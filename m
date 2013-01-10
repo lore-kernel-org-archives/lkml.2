@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab3AJPba (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:31:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13029 "EHLO mx1.redhat.com"
+	id S1754032Ab3AJPc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:32:27 -0500
+Received: from mga09.intel.com ([134.134.136.24]:38415 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753679Ab3AJPb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:31:29 -0500
-Message-ID: <50EEDEC1.9020708@redhat.com>
-Date: Thu, 10 Jan 2013 10:31:13 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: linux-kernel@vger.kernel.org, aquini@redhat.com, walken@google.com,
-        eric.dumazet@gmail.com, lwoodman@redhat.com, jeremy@goop.org,
-        Jan Beulich <JBeulich@novell.com>, knoel@redhat.com,
-        chegu_vinod@hp.com, raghavendra.kt@linux.vnet.ibm.com,
-        mingo@redhat.com
-Subject: Re: [PATCH 0/5] x86,smp: make ticket spinlock proportional backoff
- w/ auto tuning
-References: <20130108172632.1126898a@annuminas.surriel.com> <1357831182.5841.21.camel@marge.simpson.net>
-In-Reply-To: <1357831182.5841.21.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753679Ab3AJPc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:32:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,444,1355126400"; 
+   d="scan'208";a="244669286"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        sedat.dilek@gmail.com, Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next V2] mei: drop the warning when cl is not initialized during unlinking
+Date: Thu, 10 Jan 2013 17:32:14 +0200
+Message-Id: <1357831934-31610-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 10:19 AM, Mike Galbraith wrote:
-> On Tue, 2013-01-08 at 17:26 -0500, Rik van Riel wrote:
->
->> Please let me know if you manage to break this code in any way,
->> so I can fix it...
->
-> I didn't break it, but did let it play with rq->lock contention.  Using
-> cyclictest -Smp99 -i 100 -d 0, with 3 rt tasks for pull_rt_task() to
-> pull around appears to have been a ~dead heat.
+On systems where wd and amthif is not initialized
+we will hit cl->dev == NULL. This condition is okay
+so we don't need to be laud about it.
 
-Good to hear that the code seems to be robust. It seems to
-help prevent performance degradation in some workloads, and
-nobody seems to have found regressions yet.
+Fixes the follwing warning during suspend
+[  137.061985] WARNING: at drivers/misc/mei/client.c:315 mei_cl_unlink+0x86/0x90 [mei]()
+[  137.061986] Hardware name: 530U3BI/530U4BI/530U4BH
+[  137.062140] Modules linked in: snd_hda_codec_hdmi snd_hda_codec_realtek joydev coretemp kvm_intel snd_hda_intel snd_hda_codec kvm arc4 iwldvm snd_hwdep i915 snd_pcm mac80211 ghash_clmulni_intel snd_page_alloc aesni_intel snd_seq_midi xts snd_seq_midi_event aes_x86_64 rfcomm snd_rawmidi parport_pc bnep lrw snd_seq uvcvideo i2c_algo_bit ppdev gf128mul iwlwifi snd_timer drm_kms_helper ablk_helper cryptd drm snd_seq_device videobuf2_vmalloc psmouse videobuf2_memops snd cfg80211 btusb videobuf2_core soundcore videodev lp bluetooth samsung_laptop wmi microcode mei serio_raw mac_hid video hid_generic lpc_ich parport usbhid hid r8169
+[  137.062143] Pid: 2706, comm: kworker/u:15 Tainted: G      D W    3.8.0-rc2-next20130109-1-iniza-generic #1
+[  137.062144] Call Trace:
+[  137.062156]  [<ffffffff8105860f>] warn_slowpath_common+0x7f/0xc0
+[  137.062159]  [<ffffffff8135b1ea>] ? ioread32+0x3a/0x40
+[  137.062162]  [<ffffffff8105866a>] warn_slowpath_null+0x1a/0x20
+[  137.062168]  [<ffffffffa0076be6>] mei_cl_unlink+0x86/0x90 [mei]
+[  137.062173]  [<ffffffffa0071325>] mei_reset+0xc5/0x240 [mei]
+[  137.062178]  [<ffffffffa0073703>] mei_pci_resume+0xa3/0x110 [mei]
+[  137.062183]  [<ffffffff81379cae>] pci_pm_resume+0x7e/0xe0
+[  137.062185]  [<ffffffff81379c30>] ? pci_pm_thaw+0x80/0x80
+[  137.062189]  [<ffffffff8145a415>] dpm_run_callback.isra.6+0x25/0x50
+[  137.062192]  [<ffffffff8145a6cf>] device_resume+0x9f/0x140
+[  137.062194]  [<ffffffff8145a791>] async_resume+0x21/0x50
+[  137.062200]  [<ffffffff810858b0>] async_run_entry_fn+0x90/0x1c0
+[  137.062203]  [<ffffffff810778e5>] process_one_work+0x155/0x460
+[  137.062207]  [<ffffffff81078578>] worker_thread+0x168/0x400
+[  137.062210]  [<ffffffff81078410>] ? manage_workers+0x2b0/0x2b0
+[  137.062214]  [<ffffffff8107d9f0>] kthread+0xc0/0xd0
+[  137.062218]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
+[  137.062222]  [<ffffffff816bac6c>] ret_from_fork+0x7c/0xb0
+[  137.062228]  [<ffffffff8107d930>] ? flush_kthread_worker+0xb0/0xb0
 
-Thank you for testing.
+Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+V2: fix a typo in the comment
+
+ drivers/misc/mei/client.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index d566dd8..a921001 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -312,8 +312,9 @@ int mei_cl_unlink(struct mei_cl *cl)
+ 	if (!cl)
+ 		return 0;
+ 
+-	if (WARN_ON(!cl->dev))
+-		return -EINVAL;
++	/* wd and amthif might not be initialized */
++	if (!cl->dev)
++		return 0;
+ 
+ 	dev = cl->dev;
+ 
+-- 
+1.7.4.4
+
