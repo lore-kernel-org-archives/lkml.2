@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab3AJKCN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 05:02:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59591 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab3AJKCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 05:02:12 -0500
-From: Oliver Neukum <oneukum@suse.de>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Josh Boyer <jwboyer@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: USB autosuspend vs. URB submission
-Date: Thu, 10 Jan 2013 11:02:11 +0100
-Message-ID: <5203913.6Ij3EG26lC@linux-5eaq.site>
-Organization: SUSE
-User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CACVXFVNUJ8i5hOX8oqcBn1rO=KmHQU3WMBVBh9HF=BfJw1QcPw@mail.gmail.com>
-References: <20130107204220.GB12363@hansolo.jdub.homelinux.org> <2664900.viczl5BYBS@avalon> <CACVXFVNUJ8i5hOX8oqcBn1rO=KmHQU3WMBVBh9HF=BfJw1QcPw@mail.gmail.com>
+	id S1751752Ab3AJKEe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 05:04:34 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:60388 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab3AJKEc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 05:04:32 -0500
+Message-ID: <50EE921D.8020601@ti.com>
+Date: Thu, 10 Jan 2013 11:04:13 +0100
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: kishon <kishon@ti.com>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <arnd@arndb.de>, <balbi@ti.com>,
+        <tony@atomide.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: dts: omap: Add omap-usb2 dt data
+References: <1348050772-27819-1-git-send-email-kishon@ti.com> <1348050772-27819-3-git-send-email-kishon@ti.com> <50EE8A89.4010801@ti.com>
+In-Reply-To: <50EE8A89.4010801@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 January 2013 13:13:58 Ming Lei wrote:
-> IMO, there is a minor fault in the error handling path of
-> uvc_status_start() inside uvc_v4l2_open(), and the 'users' count
-> should have been decreased before usb_autopm_put_interface().
-> In theory, the warning can be triggered when the device is
-> opened just between usb_autopm_put_interface() and
-> atomic_dec(&stream->dev->users), but I don't think it is
-> the cause of the report.
+On 01/10/2013 10:31 AM, kishon wrote:
+> Hi Benoit,
+> 
+> On Wednesday 19 September 2012 04:02 PM, Kishon Vijay Abraham I wrote:
+>> Add omap-usb2 data node in omap4 device tree file. Since omap-usb2 is
+>> connected to ocp2scp, omap-usb2 dt data is added as a child node
+>> of ocp2scp.
+>>
+>> Acked-by: Felipe Balbi <balbi@ti.com>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> 
+> This patch is also missing in mainline :-(
 
-Hi,
+Well, in that case this was done on purpose :-)
 
-the analysis is sound. Good catch. As the fix is trivial, I am making
-a quick patch.
+> 
+> Thanks
+> Kishon
+> 
+>> ---
+>>   arch/arm/boot/dts/omap4.dtsi |    5 +++++
+>>   1 file changed, 5 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+>> index 4fbb9dc..28eaddc 100644
+>> --- a/arch/arm/boot/dts/omap4.dtsi
+>> +++ b/arch/arm/boot/dts/omap4.dtsi
+>> @@ -303,6 +303,11 @@
+>>               #size-cells = <1>;
+>>               ranges;
+>>               ti,hwmods = "ocp2scp_usb_phy";
+>> +            usb2phy@4a0ad080 {
+>> +                compatible = "ti,omap-usb2";
+>> +                reg = <0x4a0ad080 0x58>,
+>> +                      <0x4a002300 0x4>; /* TO BE REMOVED: SCM */
 
-	Regards
-		Oliver
+Rob and I did not agree to use that temp hack in the case of DT, so you
+were supposed to repost with a proper driver for the SCM part that
+control the USB.
+
+Regards,
+Benoit
 
