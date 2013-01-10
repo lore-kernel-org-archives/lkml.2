@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab3AJMTD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 07:19:03 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41524 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754303Ab3AJMS7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 07:18:59 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 6/9] mfd: arizona: Allow customisation of microphone detection levels
-Date: Thu, 10 Jan 2013 12:18:49 +0000
-Message-Id: <1357820332-14586-6-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1357820332-14586-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20130110121828.GN20956@opensource.wolfsonmicro.com>
- <1357820332-14586-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1754583Ab3AJMT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 07:19:29 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33495 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754348Ab3AJMTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 07:19:25 -0500
+Date: Thu, 10 Jan 2013 13:19:22 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7u1 08/31] x86, 64bit: early #PF handler set page table
+Message-ID: <20130110121922.GF23008@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-9-git-send-email-yinghai@kernel.org>
+ <20130107155544.GD29449@x1.alien8.de>
+ <CAE9FiQXcP9E-RXre_NKf-SU454nT9K39f1GsVVroV1TFxPgQ7g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQXcP9E-RXre_NKf-SU454nT9K39f1GsVVroV1TFxPgQ7g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The microphone detection levels for Arizona parts can be customised.
-Allow this to be done via platform data, the values chosen will depend
-on the system design and determined in discussion with Wolfson.
+On Wed, Jan 09, 2013 at 05:56:07PM -0800, Yinghai Lu wrote:
+> On Mon, Jan 7, 2013 at 7:55 AM, Borislav Petkov <bp@alien8.de> wrote:
+> > Those -vXX version lines need to go under the "---" line. Alternatively,
+> > you might want to add some of them to the commit message with a proper
+> > explanation since they are not that trivial at a first glance, for
+> > example the -v5, -v6, -v8, -v9 with a better explanation.
+> 
+> mostly they are for tracking version.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c            |    8 ++++++++
- include/linux/mfd/arizona/pdata.h     |    5 +++++
- include/linux/mfd/arizona/registers.h |    4 ++++
- 3 files changed, 17 insertions(+)
+I know that! Please read my suggestion again.
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 1ab02a7..5f0de90 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -458,6 +458,14 @@ int arizona_dev_init(struct arizona *arizona)
- 			     arizona->pdata.gpio_defaults[i]);
- 	}
- 
-+	for (i = 0; i < ARRAY_SIZE(arizona->pdata.micd_level); i++) {
-+		if (!arizona->pdata.micd_level[i])
-+			continue;
-+
-+		regmap_write(arizona->regmap, ARIZONA_MIC_DETECT_LEVEL_1 + i,
-+			     arizona->pdata.micd_level[i]);
-+	}
-+
- 	pm_runtime_set_autosuspend_delay(arizona->dev, 100);
- 	pm_runtime_use_autosuspend(arizona->dev);
- 	pm_runtime_enable(arizona->dev);
-diff --git a/include/linux/mfd/arizona/pdata.h b/include/linux/mfd/arizona/pdata.h
-index 8b1d1da..73822bd 100644
---- a/include/linux/mfd/arizona/pdata.h
-+++ b/include/linux/mfd/arizona/pdata.h
-@@ -67,6 +67,8 @@
- 
- #define ARIZONA_MAX_PDM_SPK 2
- 
-+#define ARIZONA_NUM_MICD_LEVEL 4
-+
- struct regulator_init_data;
- 
- struct arizona_micd_config {
-@@ -99,6 +101,9 @@ struct arizona_pdata {
- 	/** GPIO for mic detection polarity */
- 	int micd_pol_gpio;
- 
-+	/** Mic detect level parameters */
-+	int micd_level[ARIZONA_NUM_MICD_LEVEL];
-+
- 	/** Headset polarity configurations */
- 	struct arizona_micd_config *micd_configs;
- 	int num_micd_configs;
-diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-index 1f6fe31..fb3a1b8 100644
---- a/include/linux/mfd/arizona/registers.h
-+++ b/include/linux/mfd/arizona/registers.h
-@@ -122,6 +122,10 @@
- #define ARIZONA_MIC_DETECT_1                     0x2A3
- #define ARIZONA_MIC_DETECT_2                     0x2A4
- #define ARIZONA_MIC_DETECT_3                     0x2A5
-+#define ARIZONA_MIC_DETECT_LEVEL_1		 0x2A6
-+#define ARIZONA_MIC_DETECT_LEVEL_2		 0x2A7
-+#define ARIZONA_MIC_DETECT_LEVEL_3		 0x2A8
-+#define ARIZONA_MIC_DETECT_LEVEL_4		 0x2A9
- #define ARIZONA_MIC_NOISE_MIX_CONTROL_1          0x2C3
- #define ARIZONA_ISOLATION_CONTROL                0x2CB
- #define ARIZONA_JACK_DETECT_ANALOGUE             0x2D3
+> > This needs hpa's S-O-B.
+> 
+> he will add later when he put the in the tip.
+
+This is not how SOB chaining works:
+
+SOB: Author
+SOB: Handler - this is you, who has added it to the patchset
+SOB: Committer - maintainer
+
+You need to read Documentation/SubmittingPatches if there's still things
+unclear.
+
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
