@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab3AJI3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 03:29:15 -0500
-Received: from mga03.intel.com ([143.182.124.21]:40604 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565Ab3AJI3O convert rfc822-to-8bit (ORCPT
+	id S1752406Ab3AJIdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 03:33:12 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:33096 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab3AJIdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 03:29:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="242188151"
-Message-ID: <1357806538.31620.214.camel@smile>
-Subject: Re: [resend][PATCH 00/16] dw_dmac related patchset
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Date: Thu, 10 Jan 2013 10:28:58 +0200
-In-Reply-To: <20130109154411.GU19691@intel.com>
-References: <20130108155423.GJ19691@intel.com>
-	 <1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20130109154411.GU19691@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
+	Thu, 10 Jan 2013 03:33:10 -0500
+Date: Thu, 10 Jan 2013 09:32:55 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Laurent Navet <laurent.navet@gmail.com>
+Cc: w.sang@pengutronix.de, ben-linux@fluff.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: i2c-nforce2: fix coding style issues
+Message-ID: <20130110093255.5353fb31@endymion.delvare>
+In-Reply-To: <1357764624-32134-1-git-send-email-laurent.navet@gmail.com>
+References: <1357764624-32134-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-09 at 07:44 -0800, Vinod Koul wrote: 
-> On Wed, Jan 09, 2013 at 10:16:59AM +0200, Andy Shevchenko wrote:
-> > There is a patchset against dw_dmac driver. It has been resent for Vinod to
-> > review after he returned back from vacation and holidays. That's why there is
-> > no Cc list.
-> Applied these:
-> 21fe3c5 dma: dw_dmac: add dwc_chan_pause and dwc_chan_resume
-> f5c6a7d dw_dmac: update tx_node_active in dwc_do_single_block
-> 21e93c1 dw_dmac: remove redundant check
-> cbd6531 dw_dmac: check for mapping errors
-> 123de54 dw_dmac: absence of pdata isn't critical when autocfg is set
+Hi Laurent,
+
+Thanks for the updated patch.
+
+On Wed,  9 Jan 2013 21:50:24 +0100, Laurent Navet wrote:
+> avoid these checkpatch.pl issues :
+> - ERROR: "foo * bar" should be "foo *bar"
+> - ERROR: switch and case should be at the same indent
+> - ERROR: "(foo*)" should be "(foo *)"
+> - ERROR: do not use assignment in if condition
+> - ERROR: space required before the open parenthesis '('
+> - WARNING: suspect code indent for conditional statements
+> - WARNING: quoted string split across lines
+> - WARNING: space prohibited between function name and open parenthesis '('
+
+Unfortunately your patch also add one new checkpatch.pl warning:
+
+WARNING: line over 80 characters
+#245: FILE: drivers/i2c/busses/i2c-nforce2.c:272:
++		data->word = inb_p(NVIDIA_SMB_DATA) | (inb_p(NVIDIA_SMB_DATA + 1) << 8);
+
+Please fix.
+
 > 
-> 2, 9, 11(after fixing changelog) failed, possibly due to dependecy in series
-
-It sounds strange. I just rebased against your recent next branch, and
-it went fine.
-
-Anyway, I'll submit v2 soon with changed name of the function and fixed
-changelogs.
-
+> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+> ---
+>  drivers/i2c/busses/i2c-nforce2.c |  153 +++++++++++++++++++-------------------
+>  1 file changed, 76 insertions(+), 77 deletions(-)
 > 
-> > 
-> > Andy Shevchenko (15):
-> >   dw_dmac: call .probe after we have a device in place
-> >   dw_dmac: absence of pdata isn't critical when autocfg is set
-> >   dmaengine: introduce is_slave_xfer function
-> >   dma: at_hdmac: check direction properly for cyclic transfers
-> >   dma: dw_dmac: check direction properly in dw_dma_cyclic_prep
-> >   dma: ep93xx_dma: reuse is_slave_xfer helper
-> >   dma: ipu_idmac: reuse is_slave_xfer helper
-> >   dma: ste_dma40: reuse is_slave_xfer helper
-> >   dw_dmac: store direction in the custom channel structure
-> >   dw_dmac: make usage of dw_dma_slave optional
-> >   dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
-> >   dw_dmac: check for mapping errors
-> >   dw_dmac: remove redundant check
-> >   dw_dmac: update tx_node_active in dwc_do_single_block
-> >   dma: dw_dmac: add dwc_chan_pause and dwc_chan_resume
-> > 
-> > Heikki Krogerus (1):
-> >   dma: dw_dmac: clear suspend bit during termination
-> > 
-> >  drivers/dma/at_hdmac.c      |   10 +--
-> >  drivers/dma/dw_dmac.c       |  152 +++++++++++++++++++++++++++++--------------
-> >  drivers/dma/dw_dmac_regs.h  |   17 +++--
-> >  drivers/dma/ep93xx_dma.c    |    3 +-
-> >  drivers/dma/ipu/ipu_idmac.c |    2 +-
-> >  drivers/dma/ste_dma40.c     |    2 +-
-> >  include/linux/dmaengine.h   |    5 ++
-> >  7 files changed, 123 insertions(+), 68 deletions(-)
-> > 
-> > -- 
-> > 1.7.10.4
-> > 
+> diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
+> index 392303b..90357a2 100644
+> --- a/drivers/i2c/busses/i2c-nforce2.c
+> +++ b/drivers/i2c/busses/i2c-nforce2.c
+> (...)
+> @@ -327,10 +324,10 @@ static DEFINE_PCI_DEVICE_TABLE(nforce2_ids) = {
+>  	{ 0 }
+>  };
+>  
+> -MODULE_DEVICE_TABLE (pci, nforce2_ids);
+> +MODULE_DEVICE_TABLE(pci, nforce2_ids);
+>  
+>  
+> -static int __devinit nforce2_probe_smb (struct pci_dev *dev, int bar,
+> +static int __devinit nforce2_probe_smb(struct pci_dev *dev, int bar,
+>  	int alt_reg, struct nforce2_smbus *smbus, const char *name)
+>  {
+>  	int error;
+
+As mentioned previously, __devinit has been dropped meanwhile, so this
+change doesn't apply cleanly. Please rebase your patch on top of kernel
+3.8-rc3 (or Wolfram's i2c tree) so that Wolfram can apply it.
+
+All the rest looks very good now, thanks for the good work.
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Jean Delvare
