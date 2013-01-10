@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab3AJS1e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 13:27:34 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:49219 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744Ab3AJS1c (ORCPT
+	id S1754839Ab3AJSa3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 13:30:29 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:55867 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744Ab3AJSa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 13:27:32 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
-Date: Thu, 10 Jan 2013 18:26:55 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <201301100917.19577.arnd@arndb.de> <20130110102544.GA5546@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20130110102544.GA5546@avionic-0098.adnet.avionic-design.de>
+	Thu, 10 Jan 2013 13:30:27 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301101826.56248.arnd@arndb.de>
-X-Provags-ID: V02:K0:RnAglmKDzYoFE1EZ2W1VaSaczwQ9719NCV2CDKzaUFo
- nhU/Y2MZ5RRl7NB0Dkq2T+Z+ghVq87+qfdpaxkAIvoRktD84Pt
- kjIMkJIcApt82ffSKqUAME6wVft2gj5QDhxRCeoh6/zhLat2u1
- 4o2p2B0iWliYXrL2cD4Ndn+8L82GDcsCJJV+Pl/SaBXE8iHT3v
- 1XaIWsZtkvUQAvUy6lbWiyddxBMx43bKMARJw3VPcOIFi2vW9Z
- 7vS50TeGq3cW23+1VcYbEiBJtlygt2zm/NKo0hWR8DzkwdRyvy
- 743WEQu3jh726zNWbt9PmeE+YCBk2MsHyuN+cBiOHM1701bynm
- folCgJXRvCX/jbibiJdc=
+In-Reply-To: <3580741.9uNSi7V1RO@vostro.rjw.lan>
+References: <20130110112836.19126ca740c8e13a15860dc0@canb.auug.org.au> <3580741.9uNSi7V1RO@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 10 Jan 2013 11:30:06 -0700
+Message-ID: <CAErSpo6vWrpJ-y4dGp3pa65UZUm50nzW-QfXji8tdYjh-OU_AA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the pm tree with the pci tree
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 January 2013, Thierry Reding wrote:
-> I don't understand how this would help. The encoding is like this:
-> 
->         [27:24] extended register number
->         [23:16] bus number
->         [15:11] device number
->         [10: 8] function number
->         [ 7: 0] register number
-> 
-> So it doesn't matter whether I use separate areas per bus or not. As
-> soon as the whole extended configuration space needs to be accessed a
-> whopping 28 bits (256 MiB) are required.
-> 
-> What you propose would work if only regular configuration space is
-> supported. I'm not sure if that's an option.
+On Thu, Jan 10, 2013 at 6:12 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Hi,
+>
+> On Thursday, January 10, 2013 11:28:36 AM Stephen Rothwell wrote:
+>> Hi Rafael,
+>>
+>> Today's linux-next merge of the pm tree got a conflict in
+>> drivers/acpi/pci_root.c between commit 3c449ed00759 ("PCI/ACPI: Reserve
+>> firmware-allocated resources for hot-added root buses") from the pci tree
+>> and commit 47525cda88f5 ("ACPI / PCI: Fold acpi_pci_root_start() into
+>> acpi_pci_root_add()") from the pm tree.
+>>
+>> I fixed it up (see below) and can carry the fix as necessary (no action
+>> is required).
+>
+> Thanks for the fixup and please carry it for now (the conflict should go away
+> when Bjorn pulls from my acpi-scan branch).
 
-I mean something like:
+I pulled from acpi-scan and put it in my -next branch.
 
-struct tegra_bus_private {
-	...
-	void __iomem *config_space[16];
-};
+I had done this yesterday, but botched the conflict resolution
+(thanks, Stephen, for showing me the correct resolution).  So I
+recreated my pci/yinghai-survey-resources+acpi-scan branch, re-did the
+merge, the force-updated both my
+pci/yinghai-survey-resources+acpi-scan and next branches.
 
-
-void tegra_scan_bus(struct pci_bus *bus)
-{
-	int i;
-	struct tegra_bus_private *priv = bus->dev->private;
-
-	for (i=0; i<16; i++)
-		priv->config_space[i] = ioremap(config_space_phys +
-				 65536 * bus->primary + i * SZ_1M, 65536);
-
-	...
-}
-
-	Arnd
+Bjorn
