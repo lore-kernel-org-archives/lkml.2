@@ -1,390 +1,739 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab3AJPjP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:39:15 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:52769 "EHLO multi.imgtec.com"
+	id S1754940Ab3AJPjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:39:13 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:56857 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753210Ab3AJPct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:32:49 -0500
+	id S1754445Ab3AJPcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:32:50 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
 CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v3 17/44] metag: TCM support
-Date: Thu, 10 Jan 2013 15:30:45 +0000
-Message-ID: <1357831872-29451-18-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH v3 31/44] metag: DMA
+Date: Thu, 10 Jan 2013 15:30:59 +0000
+Message-ID: <1357831872-29451-32-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_29
+X-SEF-Processed: 7_3_0_01181__2013_01_10_15_32_31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add some TCM support
+Add DMA mapping code.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/metag/include/asm/mmzone.h    |   42 ++++++++++
- arch/metag/include/asm/sparsemem.h |   13 +++
- arch/metag/include/asm/tcm.h       |   30 +++++++
- arch/metag/kernel/tcm.c            |  151 ++++++++++++++++++++++++++++++++++++
- arch/metag/mm/numa.c               |   81 +++++++++++++++++++
- 5 files changed, 317 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/mmzone.h
- create mode 100644 arch/metag/include/asm/sparsemem.h
- create mode 100644 arch/metag/include/asm/tcm.h
- create mode 100644 arch/metag/kernel/tcm.c
- create mode 100644 arch/metag/mm/numa.c
+ arch/metag/include/asm/dma-mapping.h |  183 ++++++++++++
+ arch/metag/kernel/dma.c              |  507 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 690 insertions(+), 0 deletions(-)
+ create mode 100644 arch/metag/include/asm/dma-mapping.h
+ create mode 100644 arch/metag/kernel/dma.c
 
-diff --git a/arch/metag/include/asm/mmzone.h b/arch/metag/include/asm/mmzone.h
+diff --git a/arch/metag/include/asm/dma-mapping.h b/arch/metag/include/asm/dma-mapping.h
 new file mode 100644
-index 0000000..9c88a9c
+index 0000000..b5f80a6
 --- /dev/null
-+++ b/arch/metag/include/asm/mmzone.h
-@@ -0,0 +1,42 @@
-+#ifndef __ASM_METAG_MMZONE_H
-+#define __ASM_METAG_MMZONE_H
++++ b/arch/metag/include/asm/dma-mapping.h
+@@ -0,0 +1,183 @@
++#ifndef _ASM_METAG_DMA_MAPPING_H
++#define _ASM_METAG_DMA_MAPPING_H
 +
-+#ifdef CONFIG_NEED_MULTIPLE_NODES
-+#include <linux/numa.h>
++#include <linux/mm.h>
 +
-+extern struct pglist_data *node_data[];
-+#define NODE_DATA(nid)		(node_data[nid])
++#include <asm/cache.h>
++#include <asm/io.h>
++#include <linux/scatterlist.h>
++#include <asm/bug.h>
 +
-+static inline int pfn_to_nid(unsigned long pfn)
++#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
++#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
++
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			 dma_addr_t *dma_handle, gfp_t flag);
++
++void dma_free_coherent(struct device *dev, size_t size,
++		       void *vaddr, dma_addr_t dma_handle);
++
++void dma_sync_for_device(void *vaddr, size_t size, int dma_direction);
++void dma_sync_for_cpu(void *vaddr, size_t size, int dma_direction);
++
++int dma_mmap_coherent(struct device *dev, struct vm_area_struct *vma,
++		      void *cpu_addr, dma_addr_t dma_addr, size_t size);
++
++int dma_mmap_writecombine(struct device *dev, struct vm_area_struct *vma,
++			  void *cpu_addr, dma_addr_t dma_addr, size_t size);
++
++static inline dma_addr_t
++dma_map_single(struct device *dev, void *ptr, size_t size,
++	       enum dma_data_direction direction)
 +{
-+	int nid;
-+
-+	for (nid = 0; nid < MAX_NUMNODES; nid++)
-+		if (pfn >= node_start_pfn(nid) && pfn <= node_end_pfn(nid))
-+			break;
-+
-+	return nid;
++	BUG_ON(!valid_dma_direction(direction));
++	WARN_ON(size == 0);
++	dma_sync_for_device(ptr, size, direction);
++	return virt_to_phys(ptr);
 +}
 +
-+static inline struct pglist_data *pfn_to_pgdat(unsigned long pfn)
-+{
-+	return NODE_DATA(pfn_to_nid(pfn));
-+}
-+
-+/* arch/metag/mm/numa.c */
-+void __init setup_bootmem_node(int nid, unsigned long start, unsigned long end);
-+#else
 +static inline void
-+setup_bootmem_node(int nid, unsigned long start, unsigned long end)
++dma_unmap_single(struct device *dev, dma_addr_t dma_addr, size_t size,
++		 enum dma_data_direction direction)
 +{
-+}
-+#endif /* CONFIG_NEED_MULTIPLE_NODES */
-+
-+#ifdef CONFIG_NUMA
-+/* SoC specific mem init */
-+void __init soc_mem_setup(void);
-+#else
-+static inline void __init soc_mem_setup(void) {};
-+#endif
-+
-+#endif /* __ASM_METAG_MMZONE_H */
-diff --git a/arch/metag/include/asm/sparsemem.h b/arch/metag/include/asm/sparsemem.h
-new file mode 100644
-index 0000000..03fe255
---- /dev/null
-+++ b/arch/metag/include/asm/sparsemem.h
-@@ -0,0 +1,13 @@
-+#ifndef __ASM_METAG_SPARSEMEM_H
-+#define __ASM_METAG_SPARSEMEM_H
-+
-+/*
-+ * SECTION_SIZE_BITS		2^N: how big each section will be
-+ * MAX_PHYSADDR_BITS		2^N: how much physical address space we have
-+ * MAX_PHYSMEM_BITS		2^N: how much memory we can have in that space
-+ */
-+#define SECTION_SIZE_BITS	26
-+#define MAX_PHYSADDR_BITS	32
-+#define MAX_PHYSMEM_BITS	32
-+
-+#endif /* __ASM_METAG_SPARSEMEM_H */
-diff --git a/arch/metag/include/asm/tcm.h b/arch/metag/include/asm/tcm.h
-new file mode 100644
-index 0000000..7711c31
---- /dev/null
-+++ b/arch/metag/include/asm/tcm.h
-@@ -0,0 +1,30 @@
-+#ifndef __ASM_TCM_H__
-+#define __ASM_TCM_H__
-+
-+#include <linux/ioport.h>
-+#include <linux/list.h>
-+
-+struct tcm_allocation {
-+	struct list_head list;
-+	unsigned int tag;
-+	unsigned long addr;
-+	unsigned long size;
-+};
-+
-+/*
-+ * TCM memory region descriptor.
-+ */
-+struct tcm_region {
-+	unsigned int tag;
-+	struct resource res;
-+};
-+
-+#define TCM_INVALID_TAG	0xffffffff
-+
-+unsigned long tcm_alloc(unsigned int tag, size_t len);
-+void tcm_free(unsigned int tag, unsigned long addr, size_t len);
-+unsigned int tcm_lookup_tag(unsigned long p);
-+
-+int tcm_add_region(struct tcm_region *reg);
-+
-+#endif
-diff --git a/arch/metag/kernel/tcm.c b/arch/metag/kernel/tcm.c
-new file mode 100644
-index 0000000..5d102b3
---- /dev/null
-+++ b/arch/metag/kernel/tcm.c
-@@ -0,0 +1,151 @@
-+/*
-+ * Copyright (C) 2010 Imagination Technologies Ltd.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/spinlock.h>
-+#include <linux/stddef.h>
-+#include <linux/genalloc.h>
-+#include <linux/string.h>
-+#include <linux/list.h>
-+#include <linux/slab.h>
-+#include <asm/page.h>
-+#include <asm/tcm.h>
-+
-+struct tcm_pool {
-+	struct list_head list;
-+	unsigned int tag;
-+	unsigned long start;
-+	unsigned long end;
-+	struct gen_pool *pool;
-+};
-+
-+static LIST_HEAD(pool_list);
-+
-+static struct tcm_pool *find_pool(unsigned int tag)
-+{
-+	struct list_head *lh;
-+	struct tcm_pool *pool;
-+
-+	list_for_each(lh, &pool_list) {
-+		pool = list_entry(lh, struct tcm_pool, list);
-+		if (pool->tag == tag)
-+			return pool;
-+	}
-+
-+	return NULL;
++	BUG_ON(!valid_dma_direction(direction));
++	dma_sync_for_cpu(phys_to_virt(dma_addr), size, direction);
 +}
 +
-+/**
-+ * tcm_alloc - allocate memory from a TCM pool
-+ * @tag: tag of the pool to allocate memory from
-+ * @len: number of bytes to be allocated
-+ *
-+ * Allocate the requested number of bytes from the pool matching
-+ * the specified tag. Returns the address of the allocated memory
-+ * or zero on failure.
-+ */
-+unsigned long tcm_alloc(unsigned int tag, size_t len)
++static inline int
++dma_map_sg(struct device *dev, struct scatterlist *sglist, int nents,
++	   enum dma_data_direction direction)
 +{
-+	unsigned long vaddr;
-+	struct tcm_pool *pool;
++	struct scatterlist *sg;
++	int i;
 +
-+	pool = find_pool(tag);
-+	if (!pool)
-+		return 0;
++	BUG_ON(!valid_dma_direction(direction));
++	WARN_ON(nents == 0 || sglist[0].length == 0);
 +
-+	vaddr = gen_pool_alloc(pool->pool, len);
-+	if (!vaddr)
-+		return 0;
++	for_each_sg(sglist, sg, nents, i) {
++		BUG_ON(!sg_page(sg));
 +
-+	return vaddr;
++		sg->dma_address = sg_phys(sg);
++		dma_sync_for_device(sg_virt(sg), sg->length, direction);
++	}
++
++	return nents;
 +}
 +
-+/**
-+ * tcm_free - free a block of memory to a TCM pool
-+ * @tag: tag of the pool to free memory to
-+ * @addr: address of the memory to be freed
-+ * @len: number of bytes to be freed
-+ *
-+ * Free the requested number of bytes at a specific address to the
-+ * pool matching the specified tag.
-+ */
-+void tcm_free(unsigned int tag, unsigned long addr, size_t len)
++static inline dma_addr_t
++dma_map_page(struct device *dev, struct page *page, unsigned long offset,
++	     size_t size, enum dma_data_direction direction)
 +{
-+	struct tcm_pool *pool;
-+
-+	pool = find_pool(tag);
-+	if (!pool)
-+		return;
-+	gen_pool_free(pool->pool, addr, len);
++	BUG_ON(!valid_dma_direction(direction));
++	dma_sync_for_device((void *)(page_to_phys(page) + offset), size,
++			    direction);
++	return page_to_phys(page) + offset;
 +}
 +
-+/**
-+ * tcm_lookup_tag - find the tag matching an address
-+ * @p: memory address to lookup the tag for
-+ *
-+ * Find the tag of the tcm memory region that contains the
-+ * specified address. Returns %TCM_INVALID_TAG if no such
-+ * memory region could be found.
-+ */
-+unsigned int tcm_lookup_tag(unsigned long p)
++static inline void
++dma_unmap_page(struct device *dev, dma_addr_t dma_address, size_t size,
++	       enum dma_data_direction direction)
 +{
-+	struct list_head *lh;
-+	struct tcm_pool *pool;
-+	unsigned long addr = (unsigned long) p;
-+
-+	list_for_each(lh, &pool_list) {
-+		pool = list_entry(lh, struct tcm_pool, list);
-+		if (addr >= pool->start && addr < pool->end)
-+			return pool->tag;
-+	}
-+
-+	return TCM_INVALID_TAG;
++	BUG_ON(!valid_dma_direction(direction));
++	dma_sync_for_cpu(phys_to_virt(dma_address), size, direction);
 +}
 +
-+/**
-+ * tcm_add_region - add a memory region to TCM pool list
-+ * @reg: descriptor of region to be added
-+ *
-+ * Add a region of memory to the TCM pool list. Returns 0 on success.
-+ */
-+int __init tcm_add_region(struct tcm_region *reg)
++
++static inline void
++dma_unmap_sg(struct device *dev, struct scatterlist *sglist, int nhwentries,
++	     enum dma_data_direction direction)
 +{
-+	struct tcm_pool *pool;
++	struct scatterlist *sg;
++	int i;
 +
-+	pool = kmalloc(sizeof(*pool), GFP_KERNEL);
-+	if (!pool) {
-+		pr_err("Failed to alloc memory for TCM pool!\n");
-+		return -ENOMEM;
++	BUG_ON(!valid_dma_direction(direction));
++	WARN_ON(nhwentries == 0 || sglist[0].length == 0);
++
++	for_each_sg(sglist, sg, nhwentries, i) {
++		BUG_ON(!sg_page(sg));
++
++		sg->dma_address = sg_phys(sg);
++		dma_sync_for_cpu(sg_virt(sg), sg->length, direction);
 +	}
++}
 +
-+	pool->tag = reg->tag;
-+	pool->start = reg->res.start;
-+	pool->end = reg->res.end;
++static inline void
++dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle, size_t size,
++			enum dma_data_direction direction)
++{
++	dma_sync_for_cpu(phys_to_virt(dma_handle), size, direction);
++}
 +
-+	/*
-+	 * 2^3 = 8 bytes granularity to allow for 64bit access alignment.
-+	 * -1 = NUMA node specifier.
-+	 */
-+	pool->pool = gen_pool_create(3, -1);
++static inline void
++dma_sync_single_for_device(struct device *dev, dma_addr_t dma_handle,
++			   size_t size, enum dma_data_direction direction)
++{
++	dma_sync_for_device(phys_to_virt(dma_handle), size, direction);
++}
 +
-+	if (!pool->pool) {
-+		pr_err("Failed to create TCM pool!\n");
-+		kfree(pool);
-+		return -ENOMEM;
-+	}
++static inline void
++dma_sync_single_range_for_cpu(struct device *dev, dma_addr_t dma_handle,
++			      unsigned long offset, size_t size,
++			      enum dma_data_direction direction)
++{
++	dma_sync_for_cpu(phys_to_virt(dma_handle)+offset, size,
++			 direction);
++}
 +
-+	if (gen_pool_add(pool->pool, reg->res.start,
-+			 reg->res.end - reg->res.start + 1, -1)) {
-+		pr_err("Failed to add memory to TCM pool!\n");
-+		return -ENOMEM;
-+	}
-+	pr_info("Added %s TCM pool (%08x bytes @ %08x)\n",
-+		reg->res.name, reg->res.end - reg->res.start + 1,
-+		reg->res.start);
++static inline void
++dma_sync_single_range_for_device(struct device *dev, dma_addr_t dma_handle,
++				 unsigned long offset, size_t size,
++				 enum dma_data_direction direction)
++{
++	dma_sync_for_device(phys_to_virt(dma_handle)+offset, size,
++			    direction);
++}
 +
-+	list_add_tail(&pool->list, &pool_list);
++static inline void
++dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg, int nelems,
++		    enum dma_data_direction direction)
++{
++	int i;
++	for (i = 0; i < nelems; i++, sg++)
++		dma_sync_for_cpu(sg_virt(sg), sg->length, direction);
++}
++
++static inline void
++dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg, int nelems,
++		       enum dma_data_direction direction)
++{
++	int i;
++	for (i = 0; i < nelems; i++, sg++)
++		dma_sync_for_device(sg_virt(sg), sg->length, direction);
++}
++
++static inline int
++dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
++{
++	return 0;
++}
++
++#define dma_supported(dev, mask)        (1)
++
++static inline int
++dma_set_mask(struct device *dev, u64 mask)
++{
++	if (!dev->dma_mask || !dma_supported(dev, mask))
++		return -EIO;
++
++	*dev->dma_mask = mask;
 +
 +	return 0;
 +}
-diff --git a/arch/metag/mm/numa.c b/arch/metag/mm/numa.c
++
++/*
++ * dma_alloc_noncoherent() returns non-cacheable memory, so there's no need to
++ * do any flushing here.
++ */
++static inline void
++dma_cache_sync(struct device *dev, void *vaddr, size_t size,
++	       enum dma_data_direction direction)
++{
++}
++
++#endif
+diff --git a/arch/metag/kernel/dma.c b/arch/metag/kernel/dma.c
 new file mode 100644
-index 0000000..9ae578c
+index 0000000..8c00ded
 --- /dev/null
-+++ b/arch/metag/mm/numa.c
-@@ -0,0 +1,81 @@
++++ b/arch/metag/kernel/dma.c
+@@ -0,0 +1,507 @@
 +/*
-+ *  Multiple memory node support for Meta machines
++ *  Meta version derived from arch/powerpc/lib/dma-noncoherent.c
++ *    Copyright (C) 2008 Imagination Technologies Ltd.
 + *
-+ *  Copyright (C) 2007  Paul Mundt
-+ *  Copyright (C) 2010  Imagination Technologies Ltd.
++ *  PowerPC version derived from arch/arm/mm/consistent.c
++ *    Copyright (C) 2001 Dan Malek (dmalek@jlc.net)
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ *  Copyright (C) 2000 Russell King
++ *
++ * Consistent memory allocators.  Used for DMA devices that want to
++ * share uncached memory with the processor core.  The function return
++ * is the virtual address and 'dma_handle' is the physical address.
++ * Mostly stolen from the ARM port, with some changes for PowerPC.
++ *						-- Dan
++ *
++ * Reorganized to get rid of the arch-specific consistent_* functions
++ * and provide non-coherent implementations for the DMA API. -Matt
++ *
++ * Added in_interrupt() safe dma_alloc_coherent()/dma_free_coherent()
++ * implementation. This is pulled straight from ARM and barely
++ * modified. -Matt
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
++
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
 +#include <linux/export.h>
-+#include <linux/bootmem.h>
-+#include <linux/memblock.h>
-+#include <linux/mm.h>
-+#include <linux/numa.h>
-+#include <linux/pfn.h>
-+#include <asm/sections.h>
++#include <linux/string.h>
++#include <linux/types.h>
++#include <linux/highmem.h>
++#include <linux/dma-mapping.h>
++#include <linux/slab.h>
 +
-+struct pglist_data *node_data[MAX_NUMNODES] __read_mostly;
-+EXPORT_SYMBOL_GPL(node_data);
++#include <asm/tlbflush.h>
++#include <asm/mmu.h>
 +
-+extern char _heap_start[];
++#define CONSISTENT_OFFSET(x)	(((unsigned long)(x) - CONSISTENT_START) \
++					>> PAGE_SHIFT)
++
++static u64 get_coherent_dma_mask(struct device *dev)
++{
++	u64 mask = ~0ULL;
++
++	if (dev) {
++		mask = dev->coherent_dma_mask;
++
++		/*
++		 * Sanity check the DMA mask - it must be non-zero, and
++		 * must be able to be satisfied by a DMA allocation.
++		 */
++		if (mask == 0) {
++			dev_warn(dev, "coherent DMA mask is unset\n");
++			return 0;
++		}
++	}
++
++	return mask;
++}
++/*
++ * This is the page table (2MB) covering uncached, DMA consistent allocations
++ */
++static pte_t *consistent_pte;
++static DEFINE_SPINLOCK(consistent_lock);
 +
 +/*
-+ * On Meta machines the conventional approach is to stash system RAM
-+ * in node 0, and other memory blocks in to node 1 and up, ordered by
-+ * latency. Each node's pgdat is node-local at the beginning of the node,
-+ * immediately followed by the node mem map.
++ * VM region handling support.
++ *
++ * This should become something generic, handling VM region allocations for
++ * vmalloc and similar (ioremap, module space, etc).
++ *
++ * I envisage vmalloc()'s supporting vm_struct becoming:
++ *
++ *  struct vm_struct {
++ *    struct metag_vm_region	region;
++ *    unsigned long	flags;
++ *    struct page	**pages;
++ *    unsigned int	nr_pages;
++ *    unsigned long	phys_addr;
++ *  };
++ *
++ * get_vm_area() would then call metag_vm_region_alloc with an appropriate
++ * struct metag_vm_region head (eg):
++ *
++ *  struct metag_vm_region vmalloc_head = {
++ *	.vm_list	= LIST_HEAD_INIT(vmalloc_head.vm_list),
++ *	.vm_start	= VMALLOC_START,
++ *	.vm_end		= VMALLOC_END,
++ *  };
++ *
++ * However, vmalloc_head.vm_start is variable (typically, it is dependent on
++ * the amount of RAM found at boot time.)  I would imagine that get_vm_area()
++ * would have to initialise this each time prior to calling
++ * metag_vm_region_alloc().
 + */
-+void __init setup_bootmem_node(int nid, unsigned long start, unsigned long end)
++struct metag_vm_region {
++	struct list_head vm_list;
++	unsigned long vm_start;
++	unsigned long vm_end;
++	struct page		*vm_pages;
++	int			vm_active;
++};
++
++static struct metag_vm_region consistent_head = {
++	.vm_list = LIST_HEAD_INIT(consistent_head.vm_list),
++	.vm_start = CONSISTENT_START,
++	.vm_end = CONSISTENT_END,
++};
++
++static struct metag_vm_region *metag_vm_region_alloc(struct metag_vm_region
++						     *head, size_t size,
++						     gfp_t gfp)
 +{
-+	unsigned long bootmap_pages, bootmem_paddr;
-+	unsigned long start_pfn, end_pfn;
-+	unsigned long pgdat_paddr;
++	unsigned long addr = head->vm_start, end = head->vm_end - size;
++	unsigned long flags;
++	struct metag_vm_region *c, *new;
 +
-+	/* Don't allow bogus node assignment */
-+	BUG_ON(nid > MAX_NUMNODES || nid <= 0);
++	new = kmalloc(sizeof(struct metag_vm_region), gfp);
++	if (!new)
++		goto out;
 +
-+	start_pfn = start >> PAGE_SHIFT;
-+	end_pfn = end >> PAGE_SHIFT;
++	spin_lock_irqsave(&consistent_lock, flags);
 +
-+	memblock_add(start, end - start);
++	list_for_each_entry(c, &head->vm_list, vm_list) {
++		if ((addr + size) < addr)
++			goto nospc;
++		if ((addr + size) <= c->vm_start)
++			goto found;
++		addr = c->vm_end;
++		if (addr > end)
++			goto nospc;
++	}
 +
-+	memblock_set_node(PFN_PHYS(start_pfn),
-+			  PFN_PHYS(end_pfn - start_pfn), nid);
++found:
++	/*
++	 * Insert this entry _before_ the one we found.
++	 */
++	list_add_tail(&new->vm_list, &c->vm_list);
++	new->vm_start = addr;
++	new->vm_end = addr + size;
++	new->vm_active = 1;
 +
-+	/* Node-local pgdat */
-+	pgdat_paddr = memblock_alloc_base(sizeof(struct pglist_data),
-+					  SMP_CACHE_BYTES, end);
-+	NODE_DATA(nid) = __va(pgdat_paddr);
-+	memset(NODE_DATA(nid), 0, sizeof(struct pglist_data));
++	spin_unlock_irqrestore(&consistent_lock, flags);
++	return new;
 +
-+	NODE_DATA(nid)->bdata = &bootmem_node_data[nid];
-+	NODE_DATA(nid)->node_start_pfn = start_pfn;
-+	NODE_DATA(nid)->node_spanned_pages = end_pfn - start_pfn;
-+
-+	/* Node-local bootmap */
-+	bootmap_pages = bootmem_bootmap_pages(end_pfn - start_pfn);
-+	bootmem_paddr = memblock_alloc_base(bootmap_pages << PAGE_SHIFT,
-+					    PAGE_SIZE, end);
-+	init_bootmem_node(NODE_DATA(nid), bootmem_paddr >> PAGE_SHIFT,
-+			  start_pfn, end_pfn);
-+
-+	free_bootmem_with_active_regions(nid, end_pfn);
-+
-+	/* Reserve the pgdat and bootmap space with the bootmem allocator */
-+	reserve_bootmem_node(NODE_DATA(nid), pgdat_paddr & PAGE_MASK,
-+			     sizeof(struct pglist_data), BOOTMEM_DEFAULT);
-+	reserve_bootmem_node(NODE_DATA(nid), bootmem_paddr,
-+			     bootmap_pages << PAGE_SHIFT, BOOTMEM_DEFAULT);
-+
-+	/* It's up */
-+	node_set_online(nid);
-+
-+	/* Kick sparsemem */
-+	sparse_memory_present_with_active_regions(nid);
++nospc:
++	spin_unlock_irqrestore(&consistent_lock, flags);
++	kfree(new);
++out:
++	return NULL;
 +}
 +
-+void __init __weak soc_mem_setup(void)
++static struct metag_vm_region *metag_vm_region_find(struct metag_vm_region
++						    *head, unsigned long addr)
 +{
++	struct metag_vm_region *c;
++
++	list_for_each_entry(c, &head->vm_list, vm_list) {
++		if (c->vm_active && c->vm_start == addr)
++			goto out;
++	}
++	c = NULL;
++out:
++	return c;
 +}
++
++/*
++ * Allocate DMA-coherent memory space and return both the kernel remapped
++ * virtual and bus address for that space.
++ */
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			 dma_addr_t *handle, gfp_t gfp)
++{
++	struct page *page;
++	struct metag_vm_region *c;
++	unsigned long order;
++	u64 mask = get_coherent_dma_mask(dev);
++	u64 limit;
++
++	if (!consistent_pte) {
++		pr_err("%s: not initialised\n", __func__);
++		dump_stack();
++		return NULL;
++	}
++
++	if (!mask)
++		goto no_page;
++	size = PAGE_ALIGN(size);
++	limit = (mask + 1) & ~mask;
++	if ((limit && size >= limit)
++	    || size >= (CONSISTENT_END - CONSISTENT_START)) {
++		pr_warn("coherent allocation too big (requested %#x mask %#Lx)\n",
++			size, mask);
++		return NULL;
++	}
++
++	order = get_order(size);
++
++	if (mask != 0xffffffff)
++		gfp |= GFP_DMA;
++
++	page = alloc_pages(gfp, order);
++	if (!page)
++		goto no_page;
++
++	/*
++	 * Invalidate any data that might be lurking in the
++	 * kernel direct-mapped region for device DMA.
++	 */
++	{
++		void *kaddr = page_address(page);
++		memset(kaddr, 0, size);
++		flush_dcache_region(kaddr, size);
++	}
++
++	/*
++	 * Allocate a virtual address in the consistent mapping region.
++	 */
++	c = metag_vm_region_alloc(&consistent_head, size,
++				  gfp & ~(__GFP_DMA | __GFP_HIGHMEM));
++	if (c) {
++		unsigned long vaddr = c->vm_start;
++		pte_t *pte = consistent_pte + CONSISTENT_OFFSET(vaddr);
++		struct page *end = page + (1 << order);
++
++		c->vm_pages = page;
++		split_page(page, order);
++
++		/*
++		 * Set the "dma handle"
++		 */
++		*handle = page_to_bus(page);
++
++		do {
++			BUG_ON(!pte_none(*pte));
++
++			SetPageReserved(page);
++			set_pte_at(&init_mm, vaddr,
++				   pte, mk_pte(page,
++					       pgprot_writecombine
++					       (PAGE_KERNEL)));
++			page++;
++			pte++;
++			vaddr += PAGE_SIZE;
++		} while (size -= PAGE_SIZE);
++
++		/*
++		 * Free the otherwise unused pages.
++		 */
++		while (page < end) {
++			__free_page(page);
++			page++;
++		}
++
++		return (void *)c->vm_start;
++	}
++
++	if (page)
++		__free_pages(page, order);
++no_page:
++	return NULL;
++}
++EXPORT_SYMBOL(dma_alloc_coherent);
++
++/*
++ * free a page as defined by the above mapping.
++ */
++void dma_free_coherent(struct device *dev, size_t size,
++		       void *vaddr, dma_addr_t dma_handle)
++{
++	struct metag_vm_region *c;
++	unsigned long flags, addr;
++	pte_t *ptep;
++
++	size = PAGE_ALIGN(size);
++
++	spin_lock_irqsave(&consistent_lock, flags);
++
++	c = metag_vm_region_find(&consistent_head, (unsigned long)vaddr);
++	if (!c)
++		goto no_area;
++
++	c->vm_active = 0;
++	if ((c->vm_end - c->vm_start) != size) {
++		pr_err("%s: freeing wrong coherent size (%ld != %d)\n",
++		       __func__, c->vm_end - c->vm_start, size);
++		dump_stack();
++		size = c->vm_end - c->vm_start;
++	}
++
++	ptep = consistent_pte + CONSISTENT_OFFSET(c->vm_start);
++	addr = c->vm_start;
++	do {
++		pte_t pte = ptep_get_and_clear(&init_mm, addr, ptep);
++		unsigned long pfn;
++
++		ptep++;
++		addr += PAGE_SIZE;
++
++		if (!pte_none(pte) && pte_present(pte)) {
++			pfn = pte_pfn(pte);
++
++			if (pfn_valid(pfn)) {
++				struct page *page = pfn_to_page(pfn);
++				ClearPageReserved(page);
++
++				__free_page(page);
++				continue;
++			}
++		}
++
++		pr_crit("%s: bad page in kernel page table\n",
++			__func__);
++	} while (size -= PAGE_SIZE);
++
++	flush_tlb_kernel_range(c->vm_start, c->vm_end);
++
++	list_del(&c->vm_list);
++
++	spin_unlock_irqrestore(&consistent_lock, flags);
++
++	kfree(c);
++	return;
++
++no_area:
++	spin_unlock_irqrestore(&consistent_lock, flags);
++	pr_err("%s: trying to free invalid coherent area: %p\n",
++	       __func__, vaddr);
++	dump_stack();
++}
++EXPORT_SYMBOL(dma_free_coherent);
++
++
++static int dma_mmap(struct device *dev, struct vm_area_struct *vma,
++		    void *cpu_addr, dma_addr_t dma_addr, size_t size)
++{
++	int ret = -ENXIO;
++
++	unsigned long flags, user_size, kern_size;
++	struct metag_vm_region *c;
++
++	user_size = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
++
++	spin_lock_irqsave(&consistent_lock, flags);
++	c = metag_vm_region_find(&consistent_head, (unsigned long)cpu_addr);
++	spin_unlock_irqrestore(&consistent_lock, flags);
++
++	if (c) {
++		unsigned long off = vma->vm_pgoff;
++
++		kern_size = (c->vm_end - c->vm_start) >> PAGE_SHIFT;
++
++		if (off < kern_size &&
++		    user_size <= (kern_size - off)) {
++			ret = remap_pfn_range(vma, vma->vm_start,
++					      page_to_pfn(c->vm_pages) + off,
++					      user_size << PAGE_SHIFT,
++					      vma->vm_page_prot);
++		}
++	}
++
++
++	return ret;
++}
++
++int dma_mmap_coherent(struct device *dev, struct vm_area_struct *vma,
++		      void *cpu_addr, dma_addr_t dma_addr, size_t size)
++{
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++	return dma_mmap(dev, vma, cpu_addr, dma_addr, size);
++}
++EXPORT_SYMBOL(dma_mmap_coherent);
++
++int dma_mmap_writecombine(struct device *dev, struct vm_area_struct *vma,
++			  void *cpu_addr, dma_addr_t dma_addr, size_t size)
++{
++	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
++	return dma_mmap(dev, vma, cpu_addr, dma_addr, size);
++}
++EXPORT_SYMBOL(dma_mmap_writecombine);
++
++
++
++
++/*
++ * Initialise the consistent memory allocation.
++ */
++static int __init dma_alloc_init(void)
++{
++	pgd_t *pgd, *pgd_k;
++	pud_t *pud, *pud_k;
++	pmd_t *pmd, *pmd_k;
++	pte_t *pte;
++	int ret = 0;
++
++	do {
++		int offset = pgd_index(CONSISTENT_START);
++		pgd = pgd_offset(&init_mm, CONSISTENT_START);
++		pud = pud_alloc(&init_mm, pgd, CONSISTENT_START);
++		pmd = pmd_alloc(&init_mm, pud, CONSISTENT_START);
++		if (!pmd) {
++			pr_err("%s: no pmd tables\n", __func__);
++			ret = -ENOMEM;
++			break;
++		}
++		WARN_ON(!pmd_none(*pmd));
++
++		pte = pte_alloc_kernel(pmd, CONSISTENT_START);
++		if (!pte) {
++			pr_err("%s: no pte tables\n", __func__);
++			ret = -ENOMEM;
++			break;
++		}
++
++		pgd_k = ((pgd_t *) mmu_get_base()) + offset;
++		pud_k = pud_offset(pgd_k, CONSISTENT_START);
++		pmd_k = pmd_offset(pud_k, CONSISTENT_START);
++		set_pmd(pmd_k, *pmd);
++
++		consistent_pte = pte;
++	} while (0);
++
++	return ret;
++}
++early_initcall(dma_alloc_init);
++
++/*
++ * make an area consistent to devices.
++ */
++void dma_sync_for_device(void *vaddr, size_t size, int dma_direction)
++{
++	/*
++	 * Ensure any writes get through the write combiner. This is necessary
++	 * even with DMA_FROM_DEVICE, or the write may dirty the cache after
++	 * we've invalidated it and get written back during the DMA.
++	 */
++
++	barrier();
++
++	switch (dma_direction) {
++	case DMA_BIDIRECTIONAL:
++		/*
++		 * Writeback to ensure the device can see our latest changes and
++		 * so that we have no dirty lines, and invalidate the cache
++		 * lines too in preparation for receiving the buffer back
++		 * (dma_sync_for_cpu) later.
++		 */
++		flush_dcache_region(vaddr, size);
++		break;
++	case DMA_TO_DEVICE:
++		/*
++		 * Writeback to ensure the device can see our latest changes.
++		 * There's no need to invalidate as the device shouldn't write
++		 * to the buffer.
++		 */
++		writeback_dcache_region(vaddr, size);
++		break;
++	case DMA_FROM_DEVICE:
++		/*
++		 * Invalidate to ensure we have no dirty lines that could get
++		 * written back during the DMA. It's also safe to flush
++		 * (writeback) here if necessary.
++		 */
++		invalidate_dcache_region(vaddr, size);
++		break;
++	case DMA_NONE:
++		BUG();
++	}
++
++	wmb();
++}
++EXPORT_SYMBOL(dma_sync_for_device);
++
++/*
++ * make an area consistent to the core.
++ */
++void dma_sync_for_cpu(void *vaddr, size_t size, int dma_direction)
++{
++	/*
++	 * Hardware L2 cache prefetch doesn't occur across 4K physical
++	 * boundaries, however according to Documentation/DMA-API-HOWTO.txt
++	 * kmalloc'd memory is DMA'able, so accesses in nearby memory could
++	 * trigger a cache fill in the DMA buffer.
++	 *
++	 * This should never cause dirty lines, so a flush or invalidate should
++	 * be safe to allow us to see data from the device.
++	 */
++	if (_meta_l2c_pf_is_enabled()) {
++		switch (dma_direction) {
++		case DMA_BIDIRECTIONAL:
++		case DMA_FROM_DEVICE:
++			invalidate_dcache_region(vaddr, size);
++			break;
++		case DMA_TO_DEVICE:
++			/* The device shouldn't have written to the buffer */
++			break;
++		case DMA_NONE:
++			BUG();
++		}
++	}
++
++	rmb();
++}
++EXPORT_SYMBOL(dma_sync_for_cpu);
 -- 
 1.7.7.6
 
