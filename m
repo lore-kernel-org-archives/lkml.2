@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab3AJNSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 08:18:34 -0500
-Received: from linux-sh.org ([111.68.239.195]:46459 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750938Ab3AJNSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 08:18:32 -0500
-Date: Thu, 10 Jan 2013 22:18:28 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: clk dereference in arch/sh/kernel/cpufreq.c
-Message-ID: <20130110131828.GC7785@linux-sh.org>
-References: <alpine.DEB.2.02.1301031038030.1989@hadrien>
- <20130110085923.GA7785@linux-sh.org>
- <alpine.DEB.2.02.1301101031290.2063@localhost6.localdomain6>
-MIME-Version: 1.0
+	id S1752193Ab3AJNXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 08:23:53 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:64023 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215Ab3AJNXw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 08:23:52 -0500
+X-Nat-Received: from [202.181.97.72]:52767 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1357824212.20910
+To: john.johansen@canonical.com, jmorris@namei.org
+Cc: casey@schaufler-ca.com, sfr@canb.auug.org.au,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, eparis@redhat.com, keescook@chromium.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <50EB9A5E.1080306@schaufler-ca.com>
+	<alpine.LRH.2.02.1301081942030.24212@tundra.namei.org>
+	<50EC8447.1000301@canonical.com>
+	<alpine.LRH.2.02.1301100028160.5423@tundra.namei.org>
+	<50EE9733.2060409@canonical.com>
+In-Reply-To: <50EE9733.2060409@canonical.com>
+Message-Id: <201301102223.IAB57337.FOOOtSLJMFFVHQ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 10 Jan 2013 22:23:29 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1301101031290.2063@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 10012013 #9022807, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 10:31:46AM +0100, Julia Lawall wrote:
-> On Thu, 10 Jan 2013, Paul Mundt wrote:
-> 
-> > On Thu, Jan 03, 2013 at 10:40:20AM +0100, Julia Lawall wrote:
-> > > There has been a discussion recently about how the result of get_clk
-> > > should be an opaque handle, not a value that can be dereferenced:
-> > > 
-> > > https://lkml.org/lkml/2012/12/20/105
-> > > 
-> > > There is such a dereference in arch/sh/kernel/cpufreq.c, in the function
-> > > sh_cpufreq_cpu_init:
-> > > 
-> > > freq_table = cpuclk->nr_freqs ? cpuclk->freq_table : NULL;
-> > > 
-> > > It was not obvious to me, however, what API function should be used
-> > > instead, so I am just reporting the (potential) problem.
-> > > 
-> > In this case we would have to add some new API for fetching the frequency
-> > table associated with the struct clk, which is reasonably
-> > straightforward. It's not obvious how a private API vs deref of a type we
-> > have a private definition for is any better or worse, though. This code
-> > is not aimed at the common struct clk in any event.
-> 
-> OK, maybe it should just be left as is?
-> 
-That would be in line with my intentions.
+John Johansen wrote:
+> On 01/09/2013 05:28 AM, James Morris wrote:
+> > On Tue, 8 Jan 2013, John Johansen wrote:
+> > 
+> >>> I'd say we need to see the actual use-case for Smack and Apparmor being 
+> >>> used together, along with at least one major distro committing to support 
+> >>> this.
+> >>>
+> >>>
+> >> Ubuntu is very interested in stacking
+> > 
+> > Which modules?
+> > 
+> Well Yama which has now been special cased, and in the past there has been
+> discussion about other special case LSMs like case is proposing for module
+> loading. There has been interest around both selinux + apparmor and
+> smack + apparmor. I am not sure of all of the use cases that have lead to
+> such question but some of them have been around containers, with say
+> selinux on the host and apparmor in the container, or visa versa.
+
+My case is I want to use SELinux (or SMACK or something else) for isolation
+purpose (little user configuration required) and TOMOYO (or AppArmor or
+something else) for behaviour restriction purpose (mostly user configurable
+part). SELinux + TOMOYO is a placeholder for stacking.
