@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab3AJJqQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:46:16 -0500
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:39700 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab3AJJqO convert rfc822-to-8bit (ORCPT
+	id S1752298Ab3AJJqZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:46:25 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55480 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751690Ab3AJJqT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:46:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWqb_OxBV=8K_NAN_rgC6Tq9URbwmHTu2LgojWjYxEJUA@mail.gmail.com>
-References: <CAMuHMdWqb_OxBV=8K_NAN_rgC6Tq9URbwmHTu2LgojWjYxEJUA@mail.gmail.com>
-Date: Thu, 10 Jan 2013 10:46:14 +0100
-Message-ID: <CACRpkdYHFp=nd+7Kq3t7q_SZnybKN+enX=v++iDhq21_x7SEow@mail.gmail.com>
-Subject: Re: redefinition of devm_gpio_request
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
+	Thu, 10 Jan 2013 04:46:19 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Axel Lin <axel.lin@ingics.com>, "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/3] regulator-core: update all enable GPIO state in
+ _enable/disable
+Thread-Topic: [PATCH 2/3] regulator-core: update all enable GPIO state in
+ _enable/disable
+Thread-Index: Ac3vF1MMan6DWOu1ROel6fNImsx4zQ==
+Date: Thu, 10 Jan 2013 09:46:12 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E122AA@DQHE02.ent.ti.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 16, 2012 at 2:11 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
+ When a regulator is enabled or disabled, enable GPIO state is changed if it is
+ used.
+ If multiple regulators are controlled by one shared GPIO, pin states of other
+ GPIOs should be updated also.
 
-> On current linus/HEAD, m68k allmodconfig gives:
->
-> drivers/gpio/devres.c:52: error: redefinition of ‘devm_gpio_request’
-> include/linux/gpio.h:99: error: previous definition of
-> ‘devm_gpio_request’ was here
-> drivers/gpio/devres.c:82: error: redefinition of ‘devm_gpio_request_one’
-> include/linux/gpio.h:111: error: previous definition of
-> ‘devm_gpio_request_one’ was here
-> drivers/gpio/devres.c:114: error: redefinition of ‘devm_gpio_free’
-> include/linux/gpio.h:129: error: previous definition of
-> ‘devm_gpio_free’ was here
-> make[5]: *** [drivers/gpio/devres.o] Error 1
->
-> The !CONFIG_GENERIC_GPIO dummy definitions in include/linux/gpio.h conflict
-> with the real ones in drivers/gpio/devres.c.
-> Should devres.c really be compiled if !CONFIG_GENERIC_GPIO?
+ Look up the list of regulators and change the enable pin state if same GPIO
+ is used. It guarantees exact value of regulator_is_enabled().
 
-I've looked at it but I just can't figure this one out :-(
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/regulator/core.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 21b4247..44b2d61 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1473,6 +1473,17 @@ static int regulator_enable_gpio_request(struct regulator_dev *rdev,
+ 				rdev_get_name(rdev));
+ }
+ 
++static void update_enable_gpio_state(int gpio, bool enable)
++{
++	struct regulator_dev *r;
++
++	/* Update shared enable pin state */
++	list_for_each_entry(r, &regulator_list, list) {
++		if (r->ena_gpio == gpio)
++			r->ena_gpio_state = enable ? 1 : 0;
++	}
++}
++
+ static int _regulator_do_enable(struct regulator_dev *rdev)
+ {
+ 	int ret, delay;
+@@ -1491,7 +1502,7 @@ static int _regulator_do_enable(struct regulator_dev *rdev)
+ 	if (rdev->ena_gpio) {
+ 		gpio_set_value_cansleep(rdev->ena_gpio,
+ 					!rdev->ena_gpio_invert);
+-		rdev->ena_gpio_state = 1;
++		update_enable_gpio_state(rdev->ena_gpio, true);
+ 	} else if (rdev->desc->ops->enable) {
+ 		ret = rdev->desc->ops->enable(rdev);
+ 		if (ret < 0)
+@@ -1595,8 +1606,7 @@ static int _regulator_do_disable(struct regulator_dev *rdev)
+ 	if (rdev->ena_gpio) {
+ 		gpio_set_value_cansleep(rdev->ena_gpio,
+ 					rdev->ena_gpio_invert);
+-		rdev->ena_gpio_state = 0;
+-
++		update_enable_gpio_state(rdev->ena_gpio, false);
+ 	} else if (rdev->desc->ops->disable) {
+ 		ret = rdev->desc->ops->disable(rdev);
+ 		if (ret != 0)
+-- 
+1.7.9.5
 
-GPIOLIB selects GENERIC_GPIO.
 
-So this *should* not be compiled unless GENERIC_GPIO is also
-selected.
+Best Regards,
+Milo
 
-Yours,
-Linus Walleij
+
