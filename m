@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab3AJBDr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 20:03:47 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52969 "EHLO e9.ny.us.ibm.com"
+	id S932575Ab3AJBE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 20:04:29 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:53693 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932323Ab3AJBDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 20:03:46 -0500
-Date: Wed, 9 Jan 2013 17:03:47 -0800
+	id S1755289Ab3AJBE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 20:04:28 -0500
+Date: Wed, 9 Jan 2013 17:04:35 -0800
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>
@@ -15,76 +15,91 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         robert.richter@amd.com, linuxppc-dev@ozlabs.org,
         linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/6][v3] perf/Power7: Use macros to identify perf events
-Message-ID: <20130110010347.GA32590@us.ibm.com>
+Subject: [PATCH 2/6][v3] perf: Make EVENT_ATTR global
+Message-ID: <20130110010435.GB32590@us.ibm.com>
+References: <20130110010347.GA32590@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130110010347.GA32590@us.ibm.com>
 X-Operating-System: Linux 2.0.32 on an i486
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13011001-7182-0000-0000-0000044FF9D1
+x-cbid: 13011001-7182-0000-0000-0000044FFB68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH 1/6][v3] perf/Power7: Use macros to identify perf events
+[PATCH 2/6][v3] perf: Make EVENT_ATTR global
 
-Define and use macros to identify perf events codes. This would make it
-easier and more readable when these event codes need to be used in more
-than one place.
+Rename EVENT_ATTR() to PMU_EVENT_ATTR() and make it global so it is
+available to all architectures.
+
+Further to allow architectures flexibility, have PMU_EVENT_ATTR() pass
+in the variable name as a parameter.
+
+Changelog[v3]
+	- [Jiri Olsa] No need to define PMU_EVENT_PTR()
 
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- arch/powerpc/perf/power7-pmu.c |   28 ++++++++++++++++++++--------
- 1 files changed, 20 insertions(+), 8 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   13 +++----------
+ include/linux/perf_event.h       |   11 +++++++++++
+ 2 files changed, 14 insertions(+), 10 deletions(-)
 
-diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index 441af08..44e70d2 100644
---- a/arch/powerpc/perf/power7-pmu.c
-+++ b/arch/powerpc/perf/power7-pmu.c
-@@ -51,6 +51,18 @@
- #define MMCR1_PMCSEL_MSK	0xff
- 
- /*
-+ * Power7 event codes.
-+ */
-+#define	PME_PM_CYC			0x1e
-+#define	PME_PM_GCT_NOSLOT_CYC		0x100f8
-+#define	PME_PM_CMPLU_STALL		0x4000a
-+#define	PME_PM_INST_CMPL		0x2
-+#define	PME_PM_LD_REF_L1		0xc880
-+#define	PME_PM_LD_MISS_L1		0x400f0
-+#define	PME_PM_BRU_FIN			0x10068
-+#define	PME_PM_BRU_MPRED		0x400f6
-+
-+/*
-  * Layout of constraint bits:
-  * 6666555555555544444444443333333333222222222211111111110000000000
-  * 3210987654321098765432109876543210987654321098765432109876543210
-@@ -296,14 +308,14 @@ static void power7_disable_pmc(unsigned int pmc, unsigned long mmcr[])
- }
- 
- static int power7_generic_events[] = {
--	[PERF_COUNT_HW_CPU_CYCLES] = 0x1e,
--	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x100f8, /* GCT_NOSLOT_CYC */
--	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = 0x4000a,  /* CMPLU_STALL */
--	[PERF_COUNT_HW_INSTRUCTIONS] = 2,
--	[PERF_COUNT_HW_CACHE_REFERENCES] = 0xc880,	/* LD_REF_L1_LSU*/
--	[PERF_COUNT_HW_CACHE_MISSES] = 0x400f0,		/* LD_MISS_L1	*/
--	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS] = 0x10068,	/* BRU_FIN	*/
--	[PERF_COUNT_HW_BRANCH_MISSES] = 0x400f6,	/* BR_MPRED	*/
-+	[PERF_COUNT_HW_CPU_CYCLES] =			PME_PM_CYC,
-+	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =	PME_PM_GCT_NOSLOT_CYC,
-+	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =	PME_PM_CMPLU_STALL,
-+	[PERF_COUNT_HW_INSTRUCTIONS] =			PME_PM_INST_CMPL,
-+	[PERF_COUNT_HW_CACHE_REFERENCES] =		PME_PM_LD_REF_L1,
-+	[PERF_COUNT_HW_CACHE_MISSES] =			PME_PM_LD_MISS_L1,
-+	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS] =		PME_PM_BRU_FIN,
-+	[PERF_COUNT_HW_BRANCH_MISSES] =			PME_PM_BRU_MPRED,
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 4428fd1..59a1238 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1316,11 +1316,6 @@ static struct attribute_group x86_pmu_format_group = {
+ 	.attrs = NULL,
  };
  
- #define C(x)	PERF_COUNT_HW_CACHE_##x
+-struct perf_pmu_events_attr {
+-	struct device_attribute attr;
+-	u64 id;
+-};
+-
+ /*
+  * Remove all undefined events (x86_pmu.event_map(id) == 0)
+  * out of events_attr attributes.
+@@ -1354,11 +1349,9 @@ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *at
+ #define EVENT_VAR(_id)  event_attr_##_id
+ #define EVENT_PTR(_id) &event_attr_##_id.attr.attr
+ 
+-#define EVENT_ATTR(_name, _id)					\
+-static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
+-	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
+-	.id   =  PERF_COUNT_HW_##_id,				\
+-};
++#define EVENT_ATTR(_name, _id)						\
++	PMU_EVENT_ATTR(_name, EVENT_VAR(_id), PERF_COUNT_HW_##_id,	\
++			events_sysfs_show)
+ 
+ EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
+ EVENT_ATTR(instructions,		INSTRUCTIONS		);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 6bfb2fa..42adf01 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -817,6 +817,17 @@ do {									\
+ } while (0)
+ 
+ 
++struct perf_pmu_events_attr {
++	struct device_attribute attr;
++	u64 id;
++};
++
++#define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
++static struct perf_pmu_events_attr _var = {				\
++	.attr = __ATTR(_name, 0444, _show, NULL),			\
++	.id   =  _id,							\
++};
++
+ #define PMU_FORMAT_ATTR(_name, _format)					\
+ static ssize_t								\
+ _name##_show(struct device *dev,					\
 -- 
 1.7.1
 
