@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab3AJJ3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:29:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:24143 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241Ab3AJJYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:24:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="244528002"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3 1/8] serial: 8250: Allow drivers to deliver capabilities
-Date: Thu, 10 Jan 2013 11:25:05 +0200
-Message-Id: <1357809912-25790-2-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1357809912-25790-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1357809912-25790-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1753166Ab3AJJbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:31:51 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:17910 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751386Ab3AJJbt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 04:31:49 -0500
+X-IronPort-AV: E=Sophos;i="4.84,443,1355094000"; 
+   d="scan'208";a="189230568"
+Date: Thu, 10 Jan 2013 10:31:46 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Paul Mundt <lethal@linux-sh.org>
+cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: clk dereference in arch/sh/kernel/cpufreq.c
+In-Reply-To: <20130110085923.GA7785@linux-sh.org>
+Message-ID: <alpine.DEB.2.02.1301101031290.2063@localhost6.localdomain6>
+References: <alpine.DEB.2.02.1301031038030.1989@hadrien> <20130110085923.GA7785@linux-sh.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modern UARTs are able to provide information about their
-capabilities such as FIFO size. This allows the drivers to
-deliver this information to 8250.c when they are registering
-ports.
+On Thu, 10 Jan 2013, Paul Mundt wrote:
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Reviewed-by: Jamie Iles <jamie@jamieiles.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
----
- drivers/tty/serial/8250/8250.c |   22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+> On Thu, Jan 03, 2013 at 10:40:20AM +0100, Julia Lawall wrote:
+> > There has been a discussion recently about how the result of get_clk
+> > should be an opaque handle, not a value that can be dereferenced:
+> > 
+> > https://lkml.org/lkml/2012/12/20/105
+> > 
+> > There is such a dereference in arch/sh/kernel/cpufreq.c, in the function
+> > sh_cpufreq_cpu_init:
+> > 
+> > freq_table = cpuclk->nr_freqs ? cpuclk->freq_table : NULL;
+> > 
+> > It was not obvious to me, however, what API function should be used
+> > instead, so I am just reporting the (potential) problem.
+> > 
+> In this case we would have to add some new API for fetching the frequency
+> table associated with the struct clk, which is reasonably
+> straightforward. It's not obvious how a private API vs deref of a type we
+> have a private definition for is any better or worse, though. This code
+> is not aimed at the common struct clk in any event.
 
-diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
-index d085e3a..da3f828 100644
---- a/drivers/tty/serial/8250/8250.c
-+++ b/drivers/tty/serial/8250/8250.c
-@@ -1980,9 +1980,12 @@ static int serial8250_startup(struct uart_port *port)
- 	if (port->type == PORT_8250_CIR)
- 		return -ENODEV;
- 
--	port->fifosize = uart_config[up->port.type].fifo_size;
--	up->tx_loadsz = uart_config[up->port.type].tx_loadsz;
--	up->capabilities = uart_config[up->port.type].flags;
-+	if (!port->fifosize)
-+		port->fifosize = uart_config[port->type].fifo_size;
-+	if (!up->tx_loadsz)
-+		up->tx_loadsz = uart_config[port->type].tx_loadsz;
-+	if (!up->capabilities)
-+		up->capabilities = uart_config[port->type].flags;
- 	up->mcr = 0;
- 
- 	if (port->iotype != up->cur_iotype)
-@@ -2815,9 +2818,12 @@ static void
- serial8250_init_fixed_type_port(struct uart_8250_port *up, unsigned int type)
- {
- 	up->port.type = type;
--	up->port.fifosize = uart_config[type].fifo_size;
--	up->capabilities = uart_config[type].flags;
--	up->tx_loadsz = uart_config[type].tx_loadsz;
-+	if (!up->port.fifosize)
-+		up->port.fifosize = uart_config[type].fifo_size;
-+	if (!up->tx_loadsz)
-+		up->tx_loadsz = uart_config[type].tx_loadsz;
-+	if (!up->capabilities)
-+		up->capabilities = uart_config[type].flags;
- }
- 
- static void __init
-@@ -3251,6 +3257,10 @@ int serial8250_register_8250_port(struct uart_8250_port *up)
- 		uart->bugs		= up->bugs;
- 		uart->port.mapbase      = up->port.mapbase;
- 		uart->port.private_data = up->port.private_data;
-+		uart->port.fifosize	= up->port.fifosize;
-+		uart->tx_loadsz		= up->tx_loadsz;
-+		uart->capabilities	= up->capabilities;
-+
- 		if (up->port.dev)
- 			uart->port.dev = up->port.dev;
- 
--- 
-1.7.10.4
+OK, maybe it should just be left as is?
 
+julia
