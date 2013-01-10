@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab3AJKwq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 05:52:46 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:40498 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab3AJKwp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 05:52:45 -0500
+	id S1753603Ab3AJKxq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 05:53:46 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37902 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753374Ab3AJKxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 05:53:44 -0500
+Message-ID: <50EE9D97.6000803@ti.com>
+Date: Thu, 10 Jan 2013 16:23:11 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYHFp=nd+7Kq3t7q_SZnybKN+enX=v++iDhq21_x7SEow@mail.gmail.com>
-References: <CAMuHMdWqb_OxBV=8K_NAN_rgC6Tq9URbwmHTu2LgojWjYxEJUA@mail.gmail.com>
-	<CACRpkdYHFp=nd+7Kq3t7q_SZnybKN+enX=v++iDhq21_x7SEow@mail.gmail.com>
-Date: Thu, 10 Jan 2013 11:52:44 +0100
-X-Google-Sender-Auth: nI6HeoBOk_QqbvLtuirckxl3vJ0
-Message-ID: <CAMuHMdV9tZZ94QuCcyYCwgZZN9du48vq-h7++1aVjPKZ79d-Qg@mail.gmail.com>
-Subject: Re: redefinition of devm_gpio_request
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Benoit Cousson <b-cousson@ti.com>
+CC: Aaro Koskinen <aaro.koskinen@iki.fi>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3 0/3] ARM: dts: omap: add dt data for MUSB
+References: <1348047128-25692-1-git-send-email-kishon@ti.com> <505A8BAB.2020004@ti.com> <20121227183524.GB7097@blackmetal.musicnaut.iki.fi> <50EE5D61.1020307@ti.com> <50EE90B6.2060308@ti.com>
+In-Reply-To: <50EE90B6.2060308@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 10:46 AM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
-> On Sun, Dec 16, 2012 at 2:11 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> On current linus/HEAD, m68k allmodconfig gives:
->> drivers/gpio/devres.c:52: error: redefinition of ‘devm_gpio_request’
->> include/linux/gpio.h:99: error: previous definition of
->> ‘devm_gpio_request’ was here
->> drivers/gpio/devres.c:82: error: redefinition of ‘devm_gpio_request_one’
->> include/linux/gpio.h:111: error: previous definition of
->> ‘devm_gpio_request_one’ was here
->> drivers/gpio/devres.c:114: error: redefinition of ‘devm_gpio_free’
->> include/linux/gpio.h:129: error: previous definition of
->> ‘devm_gpio_free’ was here
->> make[5]: *** [drivers/gpio/devres.o] Error 1
->>
->> The !CONFIG_GENERIC_GPIO dummy definitions in include/linux/gpio.h conflict
->> with the real ones in drivers/gpio/devres.c.
->> Should devres.c really be compiled if !CONFIG_GENERIC_GPIO?
+Hi,
+
+On Thursday 10 January 2013 03:28 PM, Benoit Cousson wrote:
+> Hi Kishon,
 >
-> I've looked at it but I just can't figure this one out :-(
+> On 01/10/2013 07:19 AM, kishon wrote:
+>> On Friday 28 December 2012 12:05 AM, Aaro Koskinen wrote:
+>>> Hi,
+>>>
+>>> On Thu, Sep 20, 2012 at 05:21:15AM +0200, Benoit Cousson wrote:
+>>>> On 09/19/2012 11:32 AM, Kishon Vijay Abraham I wrote:
+>>>>> This patch series adds dt data to get MUSB working in omap4 and omap3
+>>>>>
+>>>>> Changes from v2:
+>>>>> * Changes the subject of all the patches to include "ARM: dts:"
+>>>>> * Added reg property and interrupt property for "usb_otg_hs".
+>>>>> Previously these
+>>>>>     were obtained from ti,hwmods property.
+>>>>> * Rebased on
+>>>>>
+>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git
+>>>>> devel-dt
+>>>>>
+>>>>> Changes from v1:
+>>>>> Just removed the omap-usb2 dt data and sent that as a separate patch.
+>>>>>
+>>>>> Kishon Vijay Abraham I (3):
+>>>>>     ARM: dts: Add twl6030-usb data
+>>>>>     ARM: dts: Add twl4030-usb data
+>>>>>     ARM: dts: omap: Add usb_otg and glue data
+>>>>
+>>>> Thanks for the update. I've just pulled the series for 3.7.
+>>>
+>>> I wonder what happened to the patch #3 (Add usb_otg and glue data)
+>>> of this series? Why was it dropped? I cannot see it in 3.7 or 3.8-rc1.
 >
-> obj-$(CONFIG_GPIOLIB)           += gpiolib.o devres.o
->
-> GPIOLIB selects GENERIC_GPIO.
->
-> So this *should* not be compiled unless GENERIC_GPIO is also
-> selected.
+> I don't remember the context, can you repost it rebased on 3.8-rc2? Did
+> it generate some discussion at that time?
 
-I guess it was caused by ssb/bcma selecting GPIOLIB, which got fixed in the
-mean time.
+That patch also has SCM register. It might be rejected because of that. 
+Will work on the that.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks
+Kishon
