@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932721Ab3AJENZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 23:13:25 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:53784 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932443Ab3AJENY (ORCPT
+	id S932706Ab3AJEOq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 23:14:46 -0500
+Received: from alvesta.synopsys.com ([198.182.60.77]:42039 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443Ab3AJEOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 23:13:24 -0500
-Message-ID: <1357791191.5841.8.camel@marge.simpson.net>
-Subject: Re: kernel BUG at kernel/sched_rt.c:493!
-From: Mike Galbraith <bitbucket@online.de>
-To: Shawn Bohrer <sbohrer@rgmadvisors.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org
-Date: Thu, 10 Jan 2013 05:13:11 +0100
-In-Reply-To: <20130108150153.GA2219@BohrerMBP.rgmadvisors.com>
-References: <20130105174632.GB19226@u1004.rgmadvisors.com>
-	 <20130107175818.GA3411@BohrerMBP.rgmadvisors.com>
-	 <20130107230218.GB3411@BohrerMBP.rgmadvisors.com>
-	 <20130108143605.GB5594@home.goodmis.org>
-	 <20130108150153.GA2219@BohrerMBP.rgmadvisors.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Wed, 9 Jan 2013 23:14:45 -0500
+Message-ID: <50EE3FD3.7020105@synopsys.com>
+Date: Thu, 10 Jan 2013 09:43:07 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Tony Luck <tony.luck@gmail.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH v2] sysctl: Enable IA64 "ignore-unaligned-usertrap" to
+ be used cross-arch
+References: <50ED7B4B.7080603@synopsys.com> <1357742188-8941-1-git-send-email-vgupta@synopsys.com> <CA+8MBbJNrJYeZoGXt37ki_YCpb7kqiE1toFoBBHrtmnY8a75VA@mail.gmail.com>
+In-Reply-To: <CA+8MBbJNrJYeZoGXt37ki_YCpb7kqiE1toFoBBHrtmnY8a75VA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:vpxlZjpsLXYy2H2FuP7G5EHMjfYBPKcpe4AYCDW2P0d
- a7Ri1zkxYJueNeVGhohElA1a8pz6xOr6k7TQOEC4xbK0i6TnFl
- lOQ8xUbtZkep2DmLZ2DWDdSC4v5zacI38Urz1PVVoMzUxkAaWa
- CEIftCMQDE5Bgt2uzMK7roX9UYZp/ZtklzM7OdKId81sLg0pR4
- B7rIm2UF/6bS4ePKxkru9nh9Qpu++eFoAW6gw6E+9LmrAGqFQL
- 1TPhEj4Al30IKKwQM9Qvfq7jwxYIspAAAhjYzvAXHkmprSrciG
- dA3uFXyF3MTaz/5oT469fnVrFWdbdriS/ukT1sfrHllEh2o5rk
- RyRl1WMZLyEw/6s5nQtd3PoCSbpphMcGBt1hm6iF0GUUwi16/R
- XYwavXxftSKQA==
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-08 at 09:01 -0600, Shawn Bohrer wrote: 
-> On Tue, Jan 08, 2013 at 09:36:05AM -0500, Steven Rostedt wrote:
-> > > 
-> > > I've also managed to reproduce this on 3.8.0-rc2 so it appears the bug
-> > > is still present in the latest kernel.
-> > 
-> > Shawn,
-> > 
-> > Can you send me your .config file.
-> 
-> I've attached the 3.8.0-rc2 config that I used to reproduce this in an
-> 8 core kvm image.  Let me know if you need anything else.
+On Thursday 10 January 2013 12:25 AM, Tony Luck wrote:
+> Ok. Queued for 3.9 merge window.  It should show up in linux-next in
+> the next day or two.  We'll see if anyone complains about the name
+> SYSCTL_ARCH_UNALIGN_NO_WARN (every time I touch the Kconfig
+> bits it seems that there is some other, better way that we do this now).
+>
+> -Tony
 
-I tried beating on my little Q6600 with no success.  I even tried
-setting the entire box rt, GUI and all, nada.
-
-Hm, maybe re-installing systemd..
-
--Mike
-
+Thanks a bunch.
+-Vineet
