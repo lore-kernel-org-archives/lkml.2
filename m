@@ -1,116 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab3AJJrn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 04:47:43 -0500
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:45104 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab3AJJrl (ORCPT
+	id S1752434Ab3AJJyd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:54:33 -0500
+Received: from smtp-out-052.synserver.de ([212.40.185.52]:1688 "EHLO
+	smtp-out-052.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab3AJJyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 04:47:41 -0500
+	Thu, 10 Jan 2013 04:54:31 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 9922
+Message-ID: <50EE8FFD.2000000@metafoo.de>
+Date: Thu, 10 Jan 2013 10:55:09 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
 MIME-Version: 1.0
-In-Reply-To: <20121228161436.GA30459@redhat.com>
-References: <1356690181-1796-1-git-send-email-avagin@openvz.org>
-	<1356690181-1796-3-git-send-email-avagin@openvz.org>
-	<20121228161436.GA30459@redhat.com>
-Date: Thu, 10 Jan 2013 13:47:40 +0400
-Message-ID: <CANaxB-xupOxkyd3-tdJSeW7y+1DQzMr-3Pxnmx17Y=ocDU1VTA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] signalfd: add ability to return siginfo in a raw
- format (v2)
-From: Andrey Wagin <avagin@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, criu@openvz.org,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
+Subject: Re: [PATCH 1/3] spi: Add helper functions for setting up transfers
+References: <1357752671-30222-1-git-send-email-lars@metafoo.de> <alpine.DEB.2.02.1301100951060.2063@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1301100951060.2063@localhost6.localdomain6>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/28 Oleg Nesterov <oleg@redhat.com>:
-> On 12/28, Andrey Vagin wrote:
->>
->> signalfd should be called with the flag SFD_RAW for that.
->>
->> signalfd_siginfo is not full for siginfo with a negative si_code.
->> copy_siginfo_to_user() is copied a full siginfo to user-space, if
->> si_code is negative.  signalfd_copyinfo() doesn't do that and can't be
->> expanded, because it has not compatible format with siginfo_t.
->>
->> Another problem is that a constant __SI_* is removed from si_code.
->> It's not a problem for usual applications, because they expect
->> a defined type of siginfo (internal logic).
->> When we want to dump pending signals, we can't predict a type of
->> siginfo, so we should get it from kernel.
->>
->> The main idea of the raw format is that it should be enough for
->> restoring exactly the same siginfo for the current process.
->>
->> This functionality is required for checkpointing pending signals.
->
-> And this should be used along with pread().
->
-> I won't argue, but perhaps we should simply postulate that pread()
-> always dumps siginfo in raw format and avoid the new flag?
+On 01/10/2013 09:53 AM, Julia Lawall wrote:
+>> +@r1@
+>> +identifier fn;
+>> +identifier xfers;
+>> +@@
+>> +fn(...)
+>> +{
+>> +	...
+>> +(
+>> +	struct spi_transfer xfers[...];
+>> +|
+>> +	struct spi_transfer xfers[];
+>> +)
+>> +	...
+>> +}
+> 
+> Can it happen that there would be more than one spi_transfer or spi_message
+> variable per function?  This semantic patch will only treat the case where
+> there is only one, because the ... before an after the variable declaration
+> won't match another declaration of the same form.
+> 
+> julia
 
-I won't argue too:), but I think the flag is more flexiable. The flag
-allows to get raw siginfo from read(), it may be useful not only for
-checkpoint/restore. pread with offset = 0 is equal to read(), so the
-interface with the flag is more clear.
+I guess it could happen, but I would consider it to be very rare. There are
+a few examples of multiple transfers in the kernel. But most of them look like
 
->
->> @@ -272,20 +311,35 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
->>       signotset(&sigmask);
->>
->>       if (ufd == -1) {
->> +             struct file *file;
->>               ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
->>               if (!ctx)
->>                       return -ENOMEM;
->>
->>               ctx->sigmask = sigmask;
->>
->> +             ufd = get_unused_fd_flags(flags);
->> +             if (ufd < 0) {
->> +                     kfree(ctx);
->> +                     goto out;
->> +             }
->> +
->>               /*
->>                * When we call this, the initialization must be complete, since
->>                * anon_inode_getfd() will install the fd.
->>                */
->> -             ufd = anon_inode_getfd("[signalfd]", &signalfd_fops, ctx,
->> +             file = anon_inode_getfile("[signalfd]", &signalfd_fops, ctx,
->>                                      O_RDWR | (flags & (O_CLOEXEC | O_NONBLOCK)));
->> -             if (ufd < 0)
->> +             if (IS_ERR(file)) {
->> +                     put_unused_fd(ufd);
->> +                     ufd = PTR_ERR(file);
->>                       kfree(ctx);
->> +                     goto out;
->> +             }
->> +
->> +             file->f_flags |= flags & SFD_RAW;
->> +
->> +             fd_install(ufd, file);
->
-> And this is needed because we want to set more bits in f_flags/f_mode.
->
-> I am wondering if we can change anon_inode_getfd/getfile somehow so
-> that the user can pass more flags...
->
-> Or. Currently fops->open() is never used if this file_operations is used
-> by anon_inode_get*. So perhaps we can change anon_inode_getfile() to call
-> fops->open() if it is not zero before return?
->
-> OK, this is almost off-topic, please ignore.
->
-> Oleg.
->
+struct spi_message msg;
+struct spi_transfer xfer_foo;
+struct spi_transfer xfer_bar;
+
+...
+spi_message_add_tail(&xfer_foo, &msg);
+spi_message_add_tail(&xfer_bar, &msg);
+
+So the transformation can't be applied here anyway.
+
+Do you have an idea how to change the rule to work with multiple
+transfers/messages per function? If it would make the cocci file more
+complex I wouldn't bother to take care of it, since it basically has no
+practical use.
+
+- Lars
