@@ -1,93 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab3AJCbO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 21:31:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3862 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab3AJCbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 21:31:13 -0500
-Date: Thu, 10 Jan 2013 00:30:05 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, walken@google.com, eric.dumazet@gmail.com,
-        lwoodman@redhat.com, jeremy@goop.org,
-        Jan Beulich <JBeulich@novell.com>, knoel@redhat.com,
-        chegu_vinod@hp.com, raghavendra.kt@linux.vnet.ibm.com,
-        mingo@redhat.com
-Subject: Re: [PATCH 2/5] x86,smp: proportional backoff for ticket spinlocks
-Message-ID: <20130110023004.GB1636@x61.redhat.com>
-References: <20130108172632.1126898a@annuminas.surriel.com>
- <20130108173241.3e1b1d2d@annuminas.surriel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130108173241.3e1b1d2d@annuminas.surriel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932624Ab3AJCdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 21:33:20 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:46046 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932153Ab3AJCdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 21:33:18 -0500
+Message-ID: <1357785186.28668.1.camel@phoenix>
+Subject: [PATCH RFT] regulator: lp8788-buck: Silence build warning
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 10 Jan 2013 10:33:06 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 05:32:41PM -0500, Rik van Riel wrote:
-> Subject: x86,smp: proportional backoff for ticket spinlocks
-> 
-> Simple fixed value proportional backoff for ticket spinlocks.
-> By pounding on the cacheline with the spin lock less often,
-> bus traffic is reduced. In cases of a data structure with
-> embedded spinlock, the lock holder has a better chance of
-> making progress.
-> 
-> If we are next in line behind the current holder of the
-> lock, we do a fast spin, so as not to waste any time when
-> the lock is released.
-> 
-> The number 50 is likely to be wrong for many setups, and
-> this patch is mostly to illustrate the concept of proportional
-> backup. The next patch automatically tunes the delay value.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Michel Lespinasse <walken@google.com>
-> ---
+This driver use id as array index, thus add bounder checking for id.
 
-Acked-by: Rafael Aquini <aquini@redhat.com>
+This patch fixes below build warning:
+drivers/regulator/lp8788-buck.c: In function 'lp8788_buck_probe':
+drivers/regulator/lp8788-buck.c:490:8: warning: array subscript is above array bounds [-Warray-bounds]
+drivers/regulator/lp8788-buck.c:489:63: warning: array subscript is above array bounds [-Warray-bounds]
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Hi Fengguang,
+My toolchain does not show the warning you mentioned,
+can you test if this patch indeed silence the build warning?
+
+Thanks,
+Axel
+ drivers/regulator/lp8788-buck.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/lp8788-buck.c b/drivers/regulator/lp8788-buck.c
+index 1161949..ef845c7 100644
+--- a/drivers/regulator/lp8788-buck.c
++++ b/drivers/regulator/lp8788-buck.c
+@@ -474,7 +474,7 @@ static int lp8788_init_dvs(struct platform_device *pdev,
+ 	u8 default_dvs_mode[] = { LP8788_BUCK1_DVS_I2C, LP8788_BUCK2_DVS_I2C };
+ 
+ 	/* no dvs for buck3, 4 */
+-	if (id == BUCK3 || id == BUCK4)
++	if (id > BUCK2)
+ 		return 0;
+ 
+ 	/* no dvs platform data, then dvs will be selected by I2C registers */
+@@ -505,6 +505,9 @@ static int lp8788_buck_probe(struct platform_device *pdev)
+ 	struct regulator_dev *rdev;
+ 	int ret;
+ 
++	if (id >= LP8788_NUM_BUCKS)
++		return -EINVAL;
++
+ 	buck = devm_kzalloc(&pdev->dev, sizeof(struct lp8788_buck), GFP_KERNEL);
+ 	if (!buck)
+ 		return -ENOMEM;
+-- 
+1.7.9.5
 
 
->  arch/x86/kernel/smp.c |   23 ++++++++++++++++++++---
->  1 files changed, 20 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-> index 20da354..aa743e9 100644
-> --- a/arch/x86/kernel/smp.c
-> +++ b/arch/x86/kernel/smp.c
-> @@ -117,11 +117,28 @@ static bool smp_no_nmi_ipi = false;
->   */
->  void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
->  {
-> +	__ticket_t head = inc.head, ticket = inc.tail;
-> +	__ticket_t waiters_ahead;
-> +	unsigned loops;
-> +
->  	for (;;) {
-> -		cpu_relax();
-> -		inc.head = ACCESS_ONCE(lock->tickets.head);
-> +		waiters_ahead = ticket - head - 1;
-> +		/*
-> +		 * We are next after the current lock holder. Check often
-> +		 * to avoid wasting time when the lock is released.
-> +		 */
-> +		if (!waiters_ahead) {
-> +			do {
-> +				cpu_relax();
-> +			} while (ACCESS_ONCE(lock->tickets.head) != ticket);
-> +			break;
-> +		}
-> +		loops = 50 * waiters_ahead;
-> +		while (loops--)
-> +			cpu_relax();
->  
-> -		if (inc.head == inc.tail)
-> +		head = ACCESS_ONCE(lock->tickets.head);
-> +		if (head == ticket)
->  			break;
->  	}
->  }
-> 
+
