@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab3AJI6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 03:58:32 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:48386 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364Ab3AJI6b (ORCPT
+	id S1753648Ab3AJJGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 04:06:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39264 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab3AJJG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 03:58:31 -0500
+	Thu, 10 Jan 2013 04:06:29 -0500
+Date: Thu, 10 Jan 2013 12:06:20 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Anil Gurumurthy <agurumur@brocade.com>
+Cc: Vijaya Mohan Guvva <vmohan@brocade.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] [SCSI] bfa: fix strncpy() limiter in bfad_start_ops()
+Message-ID: <20130110090620.GE23063@elgon.mountain>
 MIME-Version: 1.0
-In-Reply-To: <20130110093255.5353fb31@endymion.delvare>
-References: <1357764624-32134-1-git-send-email-laurent.navet@gmail.com>
-	<20130110093255.5353fb31@endymion.delvare>
-Date: Thu, 10 Jan 2013 09:52:36 +0100
-Message-ID: <CAH7P7NjdKsWjttmWyKxttm=rJDAErZxe7+Zf_oaSCx6Pmc1GWw@mail.gmail.com>
-Subject: Re: [PATCH] drivers: i2c-nforce2: fix coding style issues
-From: Laurent Navet <laurent.navet@gmail.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: w.sang@pengutronix.de, ben-linux@fluff.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
+The closing parenthesis is in the wrong place so it takes the sizeof a
+pointer instead of the sizeof the buffer minus one.
 
->
-> Unfortunately your patch also add one new checkpatch.pl warning:
->
-> WARNING: line over 80 characters
-> #245: FILE: drivers/i2c/busses/i2c-nforce2.c:272:
-> +		data->word = inb_p(NVIDIA_SMB_DATA) | (inb_p(NVIDIA_SMB_DATA + 1) << 8);
->
-> Please fix.
->
-> As mentioned previously, __devinit has been dropped meanwhile, so this
-> change doesn't apply cleanly. Please rebase your patch on top of kernel
-> 3.8-rc3 (or Wolfram's i2c tree) so that Wolfram can apply it.
->
-> All the rest looks very good now, thanks for the good work.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-I've worked and tested against git.pengutronix.de wsa/linux.git
-( http://git.pengutronix.de/?p=wsa/linux.git;a=summary )
-Isnt' it the right one ?
-
-
--- 
-Laurent.
+diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
+index e6bf126..a5f7690 100644
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -1034,7 +1034,7 @@ bfad_start_ops(struct bfad_s *bfad) {
+ 			sizeof(driver_info.host_os_patch) - 1);
+ 
+ 	strncpy(driver_info.os_device_name, bfad->pci_name,
+-		sizeof(driver_info.os_device_name - 1));
++		sizeof(driver_info.os_device_name) - 1);
+ 
+ 	/* FCS driver info init */
+ 	spin_lock_irqsave(&bfad->bfad_lock, flags);
