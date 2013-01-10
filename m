@@ -1,93 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab3AJQnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 11:43:51 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27738 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab3AJQnu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 11:43:50 -0500
-X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=hgKcp-RnQ0YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=rC-twdHML7MA:10 a=D19gQVrFAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=ePcNwm83Ps8d97yFlQ4A:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357836229.5141.13.camel@gandalf.local.home>
-Subject: [PATCH][GIT PULL] tracing: Fix regression of trace_options file
- setting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>
-Date: Thu, 10 Jan 2013 11:43:49 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754930Ab3AJQvo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 11:51:44 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50904 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751816Ab3AJQvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 11:51:42 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <balbi@ti.com>
+CC: <gregkh@linuxfoundation.org>, <sameo@linux.intel.com>, <tony@atomide.com>,
+        <kishon@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <rogerq@ti.com>
+Subject: [PATCH 00/14] USB: omap-ehci: Move PHY management to PHY driver
+Date: Thu, 10 Jan 2013 18:51:20 +0200
+Message-ID: <1357836694-30788-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The OMAP's High Speed Host controller can interface to ULPI/UTMI
+PHY's transparently i.e. whithout requiring the device drivers to
+access the PHY [1]. However, the OS must ensure that the PHY has
+the necessary resources (power/clock/reset) enabled before it is used.
 
-Linus,
+Till now, the omap-ehci driver was managing the power and reset of the PHY
+whereas, clock enabling was left to the bootloader or board files.
 
-I just hit this bug with the lastest kernel. A change that came in this
-merge window broke the writing to the trace_options file. It causes
-garbage to be read during the compare of option names, and breaks
-setting options via the trace_options file, although options can still
-be set via the options/<option> files.
+In this patchset we make the NOP PHY driver (nop-usb-xceiv.c) handle
+all the PHY resources that are available so that it can be used by
+platforms like OMAP.
 
-Also, I'm not sure where Ingo is, but I have an old pull request with
-minor fixes. Feel free to pull that if you want too:
+The omap-ehci driver instantiates a PHY platform device for each port
+that is in PHY mode. It then uses the USB PHY APIs to manage the PHY.
 
-https://lkml.org/lkml/2013/1/7/208
+All this results in a much cleaner code and makes USB PHY resource management
+work properly on OMAP.
 
-Please pull trace-3.8-rc2-regression-fix:
+NOTE: Only omap4panda board is adapted for the changes. So USB Host will
+break for other boards. Once we have done a priliminary review, I can adapt
+other boards as well.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-3.8-rc2-regression-fix
+This patchset depends on the series
+https://lkml.org/lkml/2013/1/2/144
+git://github.com/rogerq/linux.git arm-for-next-usbhost9-part
 
-Head SHA1: f1a67efdbc2c0acb43b2f844053320c38876776f
+--
+cheeer,
+-roger
 
+[1] - In practice we would need to access the PHY to work around Silicon Erratas
+      in the OMAP's USB Host IP.
 
-Steven Rostedt (1):
-      tracing: Fix regression of trace_options file setting
+Roger Quadros (14):
+  mfd: omap-usb-host: Consolidate OMAP USB-HS platform data
+  usb: phy: Add new API usb_get_phy_from_dev()
+  usb: xceiv: nop: Manage PHY clock
+  usb: phy: nop: Handle power supply regulator for the PHY
+  usb: phy: nop: Handle RESET for the PHY
+  mfd: omap-usb-host: update nports in platform_data
+  usb: ehci-omap: Instantiate PHY devices if required
+  mfd: omap-usb-host: Remove PHY reset handling code
+  usb: ehci-omap: Remove PHY reset handling code
+  usb: ehci-omap: Remove PHY regulator handling code
+  ARM: OMAP2+: omap4panda: Provide USB Host's PHY platform data
+  ARM: OMAP2+: omap4panda: Adapt HUB power to regulator framework
+  ARM: OMAP2+: omap4panda: Adapt HUB reset to regulator framework
+  ARM: OMAP2+: omap4panda: Remove irrelevant USB host platform data
 
-----
- kernel/trace/trace.c |    2 ++
- 1 file changed, 2 insertions(+)
----------------------------
-commit a8dd2176a8e988e3744e863ac39647a6f59fa900
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Wed Jan 9 20:54:17 2013 -0500
+ arch/arm/mach-omap2/board-3430sdp.c        |    2 +-
+ arch/arm/mach-omap2/board-3630sdp.c        |    2 +-
+ arch/arm/mach-omap2/board-am3517crane.c    |    2 +-
+ arch/arm/mach-omap2/board-am3517evm.c      |    2 +-
+ arch/arm/mach-omap2/board-cm-t35.c         |    2 +-
+ arch/arm/mach-omap2/board-cm-t3517.c       |    2 +-
+ arch/arm/mach-omap2/board-devkit8000.c     |    2 +-
+ arch/arm/mach-omap2/board-igep0020.c       |    4 +-
+ arch/arm/mach-omap2/board-omap3beagle.c    |    2 +-
+ arch/arm/mach-omap2/board-omap3evm.c       |    2 +-
+ arch/arm/mach-omap2/board-omap3pandora.c   |    2 +-
+ arch/arm/mach-omap2/board-omap3stalker.c   |    2 +-
+ arch/arm/mach-omap2/board-omap3touchbook.c |    2 +-
+ arch/arm/mach-omap2/board-omap4panda.c     |  117 +++++++++++++-----
+ arch/arm/mach-omap2/board-overo.c          |    2 +-
+ arch/arm/mach-omap2/board-zoom.c           |    2 +-
+ arch/arm/mach-omap2/usb-host.c             |   30 +----
+ arch/arm/mach-omap2/usb.h                  |   21 +---
+ drivers/mfd/omap-usb-host.c                |   64 +---------
+ drivers/mfd/omap-usb-tll.c                 |    8 +-
+ drivers/usb/host/ehci-omap.c               |  182 ++++++++++++++--------------
+ drivers/usb/otg/nop-usb-xceiv.c            |   86 +++++++++++++
+ drivers/usb/otg/otg.c                      |   36 ++++++
+ include/linux/platform_data/usb-omap.h     |   28 ++---
+ include/linux/usb/nop-usb-xceiv.h          |    1 +
+ include/linux/usb/phy.h                    |    6 +
+ 26 files changed, 345 insertions(+), 266 deletions(-)
 
-    tracing: Fix regression of trace_options file setting
-    
-    The latest change to allow trace options to be set on the command
-    line also broke the trace_options file.
-    
-    The zeroing of the last byte of the option name that is echoed into
-    the trace_option file was removed with the consolidation of some
-    of the code. The compare between the option and what was written to
-    the trace_options file fails because the string holding the data
-    written doesn't terminate with a null character.
-    
-    A zero needs to be added to the end of the string copied from
-    user space.
-    
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index e512567..1bbfa04 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2899,6 +2899,8 @@ tracing_trace_options_write(struct file *filp, const char __user *ubuf,
- 	if (copy_from_user(&buf, ubuf, cnt))
- 		return -EFAULT;
- 
-+	buf[cnt] = 0;
-+
- 	trace_set_options(buf);
- 
- 	*ppos += cnt;
-
+-- 
+1.7.4.1
 
