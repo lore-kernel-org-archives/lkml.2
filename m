@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab3AJLPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 06:15:54 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:37243 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab3AJLPx (ORCPT
+	id S1753835Ab3AJLRL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 06:17:11 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:58809 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab3AJLRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 06:15:53 -0500
+	Thu, 10 Jan 2013 06:17:09 -0500
 MIME-Version: 1.0
-In-Reply-To: <1357493688-25061-3-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1357493688-25061-4-git-send-email-gregory.clement@free-electrons.com>
 References: <1357493688-25061-1-git-send-email-gregory.clement@free-electrons.com>
-	<1357493688-25061-3-git-send-email-gregory.clement@free-electrons.com>
-Date: Thu, 10 Jan 2013 12:15:53 +0100
-Message-ID: <CACRpkdYu63TZDpHrGkg0cdqFCrVH1PiNFX8FcrxB9S_Vk9r=kg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] gpio: pca953x: add support for pca9505
+	<1357493688-25061-4-git-send-email-gregory.clement@free-electrons.com>
+Date: Thu, 10 Jan 2013 12:17:09 +0100
+Message-ID: <CACRpkdZMLQvKSgsGuBqw=O64iZ-yXD-TqetNdv-35BXoGKWkOg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] arm: mvebu: enable gpio expander over i2c on Mirabox platform
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Gregory CLEMENT <gregory.clement@free-electrons.com>
 Cc: Grant Likely <grant.likely@secretlab.ca>,
@@ -32,13 +32,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Sun, Jan 6, 2013 at 6:34 PM, Gregory CLEMENT
 <gregory.clement@free-electrons.com> wrote:
 
-> Now that pca953x driver can handle GPIO expanders with more than 32
-> bits this patch adds the support for the pca9505 which cam with 40
-> GPIOs.
+> The Globalscale Mirabox platform can be connected to the JTAG/GPIO box
+> through the Multi-IO port. The GPIO box use the NXP PCA9505 I/O port
+> expansion IC to provide 40-bit parallel input/output GPIOs. This patch
+> enable the use of this expander on the Mirabox.
 >
 > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-Applied, thanks.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Pls merge through the Marvell tree or whatever ARM subtree makes sense.
 
 Yours,
 Linus Walleij
