@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3AJLXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 06:23:34 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:62943 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734Ab3AJLXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 06:23:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <1357577261-31536-1-git-send-email-fabio.baltieri@linaro.org>
-References: <1357577261-31536-1-git-send-email-fabio.baltieri@linaro.org>
-Date: Thu, 10 Jan 2013 12:23:32 +0100
-Message-ID: <CACRpkdZD1i_tvDf6XFyk5muYjtDziQaMNGK6vvihhFJVztXUjw@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: ux500: use clk_prepare_enable and clk_disable_unprepare
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Felipe Balbi <balbi@ti.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753522Ab3AJLYv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 06:24:51 -0500
+Received: from plane.gmane.org ([80.91.229.3]:34218 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751907Ab3AJLYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 06:24:50 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Frederik Himpe <fhimpe@vub.ac.be>
+Subject: xhci module fails when booting in UEFI mode
+Date: Thu, 10 Jan 2013 11:15:56 +0000 (UTC)
+Message-ID: <kcm7tc$aom$1@ger.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: artipc9.vub.ac.be
+User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
+	git://git.gnome.org/pan2)
+Cc: linux-usb@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 7, 2013 at 5:47 PM, Fabio Baltieri
-<fabio.baltieri@linaro.org> wrote:
+I've got a HP EliteBook 8470p on which I installed Debian Wheezy in UEFI 
+mode. With both the 3.2 kernel from Wheezy, as the 3.7.1 kernel from 
+experimental, xhci fails to initialize and my USB mouse connected to one 
+of these ports is not recognized at all. The USB3 ports work fine in 
+Windows.
 
-> This patch converts the module to use clk_prepare_enable and
-> clk_disable_unprepare variants as required by common clock framework.
->
-> Without this the system crash during probe function.
->
-> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+[    1.316248] xhci_hcd 0000:00:14.0: can't derive routing for PCI INT A
+[    1.316251] xhci_hcd 0000:00:14.0: PCI INT A: no GSI
+[    1.316253] 
+[    1.316277] xhci_hcd 0000:00:14.0: setting latency timer to 64
+[    1.316281] xhci_hcd 0000:00:14.0: xHCI Host Controller
+[    1.316287] xhci_hcd 0000:00:14.0: new USB bus registered, assigned 
+bus number 1
+[    1.316393] xhci_hcd 0000:00:14.0: cache line size of 64 is not 
+supported
+[    1.316395] xhci_hcd 0000:00:14.0: request interrupt 255 failed
+[    1.316447] xhci_hcd 0000:00:14.0: USB bus 1 deregistered
+[    1.316466] xhci_hcd 0000:00:14.0: can't derive routing for PCI INT A
+[    1.316467] xhci_hcd 0000:00:14.0: init 0000:00:14.0 fail, -22
+[    1.316505] xhci_hcd: probe of 0000:00:14.0 failed with error -22
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Full dmesg, lspci, lsusb and lsmod can be found here:
+http://artipc10.vub.ac.be/~frederik/uefi-xhci/
 
-Yours,
-Linus Walleij
+I found this report about the same problem on a HP Probook system: 
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1072918 
+
+-- 
+Frederik Himpe
+
