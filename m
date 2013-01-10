@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab3AJPjD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:39:03 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:55618 "EHLO multi.imgtec.com"
+	id S1754928Ab3AJPks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:40:48 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:52690 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754449Ab3AJPcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:32:51 -0500
+	id S1754419Ab3AJPcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:32:46 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
 CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v3 23/44] metag: IRQ handling
-Date: Thu, 10 Jan 2013 15:30:51 +0000
-Message-ID: <1357831872-29451-24-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH v3 21/44] metag: Time keeping
+Date: Thu, 10 Jan 2013 15:30:49 +0000
+Message-ID: <1357831872-29451-22-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
@@ -22,483 +22,370 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add core IRQ handling for metag. The code in irq.c exposes the TBX
-signal numbers as Linux IRQs.
+Add time keeping code for metag. Meta hardware threads have 2 timers.
+The background timer (TXTIMER) is used as a free-running time base, and
+the interrupt timer (TXTIMERI) is used for the timer interrupt. Both
+counters traditionally count at approximately 1MHz.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/metag/include/asm/irq.h      |   32 ++++
- arch/metag/include/asm/irqflags.h |   97 +++++++++++
- arch/metag/kernel/irq.c           |  317 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 446 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/irq.h
- create mode 100644 arch/metag/include/asm/irqflags.h
- create mode 100644 arch/metag/kernel/irq.c
+ arch/metag/include/asm/clock.h     |   51 +++++++++++
+ arch/metag/include/asm/delay.h     |   29 +++++++
+ arch/metag/include/asm/mach/arch.h |    4 +
+ arch/metag/kernel/clock.c          |   53 ++++++++++++
+ arch/metag/kernel/time.c           |  163 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 300 insertions(+), 0 deletions(-)
+ create mode 100644 arch/metag/include/asm/clock.h
+ create mode 100644 arch/metag/include/asm/delay.h
+ create mode 100644 arch/metag/kernel/clock.c
+ create mode 100644 arch/metag/kernel/time.c
 
-diff --git a/arch/metag/include/asm/irq.h b/arch/metag/include/asm/irq.h
+diff --git a/arch/metag/include/asm/clock.h b/arch/metag/include/asm/clock.h
 new file mode 100644
-index 0000000..be0c8f3
+index 0000000..3e2915a
 --- /dev/null
-+++ b/arch/metag/include/asm/irq.h
-@@ -0,0 +1,32 @@
-+#ifndef __ASM_METAG_IRQ_H
-+#define __ASM_METAG_IRQ_H
-+
-+#ifdef CONFIG_4KSTACKS
-+extern void irq_ctx_init(int cpu);
-+extern void irq_ctx_exit(int cpu);
-+# define __ARCH_HAS_DO_SOFTIRQ
-+#else
-+# define irq_ctx_init(cpu) do { } while (0)
-+# define irq_ctx_exit(cpu) do { } while (0)
-+#endif
-+
-+void tbi_startup_interrupt(int);
-+void tbi_shutdown_interrupt(int);
-+
-+struct pt_regs;
-+
-+int tbisig_map(unsigned int hw);
-+extern void do_IRQ(int irq, struct pt_regs *regs);
-+
-+#ifdef CONFIG_METAG_SUSPEND_MEM
-+int traps_save_context(void);
-+int traps_restore_context(void);
-+#endif
-+
-+#include <asm-generic/irq.h>
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+extern void migrate_irqs(void);
-+#endif
-+
-+#endif /* __ASM_METAG_IRQ_H */
-diff --git a/arch/metag/include/asm/irqflags.h b/arch/metag/include/asm/irqflags.h
-new file mode 100644
-index 0000000..ab5df87
---- /dev/null
-+++ b/arch/metag/include/asm/irqflags.h
-@@ -0,0 +1,97 @@
++++ b/arch/metag/include/asm/clock.h
+@@ -0,0 +1,51 @@
 +/*
-+ * IRQ flags handling
++ * arch/metag/include/asm/clock.h
 + *
-+ * This file gets included from lowlevel asm headers too, to provide
-+ * wrapped versions of the local_irq_*() APIs, based on the
-+ * raw_local_irq_*() functions from the lowlevel headers.
-+ */
-+#ifndef _ASM_IRQFLAGS_H
-+#define _ASM_IRQFLAGS_H
-+
-+#ifndef __ASSEMBLY__
-+
-+#include <asm/metag_regs.h>
-+
-+#define INTS_OFF_MASK TXSTATI_BGNDHALT_BIT
-+
-+#ifdef CONFIG_SMP
-+extern unsigned int get_trigger_mask(void);
-+#else
-+
-+extern unsigned int global_trigger_mask;
-+
-+static inline unsigned int get_trigger_mask(void)
-+{
-+	return global_trigger_mask;
-+}
-+#endif
-+
-+static inline unsigned long arch_local_save_flags(void)
-+{
-+	unsigned long flags;
-+
-+	asm volatile("MOV %0,TXMASKI\n" : "=r" (flags));
-+
-+	return flags;
-+}
-+
-+static inline int arch_irqs_disabled_flags(unsigned long flags)
-+{
-+	return (flags & ~INTS_OFF_MASK) == 0;
-+}
-+
-+static inline int arch_irqs_disabled(void)
-+{
-+	unsigned long flags = arch_local_save_flags();
-+
-+	return arch_irqs_disabled_flags(flags);
-+}
-+
-+static inline unsigned long __irqs_disabled(void)
-+{
-+	/*
-+	 * We shouldn't enable exceptions if they are not already
-+	 * enabled. This is required for chancalls to work correctly.
-+	 */
-+	return arch_local_save_flags() & INTS_OFF_MASK;
-+}
-+
-+/*
-+ * For spinlocks, etc:
-+ */
-+static inline unsigned long arch_local_irq_save(void)
-+{
-+	unsigned long flags = __irqs_disabled();
-+
-+	asm volatile("SWAP %0,TXMASKI\n" : "=r" (flags) : "0" (flags)
-+		     : "memory");
-+
-+	return flags;
-+}
-+
-+static inline void arch_local_irq_restore(unsigned long flags)
-+{
-+	asm volatile("MOV TXMASKI,%0\n" : : "r" (flags) : "memory");
-+}
-+
-+static inline void arch_local_irq_disable(void)
-+{
-+	unsigned long flags = __irqs_disabled();
-+
-+	asm volatile("MOV TXMASKI,%0\n" : : "r" (flags) : "memory");
-+}
-+
-+static inline void arch_local_irq_enable(void)
-+{
-+#ifdef CONFIG_SMP
-+	preempt_disable();
-+	arch_local_irq_restore(get_trigger_mask());
-+	preempt_enable_no_resched();
-+#else
-+	arch_local_irq_restore(get_trigger_mask());
-+#endif
-+}
-+
-+#endif /* (__ASSEMBLY__) */
-+
-+#endif /* !(_ASM_IRQFLAGS_H) */
-diff --git a/arch/metag/kernel/irq.c b/arch/metag/kernel/irq.c
-new file mode 100644
-index 0000000..769bd74
---- /dev/null
-+++ b/arch/metag/kernel/irq.c
-@@ -0,0 +1,317 @@
-+/*
-+ * Linux/Meta general interrupt handling code
++ * Copyright (C) 2012 Imagination Technologies Ltd.
 + *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
 +
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/init.h>
-+#include <linux/irqdomain.h>
-+#include <linux/ratelimit.h>
++#ifndef _METAG_CLOCK_H_
++#define _METAG_CLOCK_H_
 +
 +#include <asm/mach/arch.h>
-+#include <asm/uaccess.h>
 +
-+#ifdef CONFIG_4KSTACKS
-+union irq_ctx {
-+	struct thread_info      tinfo;
-+	u32                     stack[THREAD_SIZE/sizeof(u32)];
++/**
++ * struct meta_clock_desc - Meta Core clock callbacks.
++ * @get_core_freq:	Get the frequency of the Meta core. If this is NULL, the
++ *			core frequency will be determined like this:
++ *			Meta 1: based on loops_per_jiffy.
++ *			Meta 2: (EXPAND_TIMER_DIV + 1) MHz.
++ */
++struct meta_clock_desc {
++	unsigned long		(*get_core_freq)(void);
 +};
 +
-+static union irq_ctx *hardirq_ctx[NR_CPUS] __read_mostly;
-+static union irq_ctx *softirq_ctx[NR_CPUS] __read_mostly;
-+#endif
++extern struct meta_clock_desc _meta_clock;
 +
-+struct irq_domain *root_domain;
++/*
++ * Set up the default clock, ensuring all callbacks are valid - only accessible
++ * during boot.
++ */
++void setup_meta_clocks(struct meta_clock_desc *desc);
 +
-+static unsigned int startup_meta_irq(struct irq_data *data)
++/**
++ * get_coreclock() - Get the frequency of the Meta core clock.
++ *
++ * Returns:	The Meta core clock frequency in Hz.
++ */
++static inline unsigned long get_coreclock(void)
 +{
-+	tbi_startup_interrupt(data->hwirq);
++	/*
++	 * Use the current clock callback. If set correctly this will provide
++	 * the most accurate frequency as it can be calculated directly from the
++	 * PLL configuration. otherwise a default callback will have been set
++	 * instead.
++	 */
++	return _meta_clock.get_core_freq();
++}
++
++#endif /* _METAG_CLOCK_H_ */
+diff --git a/arch/metag/include/asm/delay.h b/arch/metag/include/asm/delay.h
+new file mode 100644
+index 0000000..9c92f99
+--- /dev/null
++++ b/arch/metag/include/asm/delay.h
+@@ -0,0 +1,29 @@
++#ifndef _METAG_DELAY_H
++#define _METAG_DELAY_H
++
++/*
++ * Copyright (C) 1993 Linus Torvalds
++ *
++ * Delay routines calling functions in arch/metag/lib/delay.c
++ */
++
++/* Undefined functions to get compile-time errors */
++extern void __bad_udelay(void);
++extern void __bad_ndelay(void);
++
++extern void __udelay(unsigned long usecs);
++extern void __ndelay(unsigned long nsecs);
++extern void __const_udelay(unsigned long xloops);
++extern void __delay(unsigned long loops);
++
++/* 0x10c7 is 2**32 / 1000000 (rounded up) */
++#define udelay(n) (__builtin_constant_p(n) ? \
++	((n) > 20000 ? __bad_udelay() : __const_udelay((n) * 0x10c7ul)) : \
++	__udelay(n))
++
++/* 0x5 is 2**32 / 1000000000 (rounded up) */
++#define ndelay(n) (__builtin_constant_p(n) ? \
++	((n) > 20000 ? __bad_ndelay() : __const_udelay((n) * 5ul)) : \
++	__ndelay(n))
++
++#endif /* _METAG_DELAY_H */
+diff --git a/arch/metag/include/asm/mach/arch.h b/arch/metag/include/asm/mach/arch.h
+index 6845d80..12c5664 100644
+--- a/arch/metag/include/asm/mach/arch.h
++++ b/arch/metag/include/asm/mach/arch.h
+@@ -16,10 +16,13 @@
+ 
+ #include <linux/stddef.h>
+ 
++#include <asm/clock.h>
++
+ /**
+  * struct machine_desc - Describes a board controlled by a Meta.
+  * @name:		Board/SoC name.
+  * @dt_compat:		Array of device tree 'compatible' strings.
++ * @clocks:		Clock callbacks.
+  *
+  * @nr_irqs:		Maximum number of IRQs.
+  *			If 0, defaults to NR_IRQS in asm-generic/irq.h.
+@@ -37,6 +40,7 @@
+ struct machine_desc {
+ 	const char		*name;
+ 	const char		**dt_compat;
++	struct meta_clock_desc	*clocks;
+ 
+ 	unsigned int		nr_irqs;
+ 
+diff --git a/arch/metag/kernel/clock.c b/arch/metag/kernel/clock.c
+new file mode 100644
+index 0000000..defc840
+--- /dev/null
++++ b/arch/metag/kernel/clock.c
+@@ -0,0 +1,53 @@
++/*
++ * arch/metag/kernel/clock.c
++ *
++ * Copyright (C) 2012 Imagination Technologies Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/delay.h>
++#include <linux/io.h>
++
++#include <asm/param.h>
++#include <asm/clock.h>
++
++struct meta_clock_desc _meta_clock;
++
++/* Default machine get_core_freq callback. */
++static unsigned long get_core_freq_default(void)
++{
++#ifdef CONFIG_METAG_META21
++	/*
++	 * Meta 2 cores divide down the core clock for the Meta timers, so we
++	 * can estimate the core clock from the divider.
++	 */
++	return (metag_in32(EXPAND_TIMER_DIV) + 1) * 1000000;
++#else
++	/*
++	 * On Meta 1 we don't know the core clock, but assuming the Meta timer
++	 * is correct it can be estimated based on loops_per_jiffy.
++	 */
++	return (loops_per_jiffy * HZ * 5) >> 1;
++#endif
++}
++
++/**
++ * setup_meta_clocks() - Set up the Meta clock.
++ * @desc:	Clock descriptor usually provided by machine description
++ *
++ * Ensures all callbacks are valid.
++ */
++void __init setup_meta_clocks(struct meta_clock_desc *desc)
++{
++	/* copy callbacks */
++	if (desc)
++		_meta_clock = *desc;
++
++	/* set fallback functions */
++	if (!_meta_clock.get_core_freq)
++		_meta_clock.get_core_freq = get_core_freq_default;
++}
++
+diff --git a/arch/metag/kernel/time.c b/arch/metag/kernel/time.c
+new file mode 100644
+index 0000000..40c2f4a
+--- /dev/null
++++ b/arch/metag/kernel/time.c
+@@ -0,0 +1,163 @@
++/*
++ * Copyright (C) 2005,2006,2007,2008 Imagination Technologies Ltd.
++ *
++ * This file contains the Meta-specific time handling details.
++ *
++ */
++
++#include <linux/errno.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/param.h>
++#include <linux/time.h>
++#include <linux/init.h>
++#include <linux/proc_fs.h>
++#include <linux/clocksource.h>
++#include <linux/clockchips.h>
++#include <linux/interrupt.h>
++
++#include <asm/clock.h>
++#include <asm/hwthread.h>
++#include <asm/core_reg.h>
++#include <asm/metag_mem.h>
++#include <asm/tbx.h>
++
++#define HARDWARE_FREQ		1000000	/* 1MHz */
++#define HARDWARE_DIV		1	/* divide by 1 = 1MHz clock */
++#define HARDWARE_TO_NS_SHIFT	10	/* convert ticks to ns */
++
++static unsigned int hwtimer_freq = HARDWARE_FREQ;
++static DEFINE_PER_CPU(struct clock_event_device, local_clockevent);
++static DEFINE_PER_CPU(char [11], local_clockevent_name);
++
++static int metag_timer_set_next_event(unsigned long delta,
++				      struct clock_event_device *dev)
++{
++	__core_reg_set(TXTIMERI, -delta);
 +	return 0;
 +}
 +
-+static void shutdown_meta_irq(struct irq_data *data)
++static void metag_timer_set_mode(enum clock_event_mode mode,
++				 struct clock_event_device *evt)
 +{
-+	tbi_shutdown_interrupt(data->hwirq);
++	switch (mode) {
++	case CLOCK_EVT_MODE_ONESHOT:
++	case CLOCK_EVT_MODE_RESUME:
++		break;
++
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		/* We should disable the IRQ here */
++		break;
++
++	case CLOCK_EVT_MODE_PERIODIC:
++	case CLOCK_EVT_MODE_UNUSED:
++		WARN_ON(1);
++		break;
++	};
 +}
 +
-+void do_IRQ(int irq, struct pt_regs *regs)
++static inline cycle_t txtimer_read(void)
 +{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+#ifdef CONFIG_4KSTACKS
-+	struct irq_desc *desc;
-+	union irq_ctx *curctx, *irqctx;
-+	u32 *isp;
-+#endif
++	unsigned int ret;
 +
-+	irq_enter();
++	asm volatile ("MOV %0, TXTIMER\n" : "=r" (ret));
++	return ret;
++}
 +
-+	irq = irq_linear_revmap(root_domain, irq);
++static cycle_t metag_clocksource_read(struct clocksource *cs)
++{
++	return txtimer_read();
++}
 +
-+#ifdef CONFIG_DEBUG_STACKOVERFLOW
-+	/* Debugging check for stack overflow: is there less than 1KB free? */
-+	{
-+		unsigned long sp;
++static struct clocksource clocksource_metag = {
++	.name = "META",
++	.rating = 200,
++	.mask = CLOCKSOURCE_MASK(32),
++	.read = metag_clocksource_read,
++	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
++};
 +
-+		asm volatile ("MOV %0,A0StP\n" : "=r"(sp));
-+		sp &= THREAD_SIZE - 1;
++static irqreturn_t metag_timer_interrupt(int irq, void *dummy)
++{
++	struct clock_event_device *evt = &__get_cpu_var(local_clockevent);
 +
-+		if (unlikely(sp > (THREAD_SIZE - 1024)))
-+			pr_err("Stack overflow in do_IRQ: %ld\n", sp);
-+	}
-+#endif
++	evt->event_handler(evt);
 +
++	return IRQ_HANDLED;
++}
 +
-+#ifdef CONFIG_4KSTACKS
-+	curctx = (union irq_ctx *) current_thread_info();
-+	irqctx = hardirq_ctx[smp_processor_id()];
++static struct irqaction metag_timer_irq = {
++	.name = "META core timer",
++	.handler = metag_timer_interrupt,
++	.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_PERCPU,
++};
++
++unsigned long long sched_clock(void)
++{
++	unsigned long long ticks = txtimer_read();
++	return ticks << HARDWARE_TO_NS_SHIFT;
++}
++
++void __cpuinit local_timer_setup(unsigned int cpu)
++{
++	unsigned int txdivtime;
++	struct clock_event_device *clk = &per_cpu(local_clockevent, cpu);
++	char *name = per_cpu(local_clockevent_name, cpu);
++
++	txdivtime = __core_reg_get(TXDIVTIME);
++
++	txdivtime &= ~TXDIVTIME_DIV_BITS;
++	txdivtime |= (HARDWARE_DIV & TXDIVTIME_DIV_BITS);
++
++	__core_reg_set(TXDIVTIME, txdivtime);
++
++	sprintf(name, "META %d", cpu);
++	clk->name = name;
++	clk->features = CLOCK_EVT_FEAT_ONESHOT,
++
++	clk->rating = 200,
++	clk->shift = 12,
++	clk->irq = tbisig_map(TBID_SIGNUM_TRT),
++	clk->set_mode = metag_timer_set_mode,
++	clk->set_next_event = metag_timer_set_next_event,
++
++	clk->mult = div_sc(hwtimer_freq, NSEC_PER_SEC, clk->shift);
++	clk->max_delta_ns = clockevent_delta2ns(0x7fffffff, clk);
++	clk->min_delta_ns = clockevent_delta2ns(0xf, clk);
++	clk->cpumask = cpumask_of(cpu);
++
++	clockevents_register_device(clk);
 +
 +	/*
-+	 * this is where we switch to the IRQ stack. However, if we are
-+	 * already using the IRQ stack (because we interrupted a hardirq
-+	 * handler) we can't do that and just have to keep using the
-+	 * current stack (which is the irq stack already after all)
++	 * For all non-boot CPUs we need to synchronize our free
++	 * running clock (TXTIMER) with the boot CPU's clock.
++	 *
++	 * While this won't be accurate, it should be close enough.
 +	 */
-+	if (curctx != irqctx) {
-+		/* build the stack frame on the IRQ stack */
-+		isp = (u32 *) ((char *)irqctx + sizeof(struct thread_info));
-+		irqctx->tinfo.task = curctx->tinfo.task;
++	if (cpu) {
++		unsigned int thread0 = cpu_2_hwthread_id[0];
++		unsigned long val;
 +
-+		/*
-+		 * Copy the softirq bits in preempt_count so that the
-+		 * softirq checks work in the hardirq context.
-+		 */
-+		irqctx->tinfo.preempt_count =
-+			(irqctx->tinfo.preempt_count & ~SOFTIRQ_MASK) |
-+			(curctx->tinfo.preempt_count & SOFTIRQ_MASK);
++		val = core_reg_read(TXUCT_ID, TXTIMER_REGNUM, thread0);
 +
-+		desc = irq_to_desc(irq);
-+
-+		asm volatile (
-+			"MOV   D0.5,%0\n"
-+			"MOV   D1Ar1,%1\n"
-+			"MOV   D1RtP,%2\n"
-+			"MOV   D0Ar2,%3\n"
-+			"SWAP  A0StP,D0.5\n"
-+			"SWAP  PC,D1RtP\n"
-+			"MOV   A0StP,D0.5\n"
-+			:
-+			: "r" (isp), "r" (irq), "r" (desc->handle_irq),
-+			  "r" (desc)
-+			: "memory", "cc", "D1Ar1", "D0Ar2", "D1Ar3", "D0Ar4",
-+			  "D1Ar5", "D0Ar6", "D0Re0", "D1Re0", "D0.4", "D1RtP",
-+			  "D0.5"
-+			);
-+	} else
-+#endif
-+		generic_handle_irq(irq);
-+
-+	irq_exit();
-+
-+	set_irq_regs(old_regs);
-+}
-+
-+#ifdef CONFIG_4KSTACKS
-+
-+static char softirq_stack[NR_CPUS * THREAD_SIZE] __page_aligned_bss;
-+
-+static char hardirq_stack[NR_CPUS * THREAD_SIZE] __page_aligned_bss;
-+
-+/*
-+ * allocate per-cpu stacks for hardirq and for softirq processing
-+ */
-+void irq_ctx_init(int cpu)
-+{
-+	union irq_ctx *irqctx;
-+
-+	if (hardirq_ctx[cpu])
-+		return;
-+
-+	irqctx = (union irq_ctx *) &hardirq_stack[cpu * THREAD_SIZE];
-+	irqctx->tinfo.task              = NULL;
-+	irqctx->tinfo.exec_domain       = NULL;
-+	irqctx->tinfo.cpu               = cpu;
-+	irqctx->tinfo.preempt_count     = HARDIRQ_OFFSET;
-+	irqctx->tinfo.addr_limit        = MAKE_MM_SEG(0);
-+
-+	hardirq_ctx[cpu] = irqctx;
-+
-+	irqctx = (union irq_ctx *) &softirq_stack[cpu * THREAD_SIZE];
-+	irqctx->tinfo.task              = NULL;
-+	irqctx->tinfo.exec_domain       = NULL;
-+	irqctx->tinfo.cpu               = cpu;
-+	irqctx->tinfo.preempt_count     = 0;
-+	irqctx->tinfo.addr_limit        = MAKE_MM_SEG(0);
-+
-+	softirq_ctx[cpu] = irqctx;
-+
-+	pr_info("CPU %u irqstacks, hard=%p soft=%p\n",
-+		cpu, hardirq_ctx[cpu], softirq_ctx[cpu]);
-+}
-+
-+void irq_ctx_exit(int cpu)
-+{
-+	hardirq_ctx[smp_processor_id()] = NULL;
-+}
-+
-+extern asmlinkage void __do_softirq(void);
-+
-+asmlinkage void do_softirq(void)
-+{
-+	unsigned long flags;
-+	struct thread_info *curctx;
-+	union irq_ctx *irqctx;
-+	u32 *isp;
-+
-+	if (in_interrupt())
-+		return;
-+
-+	local_irq_save(flags);
-+
-+	if (local_softirq_pending()) {
-+		curctx = current_thread_info();
-+		irqctx = softirq_ctx[smp_processor_id()];
-+		irqctx->tinfo.task = curctx->task;
-+
-+		/* build the stack frame on the softirq stack */
-+		isp = (u32 *) ((char *)irqctx + sizeof(struct thread_info));
-+
-+		asm volatile (
-+			"MOV   D0.5,%0\n"
-+			"SWAP  A0StP,D0.5\n"
-+			"CALLR D1RtP,___do_softirq\n"
-+			"MOV   A0StP,D0.5\n"
-+			:
-+			: "r" (isp)
-+			: "memory", "cc", "D1Ar1", "D0Ar2", "D1Ar3", "D0Ar4",
-+			  "D1Ar5", "D0Ar6", "D0Re0", "D1Re0", "D0.4", "D1RtP",
-+			  "D0.5"
-+			);
-+		/*
-+		 * Shouldn't happen, we returned above if in_interrupt():
-+		 */
-+		WARN_ON_ONCE(softirq_count());
-+	}
-+
-+	local_irq_restore(flags);
-+}
-+#endif
-+
-+static struct irq_chip meta_irq_type = {
-+	.name = "META-IRQ",
-+	.irq_startup = startup_meta_irq,
-+	.irq_shutdown = shutdown_meta_irq,
-+};
-+
-+/**
-+ * tbisig_map() - Map a TBI signal number to a virtual IRQ number.
-+ * @hw:		Number of the TBI signal. Must be in range.
-+ *
-+ * Returns:	The virtual IRQ number of the TBI signal number IRQ specified by
-+ *		@hw.
-+ */
-+int tbisig_map(unsigned int hw)
-+{
-+	return irq_create_mapping(root_domain, hw);
-+}
-+
-+/**
-+ * metag_tbisig_map() - map a tbi signal to a Linux virtual IRQ number
-+ * @d:		root irq domain
-+ * @irq:	virtual irq number
-+ * @hw:		hardware irq number (TBI signal number)
-+ *
-+ * This sets up a virtual irq for a specified TBI signal number.
-+ */
-+static int metag_tbisig_map(struct irq_domain *d, unsigned int irq,
-+			    irq_hw_number_t hw)
-+{
-+#ifdef CONFIG_SMP
-+	irq_set_chip_and_handler(irq, &meta_irq_type, handle_percpu_irq);
-+#else
-+	irq_set_chip_and_handler(irq, &meta_irq_type, handle_simple_irq);
-+#endif
-+	return 0;
-+}
-+
-+static const struct irq_domain_ops metag_tbisig_domain_ops = {
-+	.map = metag_tbisig_map,
-+};
-+
-+/*
-+ * void init_IRQ(void)
-+ *
-+ * Parameters:	None
-+ *
-+ * Returns:	Nothing
-+ *
-+ * This function should be called during kernel startup to initialize
-+ * the IRQ handling routines.
-+ */
-+void __init init_IRQ(void)
-+{
-+	root_domain = irq_domain_add_linear(NULL, 32,
-+					    &metag_tbisig_domain_ops, NULL);
-+	if (unlikely(!root_domain))
-+		panic("init_IRQ: cannot add root IRQ domain");
-+
-+	irq_ctx_init(smp_processor_id());
-+
-+	if (machine_desc->init_irq)
-+		machine_desc->init_irq();
-+}
-+
-+int __init arch_probe_nr_irqs(void)
-+{
-+	if (machine_desc->nr_irqs)
-+		nr_irqs = machine_desc->nr_irqs;
-+	return 0;
-+}
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+static void route_irq(struct irq_data *data, unsigned int irq, unsigned int cpu)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	struct irq_chip *chip = irq_data_get_irq_chip(data);
-+
-+	raw_spin_lock_irq(&desc->lock);
-+	if (chip->irq_set_affinity)
-+		chip->irq_set_affinity(data, cpumask_of(cpu), false);
-+	raw_spin_unlock_irq(&desc->lock);
-+}
-+
-+/*
-+ * The CPU has been marked offline.  Migrate IRQs off this CPU.  If
-+ * the affinity settings do not allow other CPUs, force them onto any
-+ * available CPU.
-+ */
-+void migrate_irqs(void)
-+{
-+	unsigned int i, cpu = smp_processor_id();
-+	struct irq_desc *desc;
-+
-+	for_each_irq_desc(i, desc) {
-+		struct irq_data *data = irq_desc_get_irq_data(desc);
-+		unsigned int newcpu;
-+
-+		if (irqd_is_per_cpu(data))
-+			continue;
-+
-+		if (!cpumask_test_cpu(cpu, data->affinity))
-+			continue;
-+
-+		newcpu = cpumask_any_and(data->affinity, cpu_online_mask);
-+
-+		if (newcpu >= nr_cpu_ids) {
-+			pr_info_ratelimited("IRQ%u no longer affine to CPU%u\n",
-+					    i, cpu);
-+
-+			cpumask_setall(data->affinity);
-+			newcpu = cpumask_any_and(data->affinity,
-+						 cpu_online_mask);
-+		}
-+
-+		route_irq(data, i, newcpu);
++		asm volatile ("MOV TXTIMER, %0\n" : : "r" (val));
 +	}
 +}
-+#endif /* CONFIG_HOTPLUG_CPU */
++
++void __init time_init(void)
++{
++	/*
++	 * On Meta 2 SoCs, the actual frequency of the timer is based on the
++	 * Meta core clock speed divided by an integer, so it is only
++	 * approximately 1MHz. Calculating the real frequency here drastically
++	 * reduces clock skew on these SoCs.
++	 */
++#ifdef CONFIG_METAG_META21
++	hwtimer_freq = get_coreclock() / (metag_in32(EXPAND_TIMER_DIV) + 1);
++#endif
++	clocksource_register_hz(&clocksource_metag, hwtimer_freq);
++
++	setup_irq(tbisig_map(TBID_SIGNUM_TRT), &metag_timer_irq);
++
++	local_timer_setup(smp_processor_id());
++}
 -- 
 1.7.7.6
 
