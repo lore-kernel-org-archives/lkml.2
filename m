@@ -1,204 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab3AJA0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 19:26:25 -0500
-Received: from mga09.intel.com ([134.134.136.24]:24942 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932254Ab3AJA0U convert rfc822-to-8bit (ORCPT
+	id S932404Ab3AJA2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 19:28:51 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:54959 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932224Ab3AJA2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 19:26:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,440,1355126400"; 
-   d="scan'208";a="244325310"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Gustavo Padovan <gustavo@padovan.org>
-CC: "marcel@holtmann.org" <marcel@holtmann.org>,
-        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] Bluetooth: fix the oops due to conn->hcon == NULL in
- shutdown case
-Thread-Topic: [PATCH] Bluetooth: fix the oops due to conn->hcon == NULL in
- shutdown case
-Thread-Index: AQHN7qjZnh6pj3OWdUGk98W413NKr5hBs+uA
-Date: Thu, 10 Jan 2013 00:26:16 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A1FFD91@SHSMSX101.ccr.corp.intel.com>
-References: <1356429857.25456.4.camel@cliu38-desktop-build>
- <20130103220258.GF2114@joana>
- <27240C0AC20F114CBF8149A2696CBE4A1FB42B@SHSMSX101.ccr.corp.intel.com>
- <20130109203444.GC30225@joana>
-In-Reply-To: <20130109203444.GC30225@joana>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 9 Jan 2013 19:28:49 -0500
+Date: Thu, 10 Jan 2013 11:28:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: linux-next: manual merge of the pm tree with the pci tree
+Message-Id: <20130110112836.19126ca740c8e13a15860dc0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__10_Jan_2013_11_28_36_+1100_eG9nmk3UcrCFyoRF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gustavo,
+--Signature=_Thu__10_Jan_2013_11_28_36_+1100_eG9nmk3UcrCFyoRF
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Gustavo Padovan [mailto:gustavo@padovan.org]
-> Sent: Thursday, January 10, 2013 4:35 AM
-> To: Liu, Chuansheng
-> Cc: marcel@holtmann.org; johan.hedberg@gmail.com;
-> linux-bluetooth@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] Bluetooth: fix the oops due to conn->hcon == NULL in
-> shutdown case
-> 
-> Hi Liu,
-> 
-> * Liu, Chuansheng <chuansheng.liu@intel.com> [2013-01-04 00:55:26 +0000]:
-> 
-> >
-> >
-> > > -----Original Message-----
-> > > From: Gustavo Padovan [mailto:gustavo@padovan.org]
-> > > Sent: Friday, January 04, 2013 6:03 AM
-> > > To: Liu, Chuansheng
-> > > Cc: marcel@holtmann.org; johan.hedberg@gmail.com;
-> > > linux-bluetooth@vger.kernel.org; linux-kernel@vger.kernel.org
-> > > Subject: Re: [PATCH] Bluetooth: fix the oops due to conn->hcon == NULL in
-> > > shutdown case
-> > >
-> > > Hi Chuansheng,
-> > >
-> > > * Chuansheng Liu <chuansheng.liu@intel.com> [2012-12-25 18:04:17
-> +0800]:
-> > >
-> > > >
-> > > > Meet one panic issue as below stack:
-> >
-> >
-> > > > Disassemble the code:
-> > > > base address of __sco_sock_close is 0xc184f410
-> > > > 0xc184f4f8 <+232>:   lock decl 0x8(%ebx) < == crash here, ebx is 0x0,
-> > > >
-> > > > the related source code is:
-> > > > (gdb) l *0xc184f4f8
-> > > > 0xc184f4f8 is in __sco_sock_close (arch/x86/include/asm/atomic.h:123)
-> > > > 119     static inline int atomic_dec_and_test(atomic_t *v)
-> > > > 123             asm volatile(LOCK_PREFIX "decl %0; sete %1"
-> > > >
-> > > > The whole call stack is:
-> > > > sys_shutdown()
-> > > >   sco_sock_shutdown()
-> > > >     __sco_sock_close()
-> > > >       hci_conn_put()
-> > > >         atomic_dec_and_test()
-> > > >
-> > > > Due to the conn->hcon is NULL, and the member hcon->refcnt is at offset
-> 0x8,
-> > > > so "BUG: unable to handle kernel NULL pointer dereference at 00000008"
-> > > > appears.
-> > Could you add the above crash info to indicate where crashed? Thanks.
-> >
-> > > >
-> > > > Here fix it that adding the condition if conn->hcon is NULL, just like
-> > > > in sco_chan_del().
-> > > >
-> > > > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> > > > ---
-> > > >  net/bluetooth/sco.c |    6 ++++--
-> > > >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > > >
-> > > > diff --git a/net/bluetooth/sco.c b/net/bluetooth/sco.c
-> > > > index 531a93d..190f70c 100644
-> > > > --- a/net/bluetooth/sco.c
-> > > > +++ b/net/bluetooth/sco.c
-> > > > @@ -355,8 +355,10 @@ static void __sco_sock_close(struct sock *sk)
-> > > >  		if (sco_pi(sk)->conn) {
-> > > >  			sk->sk_state = BT_DISCONN;
-> > > >  			sco_sock_set_timer(sk, SCO_DISCONN_TIMEOUT);
-> > > > -			hci_conn_put(sco_pi(sk)->conn->hcon);
-> > > > -			sco_pi(sk)->conn->hcon = NULL;
-> > > > +			if (sco_pi(sk)->conn->hcon) {
-> > > > +				hci_conn_put(sco_pi(sk)->conn->hcon);
-> > > > +				sco_pi(sk)->conn->hcon = NULL;
-> > > > +			}
-> > > >  		} else
-> > > >  			sco_chan_del(sk, ECONNRESET);
-> > > >  		break;
-> > >
-> > > Please check if the following patch fixes the issue for you:
-> > >
-> > > commit ae5668c1fc155d3034d0eedcdb52798390975a39 (HEAD, master)
-> > > Author: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-> > > Date:   Thu Jan 3 19:59:28 2013 -0200
-> > >
-> > >     Bluetooth: Check if the hci connection exists in SCO shutdown
-> > >
-> > >     Checking only for sco_conn seems to not be enough and lead to NULL
-> > >     dereferences in the code, check for hcon instead.
-> > >
-> > >     <1>[11340.226404] BUG: unable to handle kernel NULL pointer
-> > > dereference at
-> > >     0000000
-> > >     8
-> > >     <4>[11340.226619] EIP is at __sco_sock_close+0xe8/0x1a0
-> > >     <4>[11340.226629] EAX: f063a740 EBX: 00000000 ECX: f58f4544 EDX:
-> > > 00000000
-> > >     <4>[11340.226640] ESI: dec83e00 EDI: 5f9a081f EBP: e0fdff38 ESP:
-> > > e0fdff1c
-> > >     <0>[11340.226674] Stack:
-> > >     <4>[11340.226682]  c184db87 c1251028 dec83e00 e0fdff38
-> c1754aef
-> > > dec83e00
-> > >     00000000
-> > >     e0fdff5c
-> > >     <4>[11340.226718]  c184f587 e0fdff64 e0fdff68 5f9a081f e0fdff5c
-> > > c1751852
-> > >     d7813800
-> > >     62262f10
-> > >     <4>[11340.226752]  e0fdff70 c1753c00 00000000 00000001
-> 0000000d
-> > > e0fdffac
-> > >     c175425c
-> > >     00000041
-> > >     <0>[11340.226793] Call Trace:
-> > >     <4>[11340.226813]  [<c184db87>] ?
-> sco_sock_clear_timer+0x27/0x60
-> > >     <4>[11340.226831]  [<c1251028>] ? local_bh_enable+0x68/0xd0
-> > >     <4>[11340.226846]  [<c1754aef>] ? lock_sock_nested+0x4f/0x60
-> > >     <4>[11340.226862]  [<c184f587>] sco_sock_shutdown+0x67/0xb0
-> > >     <4>[11340.226879]  [<c1751852>] ? sockfd_lookup_light+0x22/0x80
-> > >     <4>[11340.226897]  [<c1753c00>] sys_shutdown+0x30/0x60
-> > >     <4>[11340.226912]  [<c175425c>] sys_socketcall+0x1dc/0x2a0
-> > >     <4>[11340.226929]  [<c149ba78>] ?
-> trace_hardirqs_on_thunk+0xc/0x10
-> > >     <4>[11340.226944]  [<c18860f1>] syscall_call+0x7/0xb
-> > >     <4>[11340.226960]  [<c1880000>] ? restore_cur+0x5e/0xd7
-> > >     <0>[11340.226969] Code: <f0> ff 4b 08 0f 94 c0 84 c0 74 20 80 7b 19
-> 01 74
-> > >     2f b8 0a 00 00
-> > >
-> > >     Reported-by: Chuansheng Liu <chuansheng.liu@intel.com>
-> > >     Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-> > >
-> > > diff --git a/net/bluetooth/sco.c b/net/bluetooth/sco.c
-> > > index 531a93d..57f250c 100644
-> > > --- a/net/bluetooth/sco.c
-> > > +++ b/net/bluetooth/sco.c
-> > > @@ -352,7 +352,7 @@ static void __sco_sock_close(struct sock *sk)
-> > >
-> > >  	case BT_CONNECTED:
-> > >  	case BT_CONFIG:
-> > > -		if (sco_pi(sk)->conn) {
-> > > +		if (sco_pi(sk)->conn->hcon) {
-> > Your fix is incomplete, at least it should be:
-> > 		if ( (sco_pi(sk)->conn) && (sco_pi(sk)->conn->hcon)) {
-> > Otherwise, it will bring another crash case. So could you add signed-off-by me
-> also?
-> 
-> Can you point any code flow that can crash with my patch? Otherwise I'm just
-> pushing this patch. I don't think we need to check for sco_pi(sk)->conn here.
-My theory is the old code if(sco_pi(sk)->conn) is already there, unless you think it is useless and impossible.
-Just a code review for me, if you think your patch is still OK, please pushing it, thanks.
-And I will try it to reproduce if possible:(
-> 
-> 	Gustavo
+Hi Rafael,
+
+Today's linux-next merge of the pm tree got a conflict in
+drivers/acpi/pci_root.c between commit 3c449ed00759 ("PCI/ACPI: Reserve
+firmware-allocated resources for hot-added root buses") from the pci tree
+and commit 47525cda88f5 ("ACPI / PCI: Fold acpi_pci_root_start() into
+acpi_pci_root_add()") from the pm tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/acpi/pci_root.c
+index dcbe966,22a8458..0000000
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@@ -632,28 -600,8 +600,10 @@@ static int acpi_pci_root_add(struct acp
+  	if (device->wakeup.flags.run_wake)
+  		device_set_run_wake(root->bus->bridge, true);
+ =20
+- 	return 0;
+-=20
+- out_del_root:
+- 	mutex_lock(&acpi_pci_root_lock);
+- 	list_del(&root->node);
+- 	mutex_unlock(&acpi_pci_root_lock);
+-=20
+- 	acpi_pci_irq_del_prt(root->segment, root->secondary.start);
+- end:
+- 	kfree(root);
+- 	return result;
+- }
+-=20
+- static int acpi_pci_root_start(struct acpi_device *device)
+- {
+- 	struct acpi_pci_root *root =3D acpi_driver_data(device);
+- 	struct acpi_pci_driver *driver;
+-=20
+ -	if (system_state !=3D SYSTEM_BOOTING)
+ +	if (system_state !=3D SYSTEM_BOOTING) {
+ +		pcibios_resource_survey_bus(root->bus);
+  		pci_assign_unassigned_bus_resources(root->bus);
+ +	}
+ =20
+  	mutex_lock(&acpi_pci_root_lock);
+  	list_for_each_entry(driver, &acpi_pci_drivers, node)
+
+--Signature=_Thu__10_Jan_2013_11_28_36_+1100_eG9nmk3UcrCFyoRF
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ7gs0AAoJEECxmPOUX5FEG6QP/iDcR3i+vSTls+EhJ1BdG51T
+vYycGcJHu/t86pvkVbucg1S4ZumsUGmJdfwJXNHN86psb/CoH/SmQ6Ji7+n0QF8O
+PFD5ohmRqJlHn1roHSYFn/R5n9kFZH7YCj+ThnX0wAVpllsvBLUtTV23lJPq+E0C
+wiKlmvDMzrsvQPEnJxVpr0dbQr+y9GXk8w+j4K3K6BOlyPr614/3qrmtkEWc7O5j
+SKF3nJ5OpGpVCIzjzur0NZ9++A9EsXIvBw5VGtWuIWwtpYFpfmLHiGSB1iu2LcLZ
+4xAwzjCpODyhLya6klEop63OID9mDqWNdB2SWh6eFvT3YLrJse/XdTj59sILY1L8
+5myF85+Fqd+Gq6YICBv5Gmb0Nv6WOv52d4Eiu8QhkYy2NC4O6iufmROyW+coHvT/
+K42FB34gVAXm+W0LnaxbV1EkoagpBp0XhgxPD6V8ierDNlLDLA90AGfR5ZlRV7F4
+PZzZ/vqWxZEBlwH8Arq/glZD6j74BK0OkYNXCK+ks3XSdDZ3G651gDcU/Zi4X8d+
+2lMNElN7bbYYQVMlktTdF1WepQF/YRcWJpKn+ZMQsGksklEa1roO7dBiwqxphsS1
+AZSeQ+GMnFlNwzrrkXrZjykh/xwHsqR1VGNG7sKKqRcVse2IqtkakfbBFFMWfwQt
+LJBI/OoLepWMtn4Jp/7y
+=A8C5
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__10_Jan_2013_11_28_36_+1100_eG9nmk3UcrCFyoRF--
