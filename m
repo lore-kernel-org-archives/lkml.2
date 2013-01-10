@@ -1,114 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662Ab3AJBok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 20:44:40 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:42368 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932383Ab3AJBoj (ORCPT
+	id S932681Ab3AJByD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 20:54:03 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:49082 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932555Ab3AJByC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 20:44:39 -0500
+	Wed, 9 Jan 2013 20:54:02 -0500
 MIME-Version: 1.0
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E12243@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F69E11A6C@DQHE02.ent.ti.com>
- <CAK5ve-+mork5jCziq64zcHC09fATth9mRCoJFiRDsFSO=+B0JA@mail.gmail.com> <A874F61F95741C4A9BA573A70FE3998F69E12243@DQHE02.ent.ti.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Wed, 9 Jan 2013 17:44:13 -0800
-Message-ID: <CAK5ve-JMFnwMb-ANLB5OZ0E+42hMVW+GJpWU6Y+0Yxq8DZHDEQ@mail.gmail.com>
-Subject: Re: [PATCH] leds-lm355x: support LED trigger functionality
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "Jeong, Daniel" <Daniel.Jeong@ti.com>,
-        "gshark.jeong@gmail.com" <gshark.jeong@gmail.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20130107155604.GE29449@x1.alien8.de>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-13-git-send-email-yinghai@kernel.org>
+	<20130107155604.GE29449@x1.alien8.de>
+Date: Wed, 9 Jan 2013 17:53:59 -0800
+X-Google-Sender-Auth: -ED0WxCiWoHT4_TNYmTPCeHTkYk
+Message-ID: <CAE9FiQXqgbMiqgfDOnJCsxP4anzgSHfW9aF2cSb3Ko_GoUQB-g@mail.gmail.com>
+Subject: Re: [PATCH v7u1 12/31] x86: add get_ramdisk_image/size()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 5:42 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
->> -----Original Message-----
->> From: Bryan Wu [mailto:cooloney@gmail.com]
->> Sent: Thursday, January 10, 2013 10:16 AM
->> To: Kim, Milo
->> Cc: Jeong, Daniel; gshark.jeong@gmail.com; linux-leds@vger.kernel.org;
->> linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH] leds-lm355x: support LED trigger functionality
+On Mon, Jan 7, 2013 at 7:56 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Jan 03, 2013 at 04:48:32PM -0800, Yinghai Lu wrote:
+>> There are several places to find ramdisk information early for reserving
+>> and relocating.
 >>
->> On Mon, Jan 7, 2013 at 10:35 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
->> >  LM355x family devices provide flash, torch and indicator functions.
->> >  This patch support LED trigger feature.
->> >  Using LED trigger APIs(), other driver simply turn on/off the flash,
->> torch
->> >  and indicator.
->> >
->> >  Platform data
->> >   the name of LED trigger is configurable.
->> >
->> >  Documentation
->> >   example and detailed description added.
->> >
->> > Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
->> > ---
->> >  Documentation/leds/leds-lm3556.txt        |   62
->> +++++++++++++++++++++++++++++
->> >  drivers/leds/leds-lm355x.c                |    3 ++
->> >  include/linux/platform_data/leds-lm355x.h |    8 ++++
->> >  3 files changed, 73 insertions(+)
->> >
->> > diff --git a/Documentation/leds/leds-lm3556.txt
->> b/Documentation/leds/leds-lm3556.txt
->> > index d9eb91b..73244cd 100644
->> > --- a/Documentation/leds/leds-lm3556.txt
->> > +++ b/Documentation/leds/leds-lm3556.txt
->> > @@ -83,3 +83,65 @@ and register it in the platform init function
->> >  Example:
->> >         board_register_i2c_bus(4, 400,
->> >                                 board_i2c_ch4,
->> ARRAY_SIZE(board_i2c_ch4));
->> > +
->> > +Support LED Triggers
->> > +--------------------
->> > +Flash, torch and indicator can be controlled not only by an user-
->> space but also
->> > +by other drivers, kernel space.
->> > +For example, flash turns on by camera driver internally.
->> > +To support this functionality, LED trigger is registered.
->> > +The name of LED trigger is configurable in the platform data.
->> > +
->> > +Example: LED trigger name for flash
->> > +#include <linux/platform_data/leds-lm355x.h>
->> > +
->> > +struct lm355x_trigger_name lm3556_trigger_name = {
->> > +       .flash = "flash",
->> > +};
->> > +
->> > +struct lm355x_platform_data lm3556_pdata = {
->> > +       ...
->> > +       .trigger = &lm3556_trigger_name,
->> > +};
->> > +
->> > +Example: Flash control in simple camera driver
+>> Use functions to make code more readable and consistent.
 >>
->> Hi Milo,
+>> Later will add ext_ramdisk_image/size in those functions to support
+>> loading ramdisk above 4g.
 >>
->> Can we share this camera flash trigger with other users? just
->> introduce a new trigger in drivers/leds/ledtrig-flash.c,
->> drivers/leds/ledtrig-torch.c, drivers/leds/ledtrig-indicator.c. So it
->> can shared by plenty of users.
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  arch/x86/kernel/setup.c |   29 +++++++++++++++++++++--------
+>>  1 file changed, 21 insertions(+), 8 deletions(-)
 >>
->> And this trigger can be independent with LM355x and use other LED
->> hardware driver underneath.
+>> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+>> index 1b8a8cc..644a123 100644
+>> --- a/arch/x86/kernel/setup.c
+>> +++ b/arch/x86/kernel/setup.c
+>> @@ -294,12 +294,25 @@ static void __init reserve_brk(void)
 >>
->> So I expect such trigger driver instead of a specific trigger in LED
->> hardware driver and in other subsystem.
+>>  #ifdef CONFIG_BLK_DEV_INITRD
+>>
+>> +static u64 __init get_ramdisk_image(void)
+>> +{
+>> +     u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+>> +
+>> +     return ramdisk_image;
 >
-> Good idea, Bryan. Thanks!
-> Then added name field of lm355x platform data can be gone and driver is
-> replaced with fixed name field.
-> And how about gathering ledtrig-* drivers in new subdirectory under drivers/leds
-> ?(eg. drivers/leds/trigger/)
->
+> just do
 
-Nice, feel free to submit patches.
-
--Bryan
+No, I will insert line between them.
