@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab3AJPcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:32:53 -0500
+	id S1754570Ab3AJPiB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:38:01 -0500
 Received: from multi.imgtec.com ([194.200.65.239]:56706 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754440Ab3AJPct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 10:32:49 -0500
+	id S1754460Ab3AJPcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 10:32:53 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v3 27/44] metag: Module support
-Date: Thu, 10 Jan 2013 15:30:55 +0000
-Message-ID: <1357831872-29451-28-git-send-email-james.hogan@imgtec.com>
+CC: James Hogan <james.hogan@imgtec.com>, Rob Landley <rob@landley.net>,
+        "Al Viro" <viro@ZenIV.linux.org.uk>, <linux-doc@vger.kernel.org>
+Subject: [PATCH v3 29/44] metag: Basic documentation
+Date: Thu, 10 Jan 2013 15:30:57 +0000
+Message-ID: <1357831872-29451-30-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
@@ -22,347 +23,323 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
----
- arch/metag/include/asm/module.h |   37 +++++
- arch/metag/kernel/module.c      |  284 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 321 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/module.h
- create mode 100644 arch/metag/kernel/module.c
+Add basic metag documentation. This includes an outline description of
+the ABIs (including syscall ABI) and calling conventions, similar to the
+one in Documentation/frv/.
 
-diff --git a/arch/metag/include/asm/module.h b/arch/metag/include/asm/module.h
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-doc@vger.kernel.org
+---
+ Documentation/00-INDEX              |    2 +
+ Documentation/kernel-parameters.txt |    4 +
+ Documentation/metag/00-INDEX        |    4 +
+ Documentation/metag/kernel-ABI.txt  |  256 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 266 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/metag/00-INDEX
+ create mode 100644 Documentation/metag/kernel-ABI.txt
+
+diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+index 8afe64f..f61be4a 100644
+--- a/Documentation/00-INDEX
++++ b/Documentation/00-INDEX
+@@ -226,6 +226,8 @@ memory-hotplug.txt
+ 	- Hotpluggable memory support, how to use and current status.
+ memory.txt
+ 	- info on typical Linux memory problems.
++metag/
++	- directory with info about Linux on Meta architecture.
+ mips/
+ 	- directory with info about Linux on MIPS architecture.
+ mmc/
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 363e348..2e9bfb7 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -970,6 +970,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			       If specified, z/VM IUCV HVC accepts connections
+ 			       from listed z/VM user IDs only.
+ 
++	hwthread_map=	[METAG] Comma-separated list of Linux cpu id to
++			        hardware thread id mappings.
++				Format: <cpu>:<hwthread>
++
+ 	keep_bootcon	[KNL]
+ 			Do not unregister boot console at start. This is only
+ 			useful for debugging when something happens in the window
+diff --git a/Documentation/metag/00-INDEX b/Documentation/metag/00-INDEX
 new file mode 100644
-index 0000000..e47e609
+index 0000000..db11c51
 --- /dev/null
-+++ b/arch/metag/include/asm/module.h
-@@ -0,0 +1,37 @@
-+#ifndef _ASM_METAG_MODULE_H
-+#define _ASM_METAG_MODULE_H
-+
-+#include <asm-generic/module.h>
-+
-+struct metag_plt_entry {
-+	/* Indirect jump instruction sequence. */
-+	unsigned long tramp[2];
-+};
-+
-+struct mod_arch_specific {
-+	/* Indices of PLT sections within module. */
-+	unsigned int core_plt_section, init_plt_section;
-+};
-+
-+#if defined CONFIG_METAG_META12
-+#define MODULE_PROC_FAMILY "META 1.2 "
-+#elif defined CONFIG_METAG_META21
-+#define MODULE_PROC_FAMILY "META 2.1 "
-+#else
-+#define MODULE_PROC_FAMILY ""
-+#endif
-+
-+#ifdef CONFIG_4KSTACKS
-+#define MODULE_STACKSIZE "4KSTACKS "
-+#else
-+#define MODULE_STACKSIZE ""
-+#endif
-+
-+#define MODULE_ARCH_VERMAGIC MODULE_PROC_FAMILY MODULE_STACKSIZE
-+
-+#ifdef MODULE
-+asm(".section .plt,\"ax\",@progbits; .balign 8; .previous");
-+asm(".section .init.plt,\"ax\",@progbits; .balign 8; .previous");
-+#endif
-+
-+#endif /* _ASM_METAG_MODULE_H */
-diff --git a/arch/metag/kernel/module.c b/arch/metag/kernel/module.c
++++ b/Documentation/metag/00-INDEX
+@@ -0,0 +1,4 @@
++00-INDEX
++	- this file
++kernel-ABI.txt
++	- Documents metag ABI details
+diff --git a/Documentation/metag/kernel-ABI.txt b/Documentation/metag/kernel-ABI.txt
 new file mode 100644
-index 0000000..986331c
+index 0000000..7b8dee8
 --- /dev/null
-+++ b/arch/metag/kernel/module.c
-@@ -0,0 +1,284 @@
-+/*  Kernel module help for Meta.
++++ b/Documentation/metag/kernel-ABI.txt
+@@ -0,0 +1,256 @@
++			==========================
++			KERNEL ABIS FOR METAG ARCH
++			==========================
 +
-+    This program is free software; you can redistribute it and/or modify
-+    it under the terms of the GNU General Public License as published by
-+    the Free Software Foundation; either version 2 of the License, or
-+    (at your option) any later version.
++This document describes the Linux ABIs for the metag architecture, and has the
++following sections:
 +
-+    This program is distributed in the hope that it will be useful,
-+    but WITHOUT ANY WARRANTY; without even the implied warranty of
-+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+    GNU General Public License for more details.
-+*/
-+#include <linux/moduleloader.h>
-+#include <linux/elf.h>
-+#include <linux/vmalloc.h>
-+#include <linux/fs.h>
-+#include <linux/string.h>
-+#include <linux/kernel.h>
-+#include <linux/sort.h>
++ (*) Outline of registers
++ (*) Userland registers
++ (*) Kernel registers
++ (*) System call ABI
++ (*) Calling conventions
 +
-+#include <asm/unaligned.h>
 +
-+/* Count how many different relocations (different symbol, different
-+   addend) */
-+static unsigned int count_relocs(const Elf32_Rela *rela, unsigned int num)
-+{
-+	unsigned int i, r_info, r_addend, _count_relocs;
++====================
++OUTLINE OF REGISTERS
++====================
 +
-+	_count_relocs = 0;
-+	r_info = 0;
-+	r_addend = 0;
-+	for (i = 0; i < num; i++)
-+		/* Only count relbranch relocs, others don't need stubs */
-+		if (ELF32_R_TYPE(rela[i].r_info) == R_METAG_RELBRANCH &&
-+		    (r_info != ELF32_R_SYM(rela[i].r_info) ||
-+		     r_addend != rela[i].r_addend)) {
-+			_count_relocs++;
-+			r_info = ELF32_R_SYM(rela[i].r_info);
-+			r_addend = rela[i].r_addend;
-+		}
++The main Meta core registers are arranged in units:
 +
-+	return _count_relocs;
-+}
++	UNIT	Type	DESCRIPTION	GP	EXT	PRIV	GLOBAL
++	=======	=======	===============	=======	=======	=======	=======
++	CT	Special	Control unit
++	D0	General	Data unit 0	0-7	8-15	16-31	16-31
++	D1	General	Data unit 1	0-7	8-15	16-31	16-31
++	A0	General	Address unit 0	0-3	4-7	 8-15	 8-15
++	A1	General	Address unit 1	0-3	4-7	 8-15	 8-15
++	PC	Special	PC unit		0		 1
++	PORT	Special	Ports
++	TR	Special	Trigger unit			 0-7
++	TT	Special	Trace unit			 0-5
++	FX	General	FP unit			0-15
 +
-+static int relacmp(const void *_x, const void *_y)
-+{
-+	const Elf32_Rela *x, *y;
++GP registers form part of the main context.
 +
-+	y = (Elf32_Rela *)_x;
-+	x = (Elf32_Rela *)_y;
++Extended context registers (EXT) may not be present on all hardware threads and
++can be context switched if support is enabled and the appropriate bits are set
++in e.g. the D0.8 register to indicate what extended state to preserve.
 +
-+	/* Compare the entire r_info (as opposed to ELF32_R_SYM(r_info) only) to
-+	 * make the comparison cheaper/faster. It won't affect the sorting or
-+	 * the counting algorithms' performance
-+	 */
-+	if (x->r_info < y->r_info)
-+		return -1;
-+	else if (x->r_info > y->r_info)
-+		return 1;
-+	else if (x->r_addend < y->r_addend)
-+		return -1;
-+	else if (x->r_addend > y->r_addend)
-+		return 1;
-+	else
-+		return 0;
-+}
++Global registers are shared between threads and are privilege protected.
 +
-+static void relaswap(void *_x, void *_y, int size)
-+{
-+	uint32_t *x, *y, tmp;
-+	int i;
++See arch/metag/include/asm/metag_regs.h for definitions relating to core
++registers and the fields and bits they contain. See the TRMs for further details
++about special registers.
 +
-+	y = (uint32_t *)_x;
-+	x = (uint32_t *)_y;
++Several special registers are preserved in the main context, these are the
++interesting ones:
 +
-+	for (i = 0; i < sizeof(Elf32_Rela) / sizeof(uint32_t); i++) {
-+		tmp = x[i];
-+		x[i] = y[i];
-+		y[i] = tmp;
-+	}
-+}
++	REG	(ALIAS)		PURPOSE
++	=======================	===============================================
++	CT.1	(TXMODE)	Processor mode bits (particularly for DSP)
++	CT.2	(TXSTATUS)	Condition flags and LSM_STEP (MGET/MSET step)
++	CT.3	(TXRPT)		Branch repeat counter
++	PC.0	(PC)		Program counter
 +
-+/* Get the potential trampolines size required of the init and
-+   non-init sections */
-+static unsigned long get_plt_size(const Elf32_Ehdr *hdr,
-+				  const Elf32_Shdr *sechdrs,
-+				  const char *secstrings,
-+				  int is_init)
-+{
-+	unsigned long ret = 0;
-+	unsigned i;
++Some of the general registers have special purposes in the ABI and therefore
++have aliases:
 +
-+	/* Everything marked ALLOC (this includes the exported
-+	   symbols) */
-+	for (i = 1; i < hdr->e_shnum; i++) {
-+		/* If it's called *.init*, and we're not init, we're
-+		   not interested */
-+		if ((strstr(secstrings + sechdrs[i].sh_name, ".init") != NULL)
-+		    != is_init)
-+			continue;
++	D0 REG	(ALIAS)	PURPOSE		D1 REG	(ALIAS)	PURPOSE
++	===============	===============	===============	=======================
++	D0.0	(D0Re0)	32bit result	D1.0	(D1Re0)	Top half of 64bit result
++	D0.1	(D0Ar6)	Argument 6	D1.1	(D1Ar5)	Argument 5
++	D0.2	(D0Ar4)	Argument 4	D1.2	(D1Ar3)	Argument 3
++	D0.3	(D0Ar2)	Argument 2	D1.3	(D1Ar1)	Argument 1
++	D0.4	(D0FrT)	Frame temp	D1.4	(D1RtP)	Return pointer
++	D0.5		Call preserved	D1.5		Call preserved
++	D0.6		Call preserved	D1.6		Call preserved
++	D0.7		Call preserved	D1.7		Call preserved
 +
-+		/* We don't want to look at debug sections. */
-+		if (strstr(secstrings + sechdrs[i].sh_name, ".debug") != NULL)
-+			continue;
++	A0 REG	(ALIAS)	PURPOSE		A1 REG	(ALIAS)	PURPOSE
++	===============	===============	===============	=======================
++	A0.0	(A0StP)	Stack pointer	A1.0	(A1GbP)	Global base pointer
++	A0.1	(A0FrP)	Frame pointer	A1.1	(A1LbP)	Local base pointer
++	A0.2				A1.2
++	A0.3				A1.3
 +
-+		if (sechdrs[i].sh_type == SHT_RELA) {
-+			pr_debug("Found relocations in section %u\n", i);
-+			pr_debug("Ptr: %p.  Number: %u\n",
-+				 (void *)hdr + sechdrs[i].sh_offset,
-+				 sechdrs[i].sh_size / sizeof(Elf32_Rela));
 +
-+			/* Sort the relocation information based on a symbol and
-+			 * addend key. This is a stable O(n*log n) complexity
-+			 * alogrithm but it will reduce the complexity of
-+			 * count_relocs() to linear complexity O(n)
-+			 */
-+			sort((void *)hdr + sechdrs[i].sh_offset,
-+			     sechdrs[i].sh_size / sizeof(Elf32_Rela),
-+			     sizeof(Elf32_Rela), relacmp, relaswap);
++==================
++USERLAND REGISTERS
++==================
 +
-+			ret += count_relocs((void *)hdr
-+					     + sechdrs[i].sh_offset,
-+					     sechdrs[i].sh_size
-+					     / sizeof(Elf32_Rela))
-+				* sizeof(struct metag_plt_entry);
-+		}
-+	}
++All the general purpose D0, D1, A0, A1 registers are preserved when entering the
++kernel (including asynchronous events such as interrupts and timer ticks) except
++the following which have special purposes in the ABI:
 +
-+	return ret;
-+}
++	REGISTERS	WHEN	STATUS		PURPOSE
++	===============	=======	===============	===============================
++	D0.8		DSP	Preserved	ECH, determines what extended
++						DSP state to preserve.
++	A0.0	(A0StP)	ALWAYS	Preserved	Stack >= A0StP may be clobbered
++						at any time by the creation of a
++						signal frame.
++	A1.0	(A1GbP)	SMP	Clobbered	Used as temporary for loading
++						kernel stack pointer and saving
++						core context.
++	A0.15		!SMP	Protected	Stores kernel stack pointer.
++	A1.15		ALWAYS	Protected	Stores kernel base pointer.
 +
-+int module_frob_arch_sections(Elf32_Ehdr *hdr,
-+			      Elf32_Shdr *sechdrs,
-+			      char *secstrings,
-+			      struct module *me)
-+{
-+	unsigned int i;
++On UP A0.15 is used to store the kernel stack pointer for storing the userland
++context. A0.15 is global between hardware threads though which means it cannot
++be used on SMP for this purpose. Since no protected local registers are
++available A1GbP is reserved for use as a temporary to allow a percpu stack
++pointer to be loaded for storing the rest of the context.
 +
-+	/* Find .plt and .init.plt sections */
-+	for (i = 0; i < hdr->e_shnum; i++) {
-+		if (strcmp(secstrings + sechdrs[i].sh_name, ".init.plt") == 0)
-+			me->arch.init_plt_section = i;
-+		else if (strcmp(secstrings + sechdrs[i].sh_name, ".plt") == 0)
-+			me->arch.core_plt_section = i;
-+	}
-+	if (!me->arch.core_plt_section || !me->arch.init_plt_section) {
-+		pr_err("Module doesn't contain .plt or .init.plt sections.\n");
-+		return -ENOEXEC;
-+	}
 +
-+	/* Override their sizes */
-+	sechdrs[me->arch.core_plt_section].sh_size
-+		= get_plt_size(hdr, sechdrs, secstrings, 0);
-+	sechdrs[me->arch.core_plt_section].sh_type = SHT_NOBITS;
-+	sechdrs[me->arch.init_plt_section].sh_size
-+		= get_plt_size(hdr, sechdrs, secstrings, 1);
-+	sechdrs[me->arch.init_plt_section].sh_type = SHT_NOBITS;
-+	return 0;
-+}
++================
++KERNEL REGISTERS
++================
 +
-+/* Set up a trampoline in the PLT to bounce us to the distant function */
-+static uint32_t do_plt_call(void *location, Elf32_Addr val,
-+			    Elf32_Shdr *sechdrs, struct module *mod)
-+{
-+	struct metag_plt_entry *entry;
-+	/* Instructions used to do the indirect jump.  */
-+	uint32_t tramp[2];
++When in the kernel the following registers have special purposes in the ABI:
 +
-+	/* We have to trash a register, so we assume that any control
-+	   transfer more than 21-bits away must be a function call
-+	   (so we can use a call-clobbered register).  */
++	REGISTERS	WHEN	STATUS		PURPOSE
++	===============	=======	===============	===============================
++	A0.0	(A0StP)	ALWAYS	Preserved	Stack >= A0StP may be clobbered
++						at any time by the creation of
++						an irq signal frame.
++	A1.0	(A1GbP)	ALWAYS	Preserved	Reserved (kernel base pointer).
 +
-+	/* MOVT D0Re0,#HI(v) */
-+	tramp[0] = 0x02000005 | (((val & 0xffff0000) >> 16) << 3);
-+	/* JUMP D0Re0,#LO(v) */
-+	tramp[1] = 0xac000001 | ((val & 0x0000ffff) << 3);
 +
-+	/* Init, or core PLT? */
-+	if (location >= mod->module_core
-+	    && location < mod->module_core + mod->core_size)
-+		entry = (void *)sechdrs[mod->arch.core_plt_section].sh_addr;
-+	else
-+		entry = (void *)sechdrs[mod->arch.init_plt_section].sh_addr;
++===============
++SYSTEM CALL ABI
++===============
 +
-+	/* Find this entry, or if that fails, the next avail. entry */
-+	while (entry->tramp[0])
-+		if (entry->tramp[0] == tramp[0] && entry->tramp[1] == tramp[1])
-+			return (uint32_t)entry;
-+		else
-+			entry++;
++When a system call is made, the following registers are effective:
 +
-+	entry->tramp[0] = tramp[0];
-+	entry->tramp[1] = tramp[1];
++	REGISTERS	CALL			RETURN
++	===============	=======================	===============================
++	D0.0	(D0Re0)				Return value (or -errno)
++	D1.0	(D1Re0)	System call number	Clobbered
++	D0.1	(D0Ar6)	Syscall arg #6		Preserved
++	D1.1	(D1Ar5)	Syscall arg #5		Preserved
++	D0.2	(D0Ar4)	Syscall arg #4		Preserved
++	D1.2	(D1Ar3)	Syscall arg #3		Preserved
++	D0.3	(D0Ar2)	Syscall arg #2		Preserved
++	D1.3	(D1Ar1)	Syscall arg #1		Preserved
 +
-+	return (uint32_t)entry;
-+}
++Due to the limited number of argument registers and some system calls with badly
++aligned 64-bit arguments, 64-bit values are always packed in consecutive
++arguments, even if this is contrary to the normal calling conventions (where the
++two halves would go in a matching pair of data registers).
 +
-+int apply_relocate_add(Elf32_Shdr *sechdrs,
-+		   const char *strtab,
-+		   unsigned int symindex,
-+		   unsigned int relsec,
-+		   struct module *me)
-+{
-+	unsigned int i;
-+	Elf32_Rela *rel = (void *)sechdrs[relsec].sh_addr;
-+	Elf32_Sym *sym;
-+	Elf32_Addr relocation;
-+	uint32_t *location;
-+	int32_t value;
++For example fadvise64_64 usually has the signature:
 +
-+	pr_debug("Applying relocate section %u to %u\n", relsec,
-+		 sechdrs[relsec].sh_info);
-+	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
-+		/* This is where to make the change */
-+		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
-+			+ rel[i].r_offset;
-+		/* This is the symbol it is referring to.  Note that all
-+		   undefined symbols have been resolved.  */
-+		sym = (Elf32_Sym *)sechdrs[symindex].sh_addr
-+			+ ELF32_R_SYM(rel[i].r_info);
-+		relocation = sym->st_value + rel[i].r_addend;
++	long sys_fadvise64_64(i32 fd, i64 offs, i64 len, i32 advice);
 +
-+		switch (ELF32_R_TYPE(rel[i].r_info)) {
-+		case R_METAG_NONE:
-+			break;
-+		case R_METAG_HIADDR16:
-+			relocation >>= 16;
-+		case R_METAG_LOADDR16:
-+			*location = (*location & 0xfff80007) |
-+				((relocation & 0xffff) << 3);
-+			break;
-+		case R_METAG_ADDR32:
-+			/*
-+			 * Packed data structures may cause a misaligned
-+			 * R_METAG_ADDR32 to be emitted.
-+			 */
-+			put_unaligned(relocation, location);
-+			break;
-+		case R_METAG_GETSETOFF:
-+			*location += ((relocation & 0xfff) << 7);
-+			break;
-+		case R_METAG_RELBRANCH:
-+			if (*location & (0x7ffff << 5)) {
-+				pr_err("bad relbranch relocation\n");
-+				break;
-+			}
++But for metag fadvise64_64 is wrapped so that the 64-bit arguments are packed:
 +
-+			/* This jump is too big for the offset slot. Build
-+			 * a PLT to jump through to get to where we want to go.
-+			 * NB: 21bit check - not scaled to 19bit yet
-+			 */
-+			if (((int32_t)(relocation -
-+				       (uint32_t)location) > 0xfffff) ||
-+			    ((int32_t)(relocation -
-+				       (uint32_t)location) < -0xfffff)) {
-+				relocation = do_plt_call(location, relocation,
-+							 sechdrs, me);
-+			}
++	long sys_fadvise64_64_metag(i32 fd,      i32 offs_lo,
++				    i32 offs_hi, i32 len_lo,
++				    i32 len_hi,  i32 advice)
 +
-+			value = relocation - (uint32_t)location;
++So the arguments are packed in the registers like this:
 +
-+			/* branch instruction aligned */
-+			value /= 4;
++	D0 REG	(ALIAS)	VALUE		D1 REG	(ALIAS)	VALUE
++	===============	===============	===============	=======================
++	D0.1	(D0Ar6)	advice		D1.1	(D1Ar5)	hi(len)
++	D0.2	(D0Ar4)	lo(len)		D1.2	(D1Ar3)	hi(offs)
++	D0.3	(D0Ar2)	lo(offs)	D1.3	(D1Ar1)	fd
 +
-+			if ((value > 0x7ffff) || (value < -0x7ffff)) {
-+				/*
-+				 * this should have been caught by the code
-+				 * above!
-+				 */
-+				pr_err("overflow of relbranch reloc\n");
-+			}
 +
-+			*location = (*location & (~(0x7ffff << 5))) |
-+				((value & 0x7ffff) << 5);
-+			break;
++===================
++CALLING CONVENTIONS
++===================
 +
-+		default:
-+			pr_err("module %s: Unknown relocation: %u\n",
-+			       me->name, ELF32_R_TYPE(rel[i].r_info));
-+			return -ENOEXEC;
-+		}
-+	}
-+	return 0;
-+}
++These calling conventions apply to both user and kernel code. The stack grows
++from low addresses to high addresses in the metag ABI. The stack pointer (A0StP)
++should always point to the next free address on the stack and should at all
++times be 64-bit aligned. The following registers are effective at the point of a
++call:
++
++	REGISTERS	CALL			RETURN
++	===============	=======================	===============================
++	D0.0	(D0Re0)				32bit return value
++	D1.0	(D1Re0)				Upper half of 64bit return value
++	D0.1	(D0Ar6)	32bit argument #6	Clobbered
++	D1.1	(D1Ar5)	32bit argument #5	Clobbered
++	D0.2	(D0Ar4)	32bit argument #4	Clobbered
++	D1.2	(D1Ar3)	32bit argument #3	Clobbered
++	D0.3	(D0Ar2)	32bit argument #2	Clobbered
++	D1.3	(D1Ar1)	32bit argument #1	Clobbered
++	D0.4	(D0FrT)				Clobbered
++	D1.4	(D1RtP)	Return pointer		Clobbered
++	D{0-1}.{5-7}				Preserved
++	A0.0	(A0StP)	Stack pointer		Preserved
++	A1.0	(A0GbP)				Preserved
++	A0.1	(A0FrP)	Frame pointer		Preserved
++	A1.1	(A0LbP)				Preserved
++	A{0-1},{2-3}				Clobbered
++
++64-bit arguments are placed in matching pairs of registers (i.e. the same
++register number in both D0 and D1 units), with the least significant half in D0
++and the most significant half in D1, leaving a gap where necessary. Futher
++arguments are stored on the stack in reverse order (earlier arguments at higher
++addresses):
++
++	ADDRESS		0     1     2     3	4     5     6     7
++	===============	===== ===== ===== =====	===== ===== ===== =====
++	A0StP       -->
++	A0StP-0x08	32bit argument #8	32bit argument #7
++	A0StP-0x10	32bit argument #10	32bit argument #9
++
++Function prologues tend to look a bit like this:
++
++	/* If frame pointer in use, move it to frame temp register so it can be
++	   easily pushed onto stack */
++	MOV	D0FrT,A0FrP
++
++	/* If frame pointer in use, set it to stack pointer */
++	ADD	A0FrP,A0StP,#0
++
++	/* Preserve D0FrT, D1RtP, D{0-1}.{5-7} on stack, incrementing A0StP */
++	MSETL	[A0StP++],D0FrT,D0.5,D0.6,D0.7
++
++	/* Allocate some stack space for local variables */
++	ADD	A0StP,A0StP,#0x10
++
++At this point the stack would look like this:
++
++	ADDRESS		0     1     2     3	4     5     6     7
++	===============	===== ===== ===== =====	===== ===== ===== =====
++	A0StP       -->
++	A0StP-0x08
++	A0StP-0x10
++	A0StP-0x18	Old D0.7		Old D1.7
++	A0StP-0x20	Old D0.6		Old D1.6
++	A0StP-0x28	Old D0.5		Old D1.5
++	A0FrP       -->	Old A0FrP (frame ptr)	Old D1RtP (return ptr)
++	A0FrP-0x08	32bit argument #8	32bit argument #7
++	A0FrP-0x10	32bit argument #10	32bit argument #9
++
++Function epilogues tend to differ depending on the use of a frame pointer. An
++example of a frame pointer epilogue:
++
++	/* Restore D0FrT, D1RtP, D{0-1}.{5-7} from stack, incrementing A0FrP */
++	MGETL	D0FrT,D0.5,D0.6,D0.7,[A0FrP++]
++	/* Restore stack pointer to where frame pointer was before increment */
++	SUB	A0StP,A0FrP,#0x20
++	/* Restore frame pointer from frame temp */
++	MOV	A0FrP,D0FrT
++	/* Return to caller via restored return pointer */
++	MOV	PC,D1RtP
++
++If the function hasn't touched the frame pointer, MGETL cannot be safely used
++with A0StP as it always increments and that would expose the stack to clobbering
++by interrupts (kernel) or signals (user). Therefore it's common to see the MGETL
++split into separate GETL instructions:
++
++	/* Restore D0FrT, D1RtP, D{0-1}.{5-7} from stack */
++	GETL	D0FrT,D1RtP,[A0StP+#-0x30]
++	GETL	D0.5,D1.5,[A0StP+#-0x28]
++	GETL	D0.6,D1.6,[A0StP+#-0x20]
++	GETL	D0.7,D1.7,[A0StP+#-0x18]
++	/* Restore stack pointer */
++	SUB	A0StP,A0StP,#0x30
++	/* Return to caller via restored return pointer */
++	MOV	PC,D1RtP
 -- 
 1.7.7.6
 
