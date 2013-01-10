@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373Ab3AJI4S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 03:56:18 -0500
-Received: from mga01.intel.com ([192.55.52.88]:34624 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187Ab3AJIxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 03:53:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="272163863"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Subject: [PATCHv2 02/11] dma: at_hdmac: check direction properly for cyclic transfers
-Date: Thu, 10 Jan 2013 10:52:57 +0200
-Message-Id: <1357807986-4026-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1357807986-4026-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1357807986-4026-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1754100Ab3AJI6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 03:58:32 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:48386 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab3AJI6b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 03:58:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130110093255.5353fb31@endymion.delvare>
+References: <1357764624-32134-1-git-send-email-laurent.navet@gmail.com>
+	<20130110093255.5353fb31@endymion.delvare>
+Date: Thu, 10 Jan 2013 09:52:36 +0100
+Message-ID: <CAH7P7NjdKsWjttmWyKxttm=rJDAErZxe7+Zf_oaSCx6Pmc1GWw@mail.gmail.com>
+Subject: Re: [PATCH] drivers: i2c-nforce2: fix coding style issues
+From: Laurent Navet <laurent.navet@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: w.sang@pengutronix.de, ben-linux@fluff.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma_transfer_direction is a normal enum. It means we can't usually use the
-values as bit fields. Let's adjust this check and move it above the usage of
-the direction parameter, due to the nature of the following usage of it.
+Hi Jean,
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/dma/at_hdmac.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+>
+> Unfortunately your patch also add one new checkpatch.pl warning:
+>
+> WARNING: line over 80 characters
+> #245: FILE: drivers/i2c/busses/i2c-nforce2.c:272:
+> +		data->word = inb_p(NVIDIA_SMB_DATA) | (inb_p(NVIDIA_SMB_DATA + 1) << 8);
+>
+> Please fix.
+>
+> As mentioned previously, __devinit has been dropped meanwhile, so this
+> change doesn't apply cleanly. Please rebase your patch on top of kernel
+> 3.8-rc3 (or Wolfram's i2c tree) so that Wolfram can apply it.
+>
+> All the rest looks very good now, thanks for the good work.
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 13a02f4..6e13f26 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -778,7 +778,7 @@ err:
-  */
- static int
- atc_dma_cyclic_check_values(unsigned int reg_width, dma_addr_t buf_addr,
--		size_t period_len, enum dma_transfer_direction direction)
-+		size_t period_len)
- {
- 	if (period_len > (ATC_BTSIZE_MAX << reg_width))
- 		goto err_out;
-@@ -786,8 +786,6 @@ atc_dma_cyclic_check_values(unsigned int reg_width, dma_addr_t buf_addr,
- 		goto err_out;
- 	if (unlikely(buf_addr & ((1 << reg_width) - 1)))
- 		goto err_out;
--	if (unlikely(!(direction & (DMA_DEV_TO_MEM | DMA_MEM_TO_DEV))))
--		goto err_out;
- 
- 	return 0;
- 
-@@ -886,14 +884,16 @@ atc_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
- 		return NULL;
- 	}
- 
-+	if (unlikely(!is_slave_direction(direction)))
-+		goto err_out;
-+
- 	if (sconfig->direction == DMA_MEM_TO_DEV)
- 		reg_width = convert_buswidth(sconfig->dst_addr_width);
- 	else
- 		reg_width = convert_buswidth(sconfig->src_addr_width);
- 
- 	/* Check for too big/unaligned periods and unaligned DMA buffer */
--	if (atc_dma_cyclic_check_values(reg_width, buf_addr,
--					period_len, direction))
-+	if (atc_dma_cyclic_check_values(reg_width, buf_addr, period_len))
- 		goto err_out;
- 
- 	/* build cyclic linked list */
+I've worked and tested against git.pengutronix.de wsa/linux.git
+( http://git.pengutronix.de/?p=wsa/linux.git;a=summary )
+Isnt' it the right one ?
+
+
 -- 
-1.7.10.4
-
+Laurent.
