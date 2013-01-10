@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab3AJSBR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 13:01:17 -0500
-Received: from sealard.tedial.com ([62.15.229.231]:41134 "EHLO
-	sealard.tedial.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab3AJSBO (ORCPT
+	id S1755550Ab3AJSDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 13:03:14 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:41588 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510Ab3AJSDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 13:01:14 -0500
-X-Greylist: delayed 1719 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jan 2013 13:01:14 EST
+	Thu, 10 Jan 2013 13:03:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 10 Jan 2013 18:32:33 +0100
-From: "Larrosa, Antonio" <antlarr@tedial.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: seteuid and /proc/<pid>/exe
-Message-ID: <7ce5db09b3a7556682a61a4fad23b2c8@tedial.com>
-User-Agent: Roundcube Webmail/0.7.2-2.el6.kolab_2.4
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
+Date: Thu, 10 Jan 2013 11:03:11 -0700
+Message-ID: <CAKocOOMbb=-4tnf7cqWge1qEJ6YjZprcknKZbBf9oYcGqvPHgg@mail.gmail.com>
+Subject: Re: [ 00/80] 3.4.25-stable review
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Jan 9, 2013 at 1:34 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> Note, there are still a lot of patches submitted for inclusion in the
+> stable releases that I have not gotten to yet.  I wanted to get this
+> release out now, instead of delaying for a week or so while I dig
+> through all of the pending patches.
+>
+> This is the start of the stable review cycle for the 3.4.25 release.
+> There are 80 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Fri Jan 11 20:13:17 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.25-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-I have a user with uid=1000 that runs a process, let's say with pid 42.
 
-If I do a readlink on /proc/42/exe from another process run by that 
-same user,
-it reads the link correctly.
-If root calls readlink on that same link, it works correctly.
+Patches applied cleanly to 3.0.y, 3.4.y, and 3.7.y.
+Compiled and booted on the following systems:
+HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
-The problem is that I have another process that is run by root, and 
-then calls
-seteuid(1000). When it tries to read that link, it fails with 
-"permission denied".
-I could just seteuid(0), read the link and seteuid(1000) again
-(I checked it and it works) but I wonder if that's really the expected 
-behaviour.
+Cross-compile tests:
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.7.y
+c6x: not applicable to 3.0.y, defconfig passed on the rest three
+mips: defconfig passed on all
+mipsel: defconfig passed on all
+powerpc: wii_defconfig passed on all
+sh: defconfig passed on all
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
 
-If any of the effective, real and saved uid of the process have 
-permissions to read the link,
-is it expected that only because they're different, then the permission 
-is denied?
-
-Thanks,
-
--- 
-Antonio Larrosa
+-- Shuah
