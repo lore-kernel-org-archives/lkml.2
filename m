@@ -1,94 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab3AJSXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 13:23:33 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:38255 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753596Ab3AJSXc convert rfc822-to-8bit (ORCPT
+	id S1755091Ab3AJSZS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 13:25:18 -0500
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:62361 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab3AJSZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 13:23:32 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Tony Luck <tony.luck@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>
-Subject: RE: [PATCH v3 1/2] pstore: Avoid deadlock in panic and
- emergency-restart path
-Thread-Topic: [PATCH v3 1/2] pstore: Avoid deadlock in panic and
- emergency-restart path
-Thread-Index: Ac3exFdBKrlqfcQKQf24y8a+iQwKcAQxM4YAAApyXpA=
-Date: Thu, 10 Jan 2013 18:23:17 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3D392@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A2A05C@USINDEM103.corp.hds.com>
- <CA+8MBbKTHQJoeRVUGZr+rcXm+VwOw2vSG31Cwnrg-sc=CzLu9w@mail.gmail.com>
-In-Reply-To: <CA+8MBbKTHQJoeRVUGZr+rcXm+VwOw2vSG31Cwnrg-sc=CzLu9w@mail.gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2013-01-10_09:2013-01-10,2013-01-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1301100147
+	Thu, 10 Jan 2013 13:25:12 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
+        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [REPOST PATCH v3 4/4] mmc: dw_mmc: Handle wp-gpios from device tree
+Date: Thu, 10 Jan 2013 10:24:29 -0800
+Message-Id: <1357842269-15062-4-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1357842269-15062-1-git-send-email-dianders@chromium.org>
+References: <1354251857-21587-1-git-send-email-dianders@chromium.org>
+ <1357842269-15062-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Acked-by: Tony Luck <tony.luck@intel.com>
-> 
-> [Also Ack for part2 the touches efivars.c]
-> 
+On some SoCs (like exynos5250) you need to use an external GPIO for
+write protect.  Add support for wp-gpios to the core dw_mmc driver
+since it could be useful across multiple SoCs.
 
-Thanks :)
+With this change I am able to make use of the write protect for the
+external SD slot on exynos5250-snow.
 
-> -Tony
-> 
-> [Or are you asking me to apply these rather than just Ack them??]
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+---
+Changes in v3: None
+Changes in v2:
+- Fixed return type from u32 to int
+- Return -EINVAL instead of -1
 
-Please apply these to your tree.
+ drivers/mmc/host/dw_mmc.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
 
-Seiji
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index bc0b030..e7e22ad 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -34,6 +34,7 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/workqueue.h>
+ #include <linux/of.h>
++#include <linux/of_gpio.h>
+ 
+ #include "dw_mmc.h"
+ 
+@@ -75,6 +76,7 @@ struct idmac_desc {
+  * @mmc: The mmc_host representing this slot.
+  * @host: The MMC controller this slot is using.
+  * @quirks: Slot-level quirks (DW_MCI_SLOT_QUIRK_XXX)
++ * @wp_gpio: If gpio_is_valid() we'll use this to read write protect.
+  * @ctype: Card type for this slot.
+  * @mrq: mmc_request currently being processed or waiting to be
+  *	processed, or NULL when the slot is idle.
+@@ -90,6 +92,7 @@ struct dw_mci_slot {
+ 	struct dw_mci		*host;
+ 
+ 	int			quirks;
++	int			wp_gpio;
+ 
+ 	u32			ctype;
+ 
+@@ -833,6 +836,8 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
+ 		read_only = 0;
+ 	else if (brd->get_ro)
+ 		read_only = brd->get_ro(slot->id);
++	else if (gpio_is_valid(slot->wp_gpio))
++		read_only = gpio_get_value(slot->wp_gpio);
+ 	else
+ 		read_only =
+ 			mci_readl(slot->host, WRTPRT) & (1 << slot->id) ? 1 : 0;
+@@ -1827,6 +1832,29 @@ static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
+ 			       " as 1\n");
+ 	return bus_wd;
+ }
++
++/* find the write protect gpio for a given slot; or -1 if none specified */
++static int dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
++{
++	struct device_node *np = dw_mci_of_find_slot_node(dev, slot);
++	int gpio;
++
++	if (!np)
++		return -EINVAL;
++
++	gpio = of_get_named_gpio(np, "wp-gpios", 0);
++
++	/* Having a missing entry is valid; return silently */
++	if (!gpio_is_valid(gpio))
++		return -EINVAL;
++
++	if (devm_gpio_request(dev, gpio, "dw-mci-wp")) {
++		dev_warn(dev, "gpio [%d] request failed\n", gpio);
++		return -EINVAL;
++	}
++
++	return gpio;
++}
+ #else /* CONFIG_OF */
+ static int dw_mci_of_get_slot_quirks(struct device *dev, u8 slot)
+ {
+@@ -1840,6 +1868,10 @@ static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
+ {
+ 	return NULL;
+ }
++static int dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
++{
++	return -EINVAL;
++}
+ #endif /* CONFIG_OF */
+ 
+ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+@@ -1957,6 +1989,8 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+ 	else
+ 		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+ 
++	slot->wp_gpio = dw_mci_of_get_wp_gpio(host->dev, slot->id);
++
+ 	mmc_add_host(mmc);
+ 
+ #if defined(CONFIG_DEBUG_FS)
+-- 
+1.7.7.3
 
-> -----Original Message-----
-> From: Tony Luck [mailto:tony.luck@gmail.com]
-> Sent: Thursday, January 10, 2013 1:21 PM
-> To: Seiji Aguchi
-> Cc: linux-kernel@vger.kernel.org; dzickus@redhat.com; ccross@android.com; keescook@chromium.org; cbouatmailru@gmail.com;
-> Satoru Moriya; dle-develop@lists.sourceforge.net
-> Subject: Re: [PATCH v3 1/2] pstore: Avoid deadlock in panic and emergency-restart path
-> 
-> On Thu, Dec 20, 2012 at 7:12 AM, Seiji Aguchi <seiji.aguchi@hds.com> wrote:
-> > +       if (pstore_cannot_block_path(reason)) {
-> > +               is_locked = spin_trylock_irqsave(&psinfo->buf_lock, flags);
-> > +               if (!is_locked) {
-> > +                       pr_err("pstore dump routine blocked in %s path, may corrupt error record\n"
-> > +                                      , in_nmi() ? "NMI" : why);
-> > +               }
-> 
-> My only quibble with this patchset is this message. The sentiment is nice, but nobody will see it. kmsg_dump has already picked the
-> pieces of log_buf that will be saved to pstore - so this new message won't be included.  I suppose it will show up on a serial console -
-> but if a user has a serial console, they don't need to use pstore.
-> 
-> But I don't think it is likely to hurt us (to get this far in a panic we already printed a bunch of stuff to the console and I can't think of a
-> credible scenario where a few extra bytes would run into a problem that the earlier messages didn't).
-> 
-> So:
-> 
-> Acked-by: Tony Luck <tony.luck@intel.com>
-> 
-> [Also Ack for part2 the touches efivars.c]
-> 
-> -Tony
-> 
-> [Or are you asking me to apply these rather than just Ack them??]
