@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab3AJPoc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 10:44:32 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:54492 "EHLO multi.imgtec.com"
+	id S1754932Ab3AJPob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 10:44:31 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:54498 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754156Ab3AJPce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754223Ab3AJPce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Jan 2013 10:32:34 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
 CC: James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v3 08/44] metag: Header for core memory mapped registers
-Date: Thu, 10 Jan 2013 15:30:36 +0000
-Message-ID: <1357831872-29451-9-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH v3 07/44] metag: Headers for core arch constants
+Date: Thu, 10 Jan 2013 15:30:35 +0000
+Message-ID: <1357831872-29451-8-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
 References: <1357831872-29451-1-git-send-email-james.hogan@imgtec.com>
@@ -22,23 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the header <asm/metag_mem.h> describing addresses, fields, and bits
-of various core memory mapped registers in the low non-MMU region.
+Add a couple of header files containing core architecture constants.
+
+The first (<asm/metag_isa.h>) contains some constants relating to the
+instruction set, such as values to give to the CACHEW and CACHER
+instructions.
+
+The second (<asm/metag_regs.h>) contains constants for the core register
+units directly accessible to various instructions, and for the
+registers, fields, and bits in those units. The main units described are
+the control unit (CT.*), the trigger unit (TR.*), and the run-time trace
+unit (TT.*).
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/metag/include/asm/metag_mem.h | 1106 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 1106 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/metag_mem.h
+ arch/metag/include/asm/metag_isa.h  |   81 +++
+ arch/metag/include/asm/metag_regs.h | 1180 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 1261 insertions(+), 0 deletions(-)
+ create mode 100644 arch/metag/include/asm/metag_isa.h
+ create mode 100644 arch/metag/include/asm/metag_regs.h
 
-diff --git a/arch/metag/include/asm/metag_mem.h b/arch/metag/include/asm/metag_mem.h
+diff --git a/arch/metag/include/asm/metag_isa.h b/arch/metag/include/asm/metag_isa.h
 new file mode 100644
-index 0000000..3f7b54d
+index 0000000..c8aa2ae
 --- /dev/null
-+++ b/arch/metag/include/asm/metag_mem.h
-@@ -0,0 +1,1106 @@
++++ b/arch/metag/include/asm/metag_isa.h
+@@ -0,0 +1,81 @@
 +/*
-+ * asm/metag_mem.h
++ * asm/metag_isa.h
 + *
 + * Copyright (C) 2000-2007, 2012 Imagination Technologies.
 + *
@@ -46,1103 +57,1264 @@ index 0000000..3f7b54d
 + * the terms of the GNU General Public License version 2 as published by the
 + * Free Software Foundation.
 + *
-+ * Various defines for Meta (memory-mapped) registers.
++ * Various defines for Meta instruction set.
 + */
 +
-+#ifndef _ASM_METAG_MEM_H_
-+#define _ASM_METAG_MEM_H_
-+
-+/*****************************************************************************
-+ *                   META MEMORY MAP LINEAR ADDRESS VALUES
-+ ****************************************************************************/
-+/*
-+ * COMMON MEMORY MAP
-+ * -----------------
-+ */
-+
-+#define LINSYSTEM_BASE  0x00200000
-+#define LINSYSTEM_LIMIT 0x07FFFFFF
-+
-+/* Linear cache flush now implemented via DCACHE instruction. These defines
-+   related to a special region that used to exist for achieving cache flushes.
-+ */
-+#define         LINSYSLFLUSH_S 0
-+
-+#define     LINSYSRES0_BASE     0x00200000
-+#define     LINSYSRES0_LIMIT    0x01FFFFFF
-+
-+#define     LINSYSCUSTOM_BASE 0x02000000
-+#define     LINSYSCUSTOM_LIMIT   0x02FFFFFF
-+
-+#define     LINSYSEXPAND_BASE 0x03000000
-+#define     LINSYSEXPAND_LIMIT   0x03FFFFFF
-+
-+#define     LINSYSEVENT_BASE  0x04000000
-+#define         LINSYSEVENT_WR_ATOMIC_UNLOCK    0x04000000
-+#define         LINSYSEVENT_WR_ATOMIC_LOCK      0x04000040
-+#define         LINSYSEVENT_WR_CACHE_DISABLE    0x04000080
-+#define         LINSYSEVENT_WR_CACHE_ENABLE     0x040000C0
-+#define         LINSYSEVENT_WR_COMBINE_FLUSH    0x04000100
-+#define         LINSYSEVENT_WR_FENCE            0x04000140
-+#define     LINSYSEVENT_LIMIT   0x04000FFF
-+
-+#define     LINSYSCFLUSH_BASE   0x04400000
-+#define         LINSYSCFLUSH_DCACHE_LINE    0x04400000
-+#define         LINSYSCFLUSH_ICACHE_LINE    0x04500000
-+#define         LINSYSCFLUSH_MMCU           0x04700000
-+#ifndef METAC_1_2
-+#define         LINSYSCFLUSH_TxMMCU_BASE    0x04700020
-+#define         LINSYSCFLUSH_TxMMCU_STRIDE  0x00000008
-+#endif
-+#define         LINSYSCFLUSH_ADDR_BITS      0x000FFFFF
-+#define         LINSYSCFLUSH_ADDR_S         0
-+#define     LINSYSCFLUSH_LIMIT  0x047FFFFF
-+
-+#define     LINSYSCTRL_BASE     0x04800000
-+#define     LINSYSCTRL_LIMIT    0x04FFFFFF
-+
-+#define     LINSYSMTABLE_BASE   0x05000000
-+#define     LINSYSMTABLE_LIMIT  0x05FFFFFF
-+
-+#define     LINSYSDIRECT_BASE   0x06000000
-+#define     LINSYSDIRECT_LIMIT  0x07FFFFFF
-+
-+#define LINLOCAL_BASE   0x08000000
-+#define LINLOCAL_LIMIT  0x7FFFFFFF
-+
-+#define LINCORE_BASE    0x80000000
-+#define LINCORE_LIMIT   0x87FFFFFF
-+
-+#define LINCORE_CODE_BASE  0x80000000
-+#define LINCORE_CODE_LIMIT 0x81FFFFFF
-+
-+#define LINCORE_DATA_BASE  0x82000000
-+#define LINCORE_DATA_LIMIT 0x83FFFFFF
++#ifndef _ASM_METAG_ISA_H_
++#define _ASM_METAG_ISA_H_
 +
 +
-+/* The core can support locked icache lines in this region */
-+#define LINCORE_ICACHE_BASE  0x84000000
-+#define LINCORE_ICACHE_LIMIT 0x85FFFFFF
++/* L1 cache layout */
 +
-+/* The core can support locked dcache lines in this region */
-+#define LINCORE_DCACHE_BASE  0x86000000
-+#define LINCORE_DCACHE_LIMIT 0x87FFFFFF
++/* Data cache line size as bytes and shift */
++#define DCACHE_LINE_BYTES 64
++#define DCACHE_LINE_S     6
 +
-+#define LINGLOBAL_BASE  0x88000000
-+#define LINGLOBAL_LIMIT 0xFFFDFFFF
++/* Number of ways in the data cache */
++#define DCACHE_WAYS       4
++
++/* Instruction cache line size as bytes and shift */
++#define ICACHE_LINE_BYTES 64
++#define ICACHE_LINE_S     6
++
++/* Number of ways in the instruction cache */
++#define ICACHE_WAYS       4
++
 +
 +/*
-+ * CHIP Core Register Map
-+ * ----------------------
++ * CACHEWD/CACHEWL instructions use the bottom 8 bits of the data presented to
++ * control the operation actually achieved.
 + */
-+#define CORE_HWBASE     0x04800000
-+#define PRIV_HWBASE     0x04810000
-+#define TRIG_HWBASE     0x04820000
-+#define SYSC_HWBASE     0x04830000
-+
-+/*****************************************************************************
-+ *         INTER-THREAD KICK REGISTERS FOR SOFTWARE EVENT GENERATION
-+ ****************************************************************************/
-+/*
-+ * These values define memory mapped registers that can be used to supply
-+ * kicks to threads that service arbitrary software events.
++/* Use of these two bits should be discouraged since the bits dont have
++ * consistent meanings
 + */
++#define CACHEW_ICACHE_BIT           0x01
++#define CACHEW_TLBFLUSH_BIT         0x02
 +
-+#define T0KICK     0x04800800   /* Background kick 0     */
-+#define     TXXKICK_MAX 0xFFFF  /* Maximum kicks */
-+#define     TnXKICK_STRIDE      0x00001000  /* Thread scale value    */
-+#define     TnXKICK_STRIDE_S    12
-+#define T0KICKI    0x04800808   /* Interrupt kick 0      */
-+#define     TXIKICK_OFFSET  0x00000008  /* Int level offset value */
-+#define T1KICK     0x04801800   /* Background kick 1     */
-+#define T1KICKI    0x04801808   /* Interrupt kick 1      */
-+#define T2KICK     0x04802800   /* Background kick 2     */
-+#define T2KICKI    0x04802808   /* Interrupt kick 2      */
-+#define T3KICK     0x04803800   /* Background kick 3     */
-+#define T3KICKI    0x04803808   /* Interrupt kick 3      */
++#define CACHEW_FLUSH_L1D_L2         0x0
++#define CACHEW_INVALIDATE_L1I       0x1
++#define CACHEW_INVALIDATE_L1DTLB    0x2
++#define CACHEW_INVALIDATE_L1ITLB    0x3
++#define CACHEW_WRITEBACK_L1D_L2     0x4
++#define CACHEW_INVALIDATE_L1D       0x8
++#define CACHEW_INVALIDATE_L1D_L2    0xC
 +
-+/*****************************************************************************
-+ *                GLOBAL REGISTER ACCESS RESOURCES
-+ ****************************************************************************/
 +/*
-+ * These values define memory mapped registers that allow access to the
-+ * internal state of all threads in order to allow global set-up of thread
-+ * state and external handling of thread events, errors, or debugging.
++ * CACHERD/CACHERL instructions use bits 3:5 of the address presented to
++ * control the operation achieved and hence the specific result.
++ */
++#define CACHER_ADDR_BITS            0xFFFFFFC0
++#define CACHER_OPER_BITS            0x00000030
++#define CACHER_OPER_S               4
++#define     CACHER_OPER_LINPHY          0
++#define CACHER_ICACHE_BIT           0x00000008
++#define CACHER_ICACHE_S             3
++
++/*
++ * CACHERD/CACHERL LINPHY Oper result is one/two 32-bit words
 + *
-+ * The actual unit and register index values needed to access individul
-+ * registers are chip specific see - METAC_TXUXX_VALUES in metac_x_y.h.
-+ * However two C array initialisers TXUXX_MASKS and TGUXX_MASKS will always be
-+ * defined to allow arbitrary loading, display, and saving of all valid
-+ * register states without detailed knowledge of their purpose - TXUXX sets
-+ * bits for all valid registers and TGUXX sets bits for the sub-set which are
-+ * global.
++ *  If CRLINPHY0_VAL_BIT (Bit 0) set then,
++ *      Lower 32-bits corresponds to MMCU_ENTRY_* above.
++ *      Upper 32-bits corresponds to CRLINPHY1_* values below (if requested).
++ *  else
++ *      Lower 32-bits corresponds to CRLINPHY0_* values below.
++ *      Upper 32-bits undefined.
 + */
++#define CRLINPHY0_VAL_BIT      0x00000001
++#define CRLINPHY0_FIRST_BIT    0x00000004 /* Set if VAL=0 due to first level */
 +
-+#define T0UCTREG0   0x04800000  /* Access to all CT regs */
-+#define TnUCTRX_STRIDE      0x00001000  /* Thread scale value    */
-+#define TXUCTREGn_STRIDE    0x00000008  /* Register scale value  */
++#define CRLINPHY1_READ_BIT     0x00000001 /* Set if reads permitted          */
++#define CRLINPHY1_SINGLE_BIT   0x00000004 /* Set if TLB does not cache entry */
++#define CRLINPHY1_PAGEMSK_BITS 0x0000FFF0 /* Set to ((2^n-1)>>12) value      */
++#define CRLINPHY1_PAGEMSK_S    4
 +
-+#define TXUXXRXDT  0x0480FFF0   /* Data to/from any threads reg */
-+#define TXUXXRXRQ  0x0480FFF8
-+#define     TXUXXRXRQ_DREADY_BIT 0x80000000  /* Poll for done */
-+#define     TXUXXRXRQ_DSPEXT_BIT 0x00020000  /* Addr DSP Regs */
-+#define     TXUXXRXRQ_RDnWR_BIT  0x00010000  /* Set for read  */
-+#define     TXUXXRXRQ_TX_BITS    0x00003000  /* Thread number */
-+#define     TXUXXRXRQ_TX_S       12
-+#define     TXUXXRXRQ_RX_BITS    0x000001F0  /* Register num  */
-+#define     TXUXXRXRQ_RX_S       4
-+#define         TXUXXRXRQ_DSPRARD0    0      /* DSP RAM A Read Pointer 0 */
-+#define         TXUXXRXRQ_DSPRARD1    1      /* DSP RAM A Read Pointer 1 */
-+#define         TXUXXRXRQ_DSPRAWR0    2      /* DSP RAM A Write Pointer 0 */
-+#define         TXUXXRXRQ_DSPRAWR2    3      /* DSP RAM A Write Pointer 1 */
-+#define         TXUXXRXRQ_DSPRBRD0    4      /* DSP RAM B Read Pointer 0 */
-+#define         TXUXXRXRQ_DSPRBRD1    5      /* DSP RAM B Read Pointer 1 */
-+#define         TXUXXRXRQ_DSPRBWR0    6      /* DSP RAM B Write Pointer 0 */
-+#define         TXUXXRXRQ_DSPRBWR1    7      /* DSP RAM B Write Pointer 1 */
-+#define         TXUXXRXRQ_DSPRARINC0  8      /* DSP RAM A Read Increment 0 */
-+#define         TXUXXRXRQ_DSPRARINC1  9      /* DSP RAM A Read Increment 1 */
-+#define         TXUXXRXRQ_DSPRAWINC0 10      /* DSP RAM A Write Increment 0 */
-+#define         TXUXXRXRQ_DSPRAWINC1 11      /* DSP RAM A Write Increment 1 */
-+#define         TXUXXRXRQ_DSPRBRINC0 12      /* DSP RAM B Read Increment 0 */
-+#define         TXUXXRXRQ_DSPRBRINC1 13      /* DSP RAM B Read Increment 1 */
-+#define         TXUXXRXRQ_DSPRBWINC0 14      /* DSP RAM B Write Increment 0 */
-+#define         TXUXXRXRQ_DSPRBWINC1 15      /* DSP RAM B Write Increment 1 */
-+
-+#define         TXUXXRXRQ_ACC0L0     16      /* Accumulator 0 bottom 32-bits */
-+#define         TXUXXRXRQ_ACC1L0     17      /* Accumulator 1 bottom 32-bits */
-+#define         TXUXXRXRQ_ACC2L0     18      /* Accumulator 2 bottom 32-bits */
-+#define         TXUXXRXRQ_ACC3L0     19      /* Accumulator 3 bottom 32-bits */
-+#define         TXUXXRXRQ_ACC0HI     20      /* Accumulator 0 top 8-bits */
-+#define         TXUXXRXRQ_ACC1HI     21      /* Accumulator 1 top 8-bits */
-+#define         TXUXXRXRQ_ACC2HI     22      /* Accumulator 2 top 8-bits */
-+#define         TXUXXRXRQ_ACC3HI     23      /* Accumulator 3 top 8-bits */
-+#define     TXUXXRXRQ_UXX_BITS   0x0000000F  /* Unit number   */
-+#define     TXUXXRXRQ_UXX_S      0
-+
-+/*****************************************************************************
-+ *          PRIVILEGE CONTROL VALUES FOR MEMORY MAPPED RESOURCES
-+ ****************************************************************************/
++#endif /* _ASM_METAG_ISA_H_ */
+diff --git a/arch/metag/include/asm/metag_regs.h b/arch/metag/include/asm/metag_regs.h
+new file mode 100644
+index 0000000..022fcad
+--- /dev/null
++++ b/arch/metag/include/asm/metag_regs.h
+@@ -0,0 +1,1180 @@
 +/*
-+ * These values define memory mapped registers that give control over and
-+ * the privilege required to access other memory mapped resources. These
-+ * registers themselves always require privilege to update them.
++ * asm/metag_regs.h
++ *
++ * Copyright (C) 2000-2007, 2012 Imagination Technologies.
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
++ *
++ * Various defines for Meta core (non memory-mapped) registers.
 + */
 +
-+#define TXPRIVREG_STRIDE    0x8 /* Delta between per-thread regs */
-+#define TXPRIVREG_STRIDE_S  3
++#ifndef _ASM_METAG_REGS_H_
++#define _ASM_METAG_REGS_H_
 +
 +/*
-+ * Each bit 0 to 15 defines privilege required to access internal register
-+ * regions 0x04800000 to 0x048FFFFF in 64k chunks
++ * CHIP Unit Identifiers and Valid/Global register number masks
++ * ------------------------------------------------------------
 + */
-+#define T0PIOREG    0x04810100
-+#define T1PIOREG    0x04810108
-+#define T2PIOREG    0x04810110
-+#define T3PIOREG    0x04810118
-+
-+/*
-+ * Each bit 0 to 31 defines privilege required to use the pair of
-+ * system events implemented as writee in the regions 0x04000000 to
-+ * 0x04000FFF in 2*64 byte chunks.
-+ */
-+#define T0PSYREG    0x04810180
-+#define T1PSYREG    0x04810188
-+#define T2PSYREG    0x04810190
-+#define T3PSYREG    0x04810198
-+
-+/*
-+ * CHIP PRIV CONTROLS
-+ * ------------------
-+ */
-+
-+/* The TXPIOREG register holds a bit mask directly mappable to
-+   corresponding addresses in the range 0x04800000 to 049FFFFF */
-+#define     TXPIOREG_ADDR_BITS  0x1F0000 /* Up to 32x64K bytes */
-+#define     TXPIOREG_ADDR_S     16
-+
-+/* Hence based on the _HWBASE values ... */
-+#define     TXPIOREG_CORE_BIT       (1<<((0x04800000>>16)&0x1F))
-+#define     TXPIOREG_PRIV_BIT       (1<<((0x04810000>>16)&0x1F))
-+#define     TXPIOREG_TRIG_BIT       (1<<((0x04820000>>16)&0x1F))
-+#define     TXPIOREG_SYSC_BIT       (1<<((0x04830000>>16)&0x1F))
-+
-+#define     TXPIOREG_WRC_BIT          0x00080000  /* Wr combiner reg priv */
-+#define     TXPIOREG_LOCALBUS_RW_BIT  0x00040000  /* Local bus rd/wr priv */
-+#define     TXPIOREG_SYSREGBUS_RD_BIT 0x00020000  /* Sys reg bus write priv */
-+#define     TXPIOREG_SYSREGBUS_WR_BIT 0x00010000  /* Sys reg bus read priv */
-+
-+/* CORE region privilege controls */
-+#define T0PRIVCORE 0x04800828
-+#define         TXPRIVCORE_TXBKICK_BIT   0x001  /* Background kick priv */
-+#define         TXPRIVCORE_TXIKICK_BIT   0x002  /* Interrupt kick priv  */
-+#define         TXPRIVCORE_TXAMAREGX_BIT 0x004  /* TXAMAREG4|5|6 priv   */
-+#define TnPRIVCORE_STRIDE 0x00001000
-+
-+#define T0PRIVSYSR 0x04810000
-+#define     TnPRIVSYSR_STRIDE   0x00000008
-+#define     TnPRIVSYSR_STRIDE_S 3
-+#define     TXPRIVSYSR_CFLUSH_BIT     0x01
-+#define     TXPRIVSYSR_MTABLE_BIT     0x02
-+#define     TXPRIVSYSR_DIRECT_BIT     0x04
++#define TXUCT_ID    0x0     /* Control unit regs */
 +#ifdef METAC_1_2
-+#define     TXPRIVSYSR_ALL_BITS       0x07
++#define     TXUCT_MASK  0xFF0FFFFF  /* Valid regs 0..31  */
 +#else
-+#define     TXPRIVSYSR_CORE_BIT       0x08
-+#define     TXPRIVSYSR_CORECODE_BIT   0x10
-+#define     TXPRIVSYSR_ALL_BITS       0x1F
++#define     TXUCT_MASK  0xFF1FFFFF  /* Valid regs 0..31  */
 +#endif
-+#define T1PRIVSYSR 0x04810008
-+#define T2PRIVSYSR 0x04810010
-+#define T3PRIVSYSR 0x04810018
++#define     TGUCT_MASK  0x00000000  /* No global regs    */
++#define TXUD0_ID    0x1     /* Data unit regs */
++#define TXUD1_ID    0x2
++#define     TXUDX_MASK  0xFFFFFFFF  /* Valid regs 0..31 */
++#define     TGUDX_MASK  0xFFFF0000  /* Global regs for base inst */
++#define     TXUDXDSP_MASK   0x0F0FFFFF  /* Valid DSP regs */
++#define     TGUDXDSP_MASK   0x0E0E0000  /* Global DSP ACC regs */
++#define TXUA0_ID    0x3     /* Address unit regs */
++#define TXUA1_ID    0x4
++#define     TXUAX_MASK  0x0000FFFF  /* Valid regs   0-15 */
++#define     TGUAX_MASK  0x0000FF00  /* Global regs  8-15 */
++#define TXUPC_ID    0x5     /* PC registers */
++#define     TXUPC_MASK  0x00000003  /* Valid regs   0- 1 */
++#define     TGUPC_MASK  0x00000000  /* No global regs    */
++#define TXUPORT_ID  0x6     /* Ports are not registers */
++#define TXUTR_ID    0x7
++#define     TXUTR_MASK  0x0000005F  /* Valid regs   0-3,4,6 */
++#define     TGUTR_MASK  0x00000000  /* No global regs    */
++#ifdef METAC_2_1
++#define TXUTT_ID    0x8
++#define     TXUTT_MASK  0x0000000F  /* Valid regs   0-3 */
++#define     TGUTT_MASK  0x00000010  /* Global reg   4   */
++#define TXUFP_ID    0x9     /* FPU regs */
++#define     TXUFP_MASK  0x0000FFFF  /* Valid regs   0-15 */
++#define     TGUFP_MASK  0x00000000  /* No global regs    */
++#endif /* METAC_2_1 */
++
++#ifdef METAC_1_2
++#define TXUXX_MASKS { TXUCT_MASK, TXUDX_MASK, TXUDX_MASK, TXUAX_MASK, \
++		      TXUAX_MASK, TXUPC_MASK,          0, TXUTR_MASK, \
++		      0, 0, 0, 0, 0, 0, 0, 0                          }
++#define TGUXX_MASKS { TGUCT_MASK, TGUDX_MASK, TGUDX_MASK, TGUAX_MASK, \
++		      TGUAX_MASK, TGUPC_MASK,          0, TGUTR_MASK, \
++		      0, 0, 0, 0, 0, 0, 0, 0                          }
++#else /* METAC_1_2 */
++#define TXUXX_MASKS { TXUCT_MASK, TXUDX_MASK, TXUDX_MASK, TXUAX_MASK, \
++		      TXUAX_MASK, TXUPC_MASK,          0, TXUTR_MASK, \
++		      TXUTT_MASK, TXUFP_MASK,          0,          0, \
++			       0,          0,          0,          0  }
++#define TGUXX_MASKS { TGUCT_MASK, TGUDX_MASK, TGUDX_MASK, TGUAX_MASK, \
++		      TGUAX_MASK, TGUPC_MASK,          0, TGUTR_MASK, \
++		      TGUTT_MASK, TGUFP_MASK,          0,          0, \
++			       0,          0,          0,          0  }
++#endif /* !METAC_1_2 */
++
++#define TXUXXDSP_MASKS { 0, TXUDXDSP_MASK, TXUDXDSP_MASK, 0, 0, 0, 0, 0, \
++			 0, 0, 0, 0, 0, 0, 0, 0                          }
++#define TGUXXDSP_MASKS { 0, TGUDXDSP_MASK, TGUDXDSP_MASK, 0, 0, 0, 0, 0, \
++			 0, 0, 0, 0, 0, 0, 0, 0                          }
++
++/* -------------------------------------------------------------------------
++;                          DATA AND ADDRESS UNIT REGISTERS
++;  -----------------------------------------------------------------------*/
++/*
++  Thread local D0 registers
++ */
++/*   D0.0    ; Holds 32-bit result, can be used as scratch */
++#define D0Re0 D0.0
++/*   D0.1    ; Used to pass Arg6_32 */
++#define D0Ar6 D0.1
++/*   D0.2    ; Used to pass Arg4_32 */
++#define D0Ar4 D0.2
++/*   D0.3    ; Used to pass Arg2_32 to a called routine (see D1.3 below) */
++#define D0Ar2 D0.3
++/*   D0.4    ; Can be used as scratch; used to save A0FrP in entry sequences */
++#define D0FrT D0.4
++/*   D0.5    ; C compiler assumes preservation, save with D1.5 if used */
++/*   D0.6    ; C compiler assumes preservation, save with D1.6 if used */
++/*   D0.7    ; C compiler assumes preservation, save with D1.7 if used */
++/*   D0.8    ; Use of D0.8 and above is not encouraged */
++/*   D0.9  */
++/*   D0.10 */
++/*   D0.11 */
++/*   D0.12 */
++/*   D0.13 */
++/*   D0.14 */
++/*   D0.15 */
++/*
++   Thread local D1 registers
++ */
++/*   D1.0    ; Holds top 32-bits of 64-bit result, can be used as scratch */
++#define D1Re0 D1.0
++/*   D1.1    ; Used to pass Arg5_32 */
++#define D1Ar5 D1.1
++/*   D1.2    ; Used to pass Arg3_32 */
++#define D1Ar3 D1.2
++/*   D1.3    ; Used to pass Arg1_32 (first 32-bit argument) to a called routine */
++#define D1Ar1 D1.3
++/*   D1.4    ; Used for Return Pointer, save during entry with A0FrP (via D0.4) */
++#define D1RtP D1.4
++/*   D1.5    ; C compiler assumes preservation, save if used */
++/*   D1.6    ; C compiler assumes preservation, save if used */
++/*   D1.7    ; C compiler assumes preservation, save if used */
++/*   D1.8    ; Use of D1.8 and above is not encouraged */
++/*   D1.9  */
++/*   D1.10 */
++/*   D1.11 */
++/*   D1.12 */
++/*   D1.13 */
++/*   D1.14 */
++/*   D1.15 */
++/*
++   Thread local A0 registers
++ */
++/*   A0.0    ; Primary stack pointer */
++#define A0StP A0.0
++/*   A0.1    ; Used as local frame pointer in C, save if used (via D0.4) */
++#define A0FrP A0.1
++/*   A0.2  */
++/*   A0.3  */
++/*   A0.4    ; Use of A0.4 and above is not encouraged */
++/*   A0.5  */
++/*   A0.6  */
++/*   A0.7  */
++/*
++   Thread local A1 registers
++ */
++/*   A1.0    ; Global static chain pointer - do not modify */
++#define A1GbP A1.0
++/*   A1.1    ; Local static chain pointer in C, can be used as scratch */
++#define A1LbP A1.1
++/*   A1.2  */
++/*   A1.3  */
++/*   A1.4    ; Use of A1.4 and above is not encouraged */
++/*   A1.5  */
++/*   A1.6  */
++/*   A1.7  */
++#ifdef METAC_2_1
++/* Renameable registers for use with Fast Interrupts */
++/* The interrupt stack pointer (usually a global register) */
++#define A0IStP A0IReg
++/* The interrupt global pointer (usually a global register) */
++#define A1IGbP A1IReg
++#endif
++/*
++   Further registers may be globally allocated via linkage/loading tools,
++   normally they are not used.
++ */
++/*-------------------------------------------------------------------------
++;                    STACK STRUCTURE and CALLING CONVENTION
++; -----------------------------------------------------------------------*/
++/*
++; Calling convention indicates that the following is the state of the
++; stack frame at the start of a routine-
++;
++;       Arg9_32 [A0StP+#-12]
++;       Arg8_32 [A0StP+#- 8]
++;       Arg7_32 [A0StP+#- 4]
++;   A0StP->
++;
++; Registers D1.3, D0.3, ..., to D0.1 are used to pass Arg1_32 to Arg6_32
++;   respectively. If a routine needs to store them on the stack in order
++;   to make sub-calls or because of the general complexity of the routine it
++;   is best to dump these registers immediately at the start of a routine
++;   using a MSETL or SETL instruction-
++;
++;   MSETL   [A0StP],D0Ar6,D0Ar4,D0Ar2; Only dump argments expected
++;or SETL    [A0StP+#8++],D0Ar2       ; Up to two 32-bit args expected
++;
++; For non-leaf routines it is always necessary to save and restore at least
++; the return address value D1RtP on the stack. Also by convention if the
++; frame is saved then a new A0FrP value must be set-up. So for non-leaf
++; routines at this point both these registers must be saved onto the stack
++; using a SETL instruction and the new A0FrP value is then set-up-
++;
++;   MOV     D0FrT,A0FrP
++;   ADD     A0FrP,A0StP,#0
++;   SETL    [A0StP+#8++],D0FrT,D1RtP
++;
++; Registers D0.5, D1.5, to D1.7 are assumed to be preserved across calls so
++;   a SETL or MSETL instruction can be used to save the current state
++;   of these registers if they are modified by the current routine-
++;
++;   MSETL   [A0StP],D0.5,D0.6,D0.7   ; Only save registers modified
++;or SETL    [A0StP+#8++],D0.5        ; Only D0.5 and/or D1.5 modified
++;
++; All of the above sequences can be combined into one maximal case-
++;
++;   MOV     D0FrT,A0FrP              ; Save and calculate new frame pointer
++;   ADD     A0FrP,A0StP,#(ARS)
++;   MSETL   [A0StP],D0Ar6,D0Ar4,D0Ar2,D0FrT,D0.5,D0.6,D0.7
++;
++; Having completed the above sequence the only remaining task on routine
++; entry is to reserve any local and outgoing argment storage space on the
++; stack. This instruction may be omitted if the size of this region is zero-
++;
++;   ADD     A0StP,A0StP,#(LCS)
++;
++; LCS is the first example use of one of a number of standard local defined
++; values that can be created to make assembler code more readable and
++; potentially more robust-
++;
++; #define ARS   0x18                 ; Register arg bytes saved on stack
++; #define FRS   0x20                 ; Frame save area size in bytes
++; #define LCS   0x00                 ; Locals and Outgoing arg size
++; #define ARO   (LCS+FRS)            ; Stack offset to access args
++;
++; All of the above defines should be undefined (#undef) at the end of each
++; routine to avoid accidental use in the next routine.
++;
++; Given all of the above the following stack structure is expected during
++; the body of a routine if all args passed in registers are saved during
++; entry-
++;
++;                                    ; 'Incoming args area'
++;         Arg10_32 [A0StP+#-((10*4)+ARO)]       Arg9_32  [A0StP+#-(( 9*4)+ARO)]
++;         Arg8_32  [A0StP+#-(( 8*4)+ARO)]       Arg7_32  [A0StP+#-(( 7*4)+ARO)]
++;--- Call point
++; D0Ar6=  Arg6_32  [A0StP+#-(( 6*4)+ARO)] D1Ar5=Arg5_32  [A0StP+#-(( 5*4)+ARO)]
++; D0Ar4=  Arg4_32  [A0StP+#-(( 4*4)+ARO)] D1Ar3=Arg3_32  [A0StP+#-(( 3*4)+ARO)]
++; D0Ar2=  Arg2_32  [A0StP+#-(( 2*4)+ARO)] D1Ar2=Arg1_32  [A0StP+#-(( 1*4)+ARO)]
++;                                    ; 'Frame area'
++; A0FrP-> D0FrT, D1RtP,
++;         D0.5, D1.5,
++;         D0.6, D1.6,
++;         D0.7, D1.7,
++;                                    ; 'Locals area'
++;         Loc0_32  [A0StP+# (( 0*4)-LCS)],      Loc1_32 [A0StP+# (( 1*4)-LCS)]
++;               .... other locals
++;         Locn_32  [A0StP+# (( n*4)-LCS)]
++;                                    ; 'Outgoing args area'
++;         Outm_32  [A0StP+#- ( m*4)]            .... other outgoing args
++;         Out8_32  [A0StP+#- ( 1*4)]            Out7_32  [A0StP+#- ( 1*4)]
++; A0StP-> (Out1_32-Out6_32 in regs D1Ar1-D0Ar6)
++;
++; The exit sequence for a non-leaf routine can use the frame pointer created
++; in the entry sequence to optimise the recovery of the full state-
++;
++;   MGETL   D0FrT,D0.5,D0.6,D0.7,[A0FrP]
++;   SUB     A0StP,A0FrP,#(ARS+FRS)
++;   MOV     A0FrP,D0FrT
++;   MOV     PC,D1RtP
++;
++; Having described the most complex non-leaf case above, it is worth noting
++; that if a routine is a leaf and does not use any of the caller-preserved
++; state. The routine can be implemented as-
++;
++;   ADD     A0StP,A0StP,#LCS
++;   .... body of routine
++;   SUB     A0StP,A0StP,#LCS
++;   MOV     PC,D1RtP
++;
++; The stack adjustments can also be omitted if no local storage is required.
++;
++; Another exit sequence structure is more applicable if for a leaf routine
++; with no local frame pointer saved/generated in which the call saved
++; registers need to be saved and restored-
++;
++;   MSETL   [A0StP],D0.5,D0.6,D0.7   ; Hence FRS is 0x18, ARS is 0x00
++;   ADD     A0StP,A0StP,#LCS
++;   .... body of routine
++;   GETL    D0.5,D1.5,[A0StP+#((0*8)-(FRS+LCS))]
++;   GETL    D0.6,D1.6,[A0StP+#((1*8)-(FRS+LCS))]
++;   GETL    D0.7,D1.7,[A0StP+#((2*8)-(FRS+LCS))]
++;   SUB     A0StP,A0StP,#(ARS+FRS+LCS)
++;   MOV     PC,D1RtP
++;
++; Lastly, to support profiling assembler code should use a fixed entry/exit
++; sequence if the trigger define _GMON_ASM is defined-
++;
++;   #ifndef _GMON_ASM
++;   ... optimised entry code
++;   #else
++;   ; Profiling entry case
++;   MOV     D0FrT,A0FrP              ; Save and calculate new frame pointer
++;   ADD     A0FrP,A0StP,#(ARS)
++;   MSETL   [A0StP],...,D0FrT,... or SETL    [A0FrP],D0FrT,D1RtP
++;   CALLR   D0FrT,_mcount_wrapper
++;   #endif
++;   ... body of routine
++;   #ifndef _GMON_ASM
++;   ... optimised exit code
++;   #else
++;   ; Profiling exit case
++;   MGETL   D0FrT,...,[A0FrP]     or GETL    D0FrT,D1RtP,[A0FrP++]
++;   SUB     A0StP,A0FrP,#(ARS+FRS)
++;   MOV     A0FrP,D0FrT
++;   MOV     PC,D1RtP
++;   #endif
++
++
++; -------------------------------------------------------------------------
++;                         CONTROL UNIT REGISTERS
++; -------------------------------------------------------------------------
++;
++; See the assembler guide, hardware documentation, or the field values
++; defined below for some details of the use of these registers.
++*/
++#define TXENABLE    CT.0    /* Need to define bit-field values in these */
++#define TXMODE      CT.1
++#define TXSTATUS    CT.2    /* DEFAULT 0x00020000 */
++#define TXRPT       CT.3
++#define TXTIMER     CT.4
++#define TXL1START   CT.5
++#define TXL1END     CT.6
++#define TXL1COUNT   CT.7
++#define TXL2START   CT.8
++#define TXL2END     CT.9
++#define TXL2COUNT   CT.10
++#define TXBPOBITS   CT.11
++#define TXMRSIZE    CT.12
++#define TXTIMERI    CT.13
++#define TXDRCTRL    CT.14  /* DEFAULT 0x0XXXF0F0 */
++#define TXDRSIZE    CT.15
++#define TXCATCH0    CT.16
++#define TXCATCH1    CT.17
++#define TXCATCH2    CT.18
++#define TXCATCH3    CT.19
++
++#ifdef METAC_2_1
++#define TXDEFR      CT.20
++#define TXCPRS      CT.21
++#endif
++
++#define TXINTERN0   CT.23
++#define TXAMAREG0   CT.24
++#define TXAMAREG1   CT.25
++#define TXAMAREG2   CT.26
++#define TXAMAREG3   CT.27
++#define TXDIVTIME   CT.28   /* DEFAULT 0x00000001 */
++#define TXPRIVEXT   CT.29   /* DEFAULT 0x003B0000 */
++#define TXTACTCYC   CT.30
++#define TXIDLECYC   CT.31
 +
 +/*****************************************************************************
-+ *          H/W TRIGGER STATE/LEVEL REGISTERS AND H/W TRIGGER VECTORS
++ *                        CONTROL UNIT REGISTER BITS
 + ****************************************************************************/
 +/*
-+ * These values define memory mapped registers that give control over and
-+ * the state of hardware trigger sources both external to the META processor
-+ * and internal to it.
++ * The following registers and where appropriate the sub-fields of those
++ * registers are defined for pervasive use in controlling program flow.
 + */
-+
-+#define HWSTATMETA  0x04820000  /* Hardware status/clear META trig */
-+#define         HWSTATMETA_T0HALT_BITS 0xF
-+#define         HWSTATMETA_T0HALT_S    0
-+#define     HWSTATMETA_T0BHALT_BIT 0x1  /* Background HALT */
-+#define     HWSTATMETA_T0IHALT_BIT 0x2  /* Interrupt HALT  */
-+#define     HWSTATMETA_T0PHALT_BIT 0x4  /* PF/RO Memory HALT */
-+#define     HWSTATMETA_T0AMATR_BIT 0x8  /* AMA trigger */
-+#define     HWSTATMETA_TnINT_S     4    /* Shift by (thread*4) */
-+#define HWSTATEXT   0x04820010  /* H/W status/clear external trigs  0-31 */
-+#define HWSTATEXT2  0x04820018  /* H/W status/clear external trigs 32-63 */
-+#define HWSTATEXT4  0x04820020  /* H/W status/clear external trigs 64-95 */
-+#define HWSTATEXT6  0x04820028  /* H/W status/clear external trigs 96-128 */
-+#define HWLEVELEXT  0x04820030  /* Edge/Level type of external trigs  0-31 */
-+#define HWLEVELEXT2 0x04820038  /* Edge/Level type of external trigs 32-63 */
-+#define HWLEVELEXT4 0x04820040  /* Edge/Level type of external trigs 64-95 */
-+#define HWLEVELEXT6 0x04820048  /* Edge/Level type of external trigs 96-128 */
-+#define     HWLEVELEXT_XXX_LEVEL 1  /* Level sense logic in HWSTATEXTn */
-+#define     HWLEVELEXT_XXX_EDGE  0
-+#define HWMASKEXT   0x04820050  /* Enable/disable of external trigs  0-31 */
-+#define HWMASKEXT2  0x04820058  /* Enable/disable of external trigs 32-63 */
-+#define HWMASKEXT4  0x04820060  /* Enable/disable of external trigs 64-95 */
-+#define HWMASKEXT6  0x04820068  /* Enable/disable of external trigs 96-128 */
-+#define T0VECINT_BHALT  0x04820500  /* Background HALT trigger vector */
-+#define     TXVECXXX_BITS   0xF       /* Per-trigger vector vals 0,1,4-15 */
-+#define     TXVECXXX_S  0
-+#define T0VECINT_IHALT  0x04820508  /* Interrupt HALT */
-+#define T0VECINT_PHALT  0x04820510  /* PF/RO memory fault */
-+#define T0VECINT_AMATR  0x04820518  /* AMA trigger */
-+#define     TnVECINT_STRIDE 0x00000020  /* Per thread stride */
-+#define HWVEC0EXT   0x04820700  /* Vectors for external triggers  0-31 */
-+#define HWVEC20EXT  0x04821700  /* Vectors for external triggers 32-63 */
-+#define HWVEC40EXT  0x04822700  /* Vectors for external triggers 64-95 */
-+#define HWVEC60EXT  0x04823700  /* Vectors for external triggers 96-127 */
-+#define     HWVECnEXT_STRIDE 0x00000008 /* Per trigger stride */
-+#define HWVECnEXT_DEBUG 0x1         /* Redirect trigger to debug i/f */
 +
 +/*
-+ * CORE HWCODE-BREAKPOINT REGISTERS/VALUES
-+ * ---------------------------------------
++ * TXENABLE register fields - only the thread id is routinely useful
 + */
-+#define CODEB0ADDR         0x0480FF00  /* Address specifier */
-+#define     CODEBXADDR_MATCHX_BITS 0xFFFFFFFC
-+#define     CODEBXADDR_MATCHX_S    2
-+#define CODEB0CTRL         0x0480FF08  /* Control */
-+#define     CODEBXCTRL_MATEN_BIT   0x80000000   /* Match 'Enable'  */
-+#define     CODEBXCTRL_MATTXEN_BIT 0x10000000   /* Match threadn enable */
-+#define     CODEBXCTRL_HITC_BITS   0x00FF0000   /* Hit counter   */
-+#define     CODEBXCTRL_HITC_S      16
-+#define           CODEBXHITC_NEXT  0xFF     /* Next 'hit' will trigger */
-+#define           CODEBXHITC_HIT1  0x00     /* No 'hits' after trigger */
-+#define     CODEBXCTRL_MMASK_BITS  0x0000FFFC   /* Mask ADDR_MATCH bits */
-+#define     CODEBXCTRL_MMASK_S     2
-+#define     CODEBXCTRL_MATLTX_BITS 0x00000003   /* Match threadn LOCAL addr */
-+#define     CODEBXCTRL_MATLTX_S    0            /* Match threadn LOCAL addr */
-+#define CODEBnXXXX_STRIDE      0x00000010  /* Stride between CODEB reg sets */
-+#define CODEBnXXXX_STRIDE_S    4
-+#define CODEBnXXXX_LIMIT       3           /* Sets 0-3 */
++#define TXENABLE_REGNUM 0
++#define TXENABLE_THREAD_BITS       0x00000700
++#define TXENABLE_THREAD_S          8
++#define TXENABLE_REV_STEP_BITS     0x000000F0
++#define TXENABLE_REV_STEP_S        4
 +
 +/*
-+ * CORE DATA-WATCHPOINT REGISTERS/VALUES
-+ * -------------------------------------
++ * TXMODE register - controls extensions of the instruction set
 + */
-+#define DATAW0ADDR         0x0480FF40  /* Address specifier */
-+#define     DATAWXADDR_MATCHR_BITS 0xFFFFFFF8
-+#define     DATAWXADDR_MATCHR_S    3
-+#define     DATAWXADDR_MATCHW_BITS 0xFFFFFFFF
-+#define     DATAWXADDR_MATCHW_S    0
-+#define DATAW0CTRL         0x0480FF48  /* Control */
-+#define     DATAWXCTRL_MATRD_BIT   0x80000000   /* Match 'Read'  */
++#define TXMODE_REGNUM 1
++#define     TXMODE_DEFAULT  0   /* All fields default to zero */
++
++/*
++ * TXSTATUS register - contains a couple of stable bits that can be used
++ *      to determine the privilege processing level and interrupt
++ *      processing level of the current thread.
++ */
++#define TXSTATUS_REGNUM 2
++#define TXSTATUS_PSTAT_BIT         0x00020000   /* -> Privilege active      */
++#define TXSTATUS_PSTAT_S           17
++#define TXSTATUS_ISTAT_BIT         0x00010000   /* -> In interrupt state    */
++#define TXSTATUS_ISTAT_S           16
++
++/*
++ * These are all relatively boring registers, mostly full 32-bit
++ */
++#define TXRPT_REGNUM     3  /* Repeat counter for XFR... instructions   */
++#define TXTIMER_REGNUM   4  /* Timer-- causes timer trigger on overflow */
++#define TXL1START_REGNUM 5  /* Hardware Loop 1 Start-PC/End-PC/Count    */
++#define TXL1END_REGNUM   6
++#define TXL1COUNT_REGNUM 7
++#define TXL2START_REGNUM 8  /* Hardware Loop 2 Start-PC/End-PC/Count    */
++#define TXL2END_REGNUM   9
++#define TXL2COUNT_REGNUM 10
++#define TXBPOBITS_REGNUM 11 /* Branch predict override bits - tune perf */
++#define TXTIMERI_REGNUM  13 /* Timer-- time based interrupt trigger     */
++
++/*
++ * TXDIVTIME register is routinely read to calculate the time-base for
++ * the TXTIMER register.
++ */
++#define TXDIVTIME_REGNUM 28
++#define     TXDIVTIME_DIV_BITS 0x000000FF
++#define     TXDIVTIME_DIV_S    0
++#define     TXDIVTIME_DIV_MIN  0x00000001   /* Maximum resolution       */
++#define     TXDIVTIME_DIV_MAX  0x00000100   /* 1/1 -> 1/256 resolution  */
++#define     TXDIVTIME_BASE_HZ  1000000      /* Timers run at 1Mhz @1/1  */
++
++/*
++ * TXPRIVEXT register can be consulted to decide if write access to a
++ *    part of the threads register set is not permitted when in
++ *    unprivileged mode (PSTAT == 0).
++ */
++#define TXPRIVEXT_REGNUM 29
++#define     TXPRIVEXT_COPRO_BITS    0xFF000000 /* Co-processor 0-7 */
++#define     TXPRIVEXT_COPRO_S       24
++#define     TXPRIVEXT_TXTRIGGER_BIT 0x00020000 /* TXSTAT|TXMASK|TXPOLL */
++#define     TXPRIVEXT_TXGBLCREG_BIT 0x00010000 /* Global common regs */
++#define     TXPRIVEXT_CBPRIV_BIT    0x00008000 /* Mem i/f dump priv */
++#define     TXPRIVEXT_ILOCK_BIT     0x00004000 /* LOCK inst priv */
++#define     TXPRIVEXT_TXITACCYC_BIT 0x00002000 /* TXIDLECYC|TXTACTCYC */
++#define     TXPRIVEXT_TXDIVTIME_BIT 0x00001000 /* TXDIVTIME priv */
++#define     TXPRIVEXT_TXAMAREGX_BIT 0x00000800 /* TXAMAREGX priv */
++#define     TXPRIVEXT_TXTIMERI_BIT  0x00000400 /* TXTIMERI  priv */
++#define     TXPRIVEXT_TXSTATUS_BIT  0x00000200 /* TXSTATUS  priv */
++#define     TXPRIVEXT_TXDISABLE_BIT 0x00000100 /* TXENABLE  priv */
 +#ifndef METAC_1_2
-+#define     DATAWXCTRL_MATNOTTX_BIT 0x20000000  /* Invert threadn enable */
++#define     TXPRIVEXT_MINIMON_BIT   0x00000080 /* Enable Minim features */
++#define     TXPRIVEXT_OLDBCCON_BIT  0x00000020 /* Restore Static predictions */
++#define     TXPRIVEXT_ALIGNREW_BIT  0x00000010 /* Align & precise checks */
 +#endif
-+#define     DATAWXCTRL_MATWR_BIT   0x40000000   /* Match 'Write' */
-+#define     DATAWXCTRL_MATTXEN_BIT 0x10000000   /* Match threadn enable */
-+#define     DATAWXCTRL_WRSIZE_BITS 0x0F000000   /* Write Match Size */
-+#define     DATAWXCTRL_WRSIZE_S    24
-+#define         DATAWWRSIZE_ANY   0         /* Any size transaction matches */
-+#define         DATAWWRSIZE_8BIT  1     /* Specific sizes ... */
-+#define         DATAWWRSIZE_16BIT 2
-+#define         DATAWWRSIZE_32BIT 3
-+#define         DATAWWRSIZE_64BIT 4
-+#define     DATAWXCTRL_HITC_BITS   0x00FF0000   /* Hit counter   */
-+#define     DATAWXCTRL_HITC_S      16
-+#define           DATAWXHITC_NEXT  0xFF     /* Next 'hit' will trigger */
-+#define           DATAWXHITC_HIT1  0x00     /* No 'hits' after trigger */
-+#define     DATAWXCTRL_MMASK_BITS 0x0000FFF8    /* Mask ADDR_MATCH bits */
-+#define     DATAWXCTRL_MMASK_S    3
-+#define     DATAWXCTRL_MATLTX_BITS 0x00000003   /* Match threadn LOCAL addr */
-+#define     DATAWXCTRL_MATLTX_S    0            /* Match threadn LOCAL addr */
-+#define DATAW0DMATCH0       0x0480FF50 /* Write match data */
-+#define DATAW0DMATCH1       0x0480FF58
-+#define DATAW0DMASK0        0x0480FF60 /* Write match data mask */
-+#define DATAW0DMASK1        0x0480FF68
-+#define DATAWnXXXX_STRIDE      0x00000040  /* Stride between DATAW reg sets */
-+#define DATAWnXXXX_STRIDE_S    6
-+#define DATAWnXXXX_LIMIT       1           /* Sets 0,1 */
++#define     TXPRIVEXT_KEEPPRI_BIT   0x00000008 /* Use AMA_Priority if ISTAT=1*/
++#define     TXPRIVEXT_TXTOGGLEI_BIT 0x00000001 /* TX.....I  priv */
++
++/*
++ * TXTACTCYC register - counts instructions issued for this thread
++ */
++#define TXTACTCYC_REGNUM  30
++#define     TXTACTCYC_COUNT_MASK    0x00FFFFFF
++
++/*
++ * TXIDLECYC register - counts idle cycles
++ */
++#define TXIDLECYC_REGNUM  31
++#define     TXIDLECYC_COUNT_MASK    0x00FFFFFF
++
++/*****************************************************************************
++ *                             DSP EXTENSIONS
++ ****************************************************************************/
++/*
++ * The following values relate to fields and controls that only a program
++ * using the DSP extensions of the META instruction set need to know.
++ */
++
++
++#ifndef METAC_1_2
++/*
++ * Allow co-processor hardware to replace the read pipeline data source in
++ * appropriate cases.
++ */
++#define TXMODE_RDCPEN_BIT       0x00800000
++#endif
++
++/*
++ * Address unit addressing modes
++ */
++#define TXMODE_A1ADDR_BITS  0x00007000
++#define TXMODE_A1ADDR_S     12
++#define TXMODE_A0ADDR_BITS  0x00000700
++#define TXMODE_A0ADDR_S     8
++#define     TXMODE_AXADDR_MODULO 3
++#define     TXMODE_AXADDR_REVB   4
++#define     TXMODE_AXADDR_REVW   5
++#define     TXMODE_AXADDR_REVD   6
++#define     TXMODE_AXADDR_REVL   7
++
++/*
++ * Data unit OverScale select (default 0 -> normal, 1 -> top 16 bits)
++ */
++#define TXMODE_DXOVERSCALE_BIT  0x00000080
++
++/*
++ * Data unit MX mode select (default 0 -> MX16, 1 -> MX8)
++ */
++#define TXMODE_M8_BIT         0x00000040
++
++/*
++ * Data unit accumulator saturation point (default -> 40 bit accumulator)
++ */
++#define TXMODE_DXACCSAT_BIT 0x00000020 /* Set for 32-bit accumulator */
++
++/*
++ * Data unit accumulator saturation enable (default 0 -> no saturation)
++ */
++#define TXMODE_DXSAT_BIT    0x00000010
++
++/*
++ * Data unit master rounding control (default 0 -> normal, 1 -> convergent)
++ */
++#define TXMODE_DXROUNDING_BIT   0x00000008
++
++/*
++ * Data unit product shift for fractional arithmetic (default off)
++ */
++#define TXMODE_DXPRODSHIFT_BIT  0x00000004
++
++/*
++ * Select the arithmetic mode (multiply mostly) for both data units
++ */
++#define TXMODE_DXARITH_BITS 0x00000003
++#define     TXMODE_DXARITH_32  3
++#define     TXMODE_DXARITH_32H 2
++#define     TXMODE_DXARITH_S16 1
++#define     TXMODE_DXARITH_16  0
++
++/*
++ * TXMRSIZE register value only relevant when DSP modulo addressing active
++ */
++#define TXMRSIZE_REGNUM 12
++#define     TXMRSIZE_MIN    0x0002  /* 0, 1 -> normal addressing logic */
++#define     TXMRSIZE_MAX    0xFFFF
++
++/*
++ * TXDRCTRL register can be used to detect the actaul size of the DSP RAM
++ * partitions allocated to this thread.
++ */
++#define TXDRCTRL_REGNUM 14
++#define     TXDRCTRL_SINESIZE_BITS  0x0F000000
++#define     TXDRCTRL_SINESIZE_S     24
++#define     TXDRCTRL_RAMSZPOW_BITS  0x001F0000  /* Limit = (1<<RAMSZPOW)-1 */
++#define     TXDRCTRL_RAMSZPOW_S     16
++#define     TXDRCTRL_D1RSZAND_BITS  0x0000F000  /* Mask top 4 bits - D1 */
++#define     TXDRCTRL_D1RSZAND_S     12
++#define     TXDRCTRL_D0RSZAND_BITS  0x000000F0  /* Mask top 4 bits - D0 */
++#define     TXDRCTRL_D0RSZAND_S     4
++/* Given extracted RAMSZPOW and DnRSZAND fields this returns the size */
++#define     TXDRCTRL_DXSIZE(Pow, AndBits) \
++				((((~(AndBits)) & 0x0f) + 1) << ((Pow)-4))
++
++/*
++ * TXDRSIZE register provides modulo addressing options for each DSP RAM
++ */
++#define TXDRSIZE_REGNUM 15
++#define     TXDRSIZE_R1MOD_BITS       0xFFFF0000
++#define     TXDRSIZE_R1MOD_S          16
++#define     TXDRSIZE_R0MOD_BITS       0x0000FFFF
++#define     TXDRSIZE_R0MOD_S          0
++
++#define     TXDRSIZE_RBRAD_SCALE_BITS 0x70000000
++#define     TXDRSIZE_RBRAD_SCALE_S    28
++#define     TXDRSIZE_RBMODSIZE_BITS   0x0FFF0000
++#define     TXDRSIZE_RBMODSIZE_S      16
++#define     TXDRSIZE_RARAD_SCALE_BITS 0x00007000
++#define     TXDRSIZE_RARAD_SCALE_S    12
++#define     TXDRSIZE_RAMODSIZE_BITS   0x00000FFF
++#define     TXDRSIZE_RAMODSIZE_S      0
++
++/*****************************************************************************
++ *                       DEFERRED and BUS ERROR EXTENSION
++ ****************************************************************************/
++
++/*
++ * TXDEFR register - Deferred exception control
++ */
++#define TXDEFR_REGNUM 20
++#define     TXDEFR_DEFAULT  0   /* All fields default to zero */
++
++/*
++ * Bus error state is a multi-bit positive/negative event notification from
++ * the bus infrastructure.
++ */
++#define     TXDEFR_BUS_ERR_BIT    0x80000000  /* Set if error (LSB STATE) */
++#define     TXDEFR_BUS_ERRI_BIT   0x40000000  /* Fetch returned error */
++#define     TXDEFR_BUS_STATE_BITS 0x3F000000  /* Bus event/state data */
++#define     TXDEFR_BUS_STATE_S    24
++#define     TXDEFR_BUS_TRIG_BIT   0x00800000  /* Set when bus error seen */
++
++/*
++ * Bus events are collected by background code in a deferred manner unless
++ * selected to trigger an extended interrupt HALT trigger when they occur.
++ */
++#define     TXDEFR_BUS_ICTRL_BIT  0x00000080  /* Enable interrupt trigger */
 +
 +/*
 + * CHIP Automatic Mips Allocation control registers
 + * ------------------------------------------------
 + */
 +
-+/* CORE memory mapped AMA registers */
-+#define T0AMAREG4   0x04800810
-+#define     TXAMAREG4_POOLSIZE_BITS 0x3FFFFF00
-+#define     TXAMAREG4_POOLSIZE_S    8
-+#define     TXAMAREG4_AVALUE_BITS   0x000000FF
-+#define     TXAMAREG4_AVALUE_S  0
-+#define T0AMAREG5   0x04800818
-+#define     TXAMAREG5_POOLC_BITS    0x07FFFFFF
-+#define         TXAMAREG5_POOLC_S       0
-+#define T0AMAREG6   0x04800820
-+#define     TXAMAREG6_DLINEDEF_BITS 0x00FFFFF0
-+#define         TXAMAREG6_DLINEDEF_S    0
-+#define TnAMAREGX_STRIDE    0x00001000
++/* CT Bank AMA Registers */
++#define TXAMAREG0_REGNUM 24
++#ifdef METAC_1_2
++#define     TXAMAREG0_CTRL_BITS       0x07000000
++#else /* METAC_1_2 */
++#define     TXAMAREG0_RCOFF_BIT       0x08000000
++#define     TXAMAREG0_DLINEHLT_BIT    0x04000000
++#define     TXAMAREG0_DLINEDIS_BIT    0x02000000
++#define     TXAMAREG0_CYCSTRICT_BIT   0x01000000
++#define     TXAMAREG0_CTRL_BITS       (TXAMAREG0_RCOFF_BIT |    \
++				       TXAMAREG0_DLINEHLT_BIT | \
++				       TXAMAREG0_DLINEDIS_BIT | \
++				       TXAMAREG0_CYCSTRICT_BIT)
++#endif /* !METAC_1_2 */
++#define     TXAMAREG0_CTRL_S           24
++#define     TXAMAREG0_MDM_BIT         0x00400000
++#define     TXAMAREG0_MPF_BIT         0x00200000
++#define     TXAMAREG0_MPE_BIT         0x00100000
++#define     TXAMAREG0_MASK_BITS       (TXAMAREG0_MDM_BIT | \
++				       TXAMAREG0_MPF_BIT | \
++				       TXAMAREG0_MPE_BIT)
++#define     TXAMAREG0_MASK_S          20
++#define     TXAMAREG0_SDM_BIT         0x00040000
++#define     TXAMAREG0_SPF_BIT         0x00020000
++#define     TXAMAREG0_SPE_BIT         0x00010000
++#define     TXAMAREG0_STATUS_BITS     (TXAMAREG0_SDM_BIT | \
++				       TXAMAREG0_SPF_BIT | \
++				       TXAMAREG0_SPE_BIT)
++#define     TXAMAREG0_STATUS_S        16
++#define     TXAMAREG0_PRIORITY_BITS   0x0000FF00
++#define     TXAMAREG0_PRIORITY_S      8
++#define     TXAMAREG0_BVALUE_BITS     0x000000FF
++#define     TXAMAREG0_BVALUE_S  0
++
++#define TXAMAREG1_REGNUM 25
++#define     TXAMAREG1_DELAYC_BITS     0x07FFFFFF
++#define     TXAMAREG1_DELAYC_S  0
++
++#define TXAMAREG2_REGNUM 26
++#ifdef METAC_1_2
++#define     TXAMAREG2_DLINEC_BITS     0x00FFFFFF
++#define     TXAMAREG2_DLINEC_S        0
++#else /* METAC_1_2 */
++#define     TXAMAREG2_IRQPRIORITY_BIT 0xFF000000
++#define     TXAMAREG2_IRQPRIORITY_S   24
++#define     TXAMAREG2_DLINEC_BITS     0x00FFFFF0
++#define     TXAMAREG2_DLINEC_S        4
++#endif /* !METAC_1_2 */
++
++#define TXAMAREG3_REGNUM 27
++#define     TXAMAREG2_AMABLOCK_BIT    0x00080000
++#define     TXAMAREG2_AMAC_BITS       0x0000FFFF
++#define     TXAMAREG2_AMAC_S          0
++
++/*****************************************************************************
++ *                                FPU EXTENSIONS
++ ****************************************************************************/
++/*
++ * The following registers only exist in FPU enabled cores.
++ */
 +
 +/*
-+ * Memory Management Control Unit Table Entries
-+ * --------------------------------------------
++ * TXMODE register - FPU rounding mode control/status fields
 + */
-+#define MMCU_ENTRY_S         4            /* -> Entry size                */
-+#define MMCU_ENTRY_ADDR_BITS 0xFFFFF000   /* Physical address             */
-+#define MMCU_ENTRY_ADDR_S    12           /* -> Page size                 */
-+#define MMCU_ENTRY_CWIN_BITS 0x000000C0   /* Caching 'window' selection   */
-+#define MMCU_ENTRY_CWIN_S    6
-+#define     MMCU_CWIN_UNCACHED  0 /* May not be memory etc.  */
-+#define     MMCU_CWIN_BURST     1 /* Cached but LRU unset */
-+#define     MMCU_CWIN_C1SET     2 /* Cached in 1 set only */
-+#define     MMCU_CWIN_CACHED    3 /* Fully cached            */
-+#define MMCU_ENTRY_CACHE_BIT 0x00000080   /* Set for cached region         */
-+#define     MMCU_ECACHE1_FULL_BIT  0x00000040 /* Use all the sets */
-+#define     MMCU_ECACHE0_BURST_BIT 0x00000040 /* Match bursts     */
-+#define MMCU_ENTRY_SYS_BIT   0x00000010   /* Sys-coherent access required  */
-+#define MMCU_ENTRY_WRC_BIT   0x00000008   /* Write combining allowed       */
-+#define MMCU_ENTRY_PRIV_BIT  0x00000004   /* Privilege required            */
-+#define MMCU_ENTRY_WR_BIT    0x00000002   /* Writes allowed                */
-+#define MMCU_ENTRY_VAL_BIT   0x00000001   /* Entry is valid                */
++#define     TXMODE_FPURMODE_BITS     0x00030000
++#define     TXMODE_FPURMODE_S        16
++#define     TXMODE_FPURMODEWRITE_BIT 0x00040000  /* Set to change FPURMODE */
 +
-+#ifdef METAC_2_1
 +/*
-+ * Extended first-level/top table entries have extra/larger fields in later
-+ * cores as bits 11:0 previously had no effect in such table entries.
++ * TXDEFR register - FPU exception handling/state is a significant source
++ *   of deferrable errors. Run-time S/W can move handling to interrupt level
++ *   using DEFR instruction to collect state.
 + */
-+#define MMCU_E1ENT_ADDR_BITS 0xFFFFFFC0   /* Physical address             */
-+#define MMCU_E1ENT_ADDR_S    6            /*   -> resolution < page size  */
-+#define MMCU_E1ENT_PGSZ_BITS 0x0000001E   /* Page size for 2nd level      */
-+#define MMCU_E1ENT_PGSZ_S    1
-+#define     MMCU_E1ENT_PGSZ0_POWER   12   /* PgSz  0 -> 4K */
-+#define     MMCU_E1ENT_PGSZ_MAX      10   /* PgSz 10 -> 4M maximum */
-+#define MMCU_E1ENT_MINIM_BIT 0x00000020
-+#endif /* METAC_2_1 */
++#define     TXDEFR_FPE_FE_BITS       0x003F0000  /* Set by FPU_FE events */
++#define     TXDEFR_FPE_FE_S          16
 +
-+/* MMCU control register in SYSC region */
-+#define MMCU_TABLE_PHYS_ADDR        0x04830010
-+#define     MMCU_TABLE_PHYS_ADDR_BITS   0xFFFFFFFC
++#define     TXDEFR_FPE_INEXACT_FE_BIT   0x010000
++#define     TXDEFR_FPE_UNDERFLOW_FE_BIT 0x020000
++#define     TXDEFR_FPE_OVERFLOW_FE_BIT  0x040000
++#define     TXDEFR_FPE_DIVBYZERO_FE_BIT 0x080000
++#define     TXDEFR_FPE_INVALID_FE_BIT   0x100000
++#define     TXDEFR_FPE_DENORMAL_FE_BIT  0x200000
++
++#define     TXDEFR_FPE_ICTRL_BITS    0x000003F   /* Route to interrupts */
++#define     TXDEFR_FPE_ICTRL_S       0
++
++#define     TXDEFR_FPE_INEXACT_ICTRL_BIT   0x01
++#define     TXDEFR_FPE_UNDERFLOW_ICTRL_BIT 0x02
++#define     TXDEFR_FPE_OVERFLOW_ICTRL_BIT  0x04
++#define     TXDEFR_FPE_DIVBYZERO_ICTRL_BIT 0x08
++#define     TXDEFR_FPE_INVALID_ICTRL_BIT   0x10
++#define     TXDEFR_FPE_DENORMAL_ICTRL_BIT  0x20
++
++/*
++ * DETAILED FPU RELATED VALUES
++ * ---------------------------
++ */
++
++/*
++ * Rounding mode field in TXMODE can hold a number of logical values
++ */
++#define METAG_FPURMODE_TONEAREST  0x0      /* Default */
++#define METAG_FPURMODE_TOWARDZERO 0x1
++#define METAG_FPURMODE_UPWARD     0x2
++#define METAG_FPURMODE_DOWNWARD   0x3
++
++/*
++ * In order to set the TXMODE register field that controls the rounding mode
++ * an extra bit must be set in the value written versus that read in order
++ * to gate writes to the rounding mode field. This allows other non-FPU code
++ * to modify TXMODE without knowledge of the FPU units presence and not
++ * influence the FPU rounding mode. This macro adds the required bit so new
++ * rounding modes are accepted.
++ */
++#define TXMODE_FPURMODE_SET(FPURMode) \
++	(TXMODE_FPURMODEWRITE_BIT + ((FPURMode)<<TXMODE_FPURMODE_S))
++
++/*
++ * To successfully restore TXMODE to zero at the end of the function the
++ * following value (rather than zero) must be used.
++ */
++#define TXMODE_FPURMODE_RESET (TXMODE_FPURMODEWRITE_BIT)
++
++/*
++ * In TXSTATUS a special bit exists to indicate if FPU H/W has been accessed
++ * since it was last reset.
++ */
++#define TXSTATUS_FPACTIVE_BIT  0x01000000
++
++/*
++ * Exception state (see TXDEFR_FPU_FE_*) and enabling (for interrupt
++ * level processing (see TXDEFR_FPU_ICTRL_*) are controlled by similar
++ * bit mask locations within each field.
++ */
++#define METAG_FPU_FE_INEXACT   0x01
++#define METAG_FPU_FE_UNDERFLOW 0x02
++#define METAG_FPU_FE_OVERFLOW  0x04
++#define METAG_FPU_FE_DIVBYZERO 0x08
++#define METAG_FPU_FE_INVALID   0x10
++#define METAG_FPU_FE_DENORMAL  0x20
++#define METAG_FPU_FE_ALL_EXCEPT (METAG_FPU_FE_INEXACT   | \
++				 METAG_FPU_FE_UNDERFLOW | \
++				 METAG_FPU_FE_OVERFLOW  | \
++				 METAG_FPU_FE_DIVBYZERO | \
++				 METAG_FPU_FE_INVALID   | \
++				 METAG_FPU_FE_DENORMAL)
++
++/*****************************************************************************
++ *             THREAD CONTROL, ERROR, OR INTERRUPT STATE EXTENSIONS
++ ****************************************************************************/
++/*
++ * The following values are only relevant to code that externally controls
++ * threads, handles errors/interrupts, and/or set-up interrupt/error handlers
++ * for subsequent use.
++ */
++
++/*
++ * TXENABLE register fields - only ENABLE_BIT is potentially read/write
++ */
++#define TXENABLE_MAJOR_REV_BITS    0xFF000000
++#define TXENABLE_MAJOR_REV_S       24
++#define TXENABLE_MINOR_REV_BITS    0x00FF0000
++#define TXENABLE_MINOR_REV_S       16
++#define TXENABLE_CLASS_BITS        0x0000F000
++#define TXENABLE_CLASS_S           12
++#define TXENABLE_CLASS_DSP             0x0 /* -> DSP Thread */
++#define TXENABLE_CLASS_LDSP            0x8 /* -> DSP LITE Thread */
++#define TXENABLE_CLASS_GP              0xC /* -> General Purpose Thread */
++#define     TXENABLE_CLASSALT_LFPU       0x2 /*  Set to indicate LITE FPU */
++#define     TXENABLE_CLASSALT_FPUR8      0x1 /*  Set to indicate 8xFPU regs */
++#define TXENABLE_MTXARCH_BIT       0x00000800
++#define TXENABLE_STEP_REV_BITS     0x000000F0
++#define TXENABLE_STEP_REV_S        4
++#define TXENABLE_STOPPED_BIT       0x00000004   /* TXOFF due to ENABLE->0 */
++#define TXENABLE_OFF_BIT           0x00000002   /* Thread is in off state */
++#define TXENABLE_ENABLE_BIT        0x00000001   /* Set if running */
++
++/*
++ * TXSTATUS register - used by external/internal interrupt/error handler
++ */
++#define TXSTATUS_CB1MARKER_BIT     0x00800000   /* -> int level mem state */
++#define TXSTATUS_CBMARKER_BIT      0x00400000   /* -> mem i/f state dumped */
++#define TXSTATUS_MEM_FAULT_BITS    0x00300000
++#define TXSTATUS_MEM_FAULT_S       20
++#define     TXSTATUS_MEMFAULT_NONE  0x0 /* -> No memory fault       */
++#define     TXSTATUS_MEMFAULT_GEN   0x1 /* -> General fault         */
++#define     TXSTATUS_MEMFAULT_PF    0x2 /* -> Page fault            */
++#define     TXSTATUS_MEMFAULT_RO    0x3 /* -> Read only fault       */
++#define TXSTATUS_MAJOR_HALT_BITS   0x000C0000
++#define TXSTATUS_MAJOR_HALT_S      18
++#define     TXSTATUS_MAJHALT_TRAP 0x0   /* -> SWITCH inst used      */
++#define     TXSTATUS_MAJHALT_INST 0x1   /* -> Unknown inst or fetch */
++#define     TXSTATUS_MAJHALT_PRIV 0x2   /* -> Internal privilege    */
++#define     TXSTATUS_MAJHALT_MEM  0x3   /* -> Memory i/f fault      */
++#define TXSTATUS_L_STEP_BITS       0x00000800   /* -> Progress of L oper    */
++#define TXSTATUS_LSM_STEP_BITS     0x00000700   /* -> Progress of L/S mult  */
++#define TXSTATUS_LSM_STEP_S        8
++#define TXSTATUS_FLAG_BITS         0x0000001F   /* -> All the flags         */
++#define TXSTATUS_SCC_BIT           0x00000010   /* -> Split-16 flags ...    */
++#define TXSTATUS_SCF_LZ_BIT        0x00000008   /* -> Split-16 Low  Z flag  */
++#define TXSTATUS_SCF_HZ_BIT        0x00000004   /* -> Split-16 High Z flag  */
++#define TXSTATUS_SCF_HC_BIT        0x00000002   /* -> Split-16 High C flag  */
++#define TXSTATUS_SCF_LC_BIT        0x00000001   /* -> Split-16 Low  C flag  */
++#define TXSTATUS_CF_Z_BIT          0x00000008   /* -> Condition Z flag      */
++#define TXSTATUS_CF_N_BIT          0x00000004   /* -> Condition N flag      */
++#define TXSTATUS_CF_O_BIT          0x00000002   /* -> Condition O flag      */
++#define TXSTATUS_CF_C_BIT          0x00000001   /* -> Condition C flag      */
++
++/*
++ * TXCATCH0-3 register contents may store information on a memory operation
++ * that has failed if the bit TXSTATUS_CBMARKER_BIT is set.
++ */
++#define TXCATCH0_REGNUM 16
++#define TXCATCH1_REGNUM 17
++#define     TXCATCH1_ADDR_BITS   0xFFFFFFFF   /* TXCATCH1 is Addr 0-31 */
++#define     TXCATCH1_ADDR_S      0
++#define TXCATCH2_REGNUM 18
++#define     TXCATCH2_DATA0_BITS  0xFFFFFFFF   /* TXCATCH2 is Data 0-31 */
++#define     TXCATCH2_DATA0_S     0
++#define TXCATCH3_REGNUM 19
++#define     TXCATCH3_DATA1_BITS  0xFFFFFFFF   /* TXCATCH3 is Data 32-63 */
++#define     TXCATCH3_DATA1_S     0
++
++/*
++ * Detailed catch state information
++ * --------------------------------
++ */
++
++/* Contents of TXCATCH0 register */
++#define     TXCATCH0_LDRXX_BITS  0xF8000000  /* Load destination reg 0-31 */
++#define     TXCATCH0_LDRXX_S     27
++#define     TXCATCH0_LDDST_BITS  0x07FF0000  /* Load destination bits */
++#define     TXCATCH0_LDDST_S     16
++#define         TXCATCH0_LDDST_D1DSP 0x400   /* One bit set if it's a LOAD */
++#define         TXCATCH0_LDDST_D0DSP 0x200
++#define         TXCATCH0_LDDST_TMPLT 0x100
++#define         TXCATCH0_LDDST_TR    0x080
 +#ifdef METAC_2_1
-+#define     MMCU_TABLE_PHYS_EXTEND      0x00000001     /* See below */
++#define         TXCATCH0_LDDST_FPU   0x040
 +#endif
-+#define MMCU_DCACHE_CTRL_ADDR       0x04830018
-+#define     MMCU_xCACHE_CTRL_ENABLE_BIT     0x00000001
-+#define     MMCU_xCACHE_CTRL_PARTITION_BIT  0x00000000 /* See xCPART below */
-+#define MMCU_ICACHE_CTRL_ADDR       0x04830020
++#define         TXCATCH0_LDDST_PC    0x020
++#define         TXCATCH0_LDDST_A1    0x010
++#define         TXCATCH0_LDDST_A0    0x008
++#define         TXCATCH0_LDDST_D1    0x004
++#define         TXCATCH0_LDDST_D0    0x002
++#define         TXCATCH0_LDDST_CT    0x001
++#ifdef METAC_2_1
++#define     TXCATCH0_WATCHSTOP_BIT 0x00004000  /* Set if Data Watch set fault */
++#endif
++#define     TXCATCH0_WATCHS_BIT  0x00004000  /* Set if Data Watch set fault */
++#define     TXCATCH0_WATCH1_BIT  0x00002000  /* Set if Data Watch 1 matches */
++#define     TXCATCH0_WATCH0_BIT  0x00001000  /* Set if Data Watch 0 matches */
++#define     TXCATCH0_FAULT_BITS  0x00000C00  /* See TXSTATUS_MEMFAULT_*     */
++#define     TXCATCH0_FAULT_S     10
++#define     TXCATCH0_PRIV_BIT    0x00000200  /* Privilege of transaction    */
++#define     TXCATCH0_READ_BIT    0x00000100  /* Set for Read or Load cases  */
++
++#ifdef METAC_2_1
++/* LNKGET Marker bit in TXCATCH0 */
++#define   TXCATCH0_LNKGET_MARKER_BIT 0x00000008
++#define       TXCATCH0_PREPROC_BIT  0x00000004
++#endif
++
++/* Loads are indicated by one of the LDDST bits being set */
++#define     TXCATCH0_LDM16_BIT   0x00000004  /* Load M16 flag */
++#define     TXCATCH0_LDL2L1_BITS 0x00000003  /* Load data size L2,L1 */
++#define     TXCATCH0_LDL2L1_S    0
++
++/* Reads are indicated by the READ bit being set without LDDST bits */
++#define     TXCATCH0_RAXX_BITS   0x0000001F  /* RAXX issue port for read */
++#define     TXCATCH0_RAXX_S      0
++
++/* Write operations are all that remain if READ bit is not set */
++#define     TXCATCH0_WMASK_BITS  0x000000FF  /* Write byte lane mask */
++#define     TXCATCH0_WMASK_S     0
 +
 +#ifdef METAC_2_1
 +
++/* When a FPU exception is signalled then FPUSPEC == FPUSPEC_TAG */
++#define     TXCATCH0_FPURDREG_BITS    0xF8000000
++#define     TXCATCH0_FPURDREG_S       27
++#define     TXCATCH0_FPUR1REG_BITS    0x07C00000
++#define     TXCATCH0_FPUR1REG_S       22
++#define     TXCATCH0_FPUSPEC_BITS     0x000F0000
++#define     TXCATCH0_FPUSPEC_S        16
++#define         TXCATCH0_FPUSPEC_TAG      0xF
++#define     TXCATCH0_FPUINSTA_BIT     0x00001000
++#define     TXCATCH0_FPUINSTQ_BIT     0x00000800
++#define     TXCATCH0_FPUINSTZ_BIT     0x00000400
++#define     TXCATCH0_FPUINSTN_BIT     0x00000200
++#define     TXCATCH0_FPUINSTO3O_BIT   0x00000100
++#define     TXCATCH0_FPUWIDTH_BITS    0x000000C0
++#define     TXCATCH0_FPUWIDTH_S       6
++#define         TXCATCH0_FPUWIDTH_FLOAT   0
++#define         TXCATCH0_FPUWIDTH_DOUBLE  1
++#define         TXCATCH0_FPUWIDTH_PAIRED  2
++#define     TXCATCH0_FPUOPENC_BITS    0x0000003F
++#define     TXCATCH0_FPUOPENC_S       0
++#define         TXCATCH0_FPUOPENC_ADD     0  /* rop1=Rs1, rop3=Rs2 */
++#define         TXCATCH0_FPUOPENC_SUB     1  /* rop1=Rs1, rop3=Rs2 */
++#define         TXCATCH0_FPUOPENC_MUL     2  /* rop1=Rs1, rop2=Rs2 */
++#define         TXCATCH0_FPUOPENC_ATOI    3  /* rop3=Rs */
++#define         TXCATCH0_FPUOPENC_ATOX    4  /* rop3=Rs, uses #Imm */
++#define         TXCATCH0_FPUOPENC_ITOA    5  /* rop3=Rs */
++#define         TXCATCH0_FPUOPENC_XTOA    6  /* rop3=Rs, uses #Imm */
++#define         TXCATCH0_FPUOPENC_ATOH    7  /* rop2=Rs */
++#define         TXCATCH0_FPUOPENC_HTOA    8  /* rop2=Rs */
++#define         TXCATCH0_FPUOPENC_DTOF    9  /* rop3=Rs */
++#define         TXCATCH0_FPUOPENC_FTOD    10 /* rop3=Rs */
++#define         TXCATCH0_FPUOPENC_DTOL    11 /* rop3=Rs */
++#define         TXCATCH0_FPUOPENC_LTOD    12 /* rop3=Rs */
++#define         TXCATCH0_FPUOPENC_DTOXL   13 /* rop3=Rs, uses #imm */
++#define         TXCATCH0_FPUOPENC_XLTOD   14 /* rop3=Rs, uses #imm */
++#define         TXCATCH0_FPUOPENC_CMP     15 /* rop1=Rs1, rop2=Rs2 */
++#define         TXCATCH0_FPUOPENC_MIN     16 /* rop1=Rs1, rop2=Rs2 */
++#define         TXCATCH0_FPUOPENC_MAX     17 /* rop1=Rs1, rop2=Rs2 */
++#define         TXCATCH0_FPUOPENC_ADDRE   18 /* rop1=Rs1, rop3=Rs2 */
++#define         TXCATCH0_FPUOPENC_SUBRE   19 /* rop1=Rs1, rop3=Rs2 */
++#define         TXCATCH0_FPUOPENC_MULRE   20 /* rop1=Rs1, rop2=Rs2 */
++#define         TXCATCH0_FPUOPENC_MXA     21 /* rop1=Rs1, rop2=Rs2, rop3=Rs3*/
++#define         TXCATCH0_FPUOPENC_MXAS    22 /* rop1=Rs1, rop2=Rs2, rop3=Rs3*/
++#define         TXCATCH0_FPUOPENC_MAR     23 /* rop1=Rs1, rop2=Rs2 */
++#define         TXCATCH0_FPUOPENC_MARS    24 /* rop1=Rs1, rop2=Rs2 */
++#define         TXCATCH0_FPUOPENC_MUZ     25 /* rop1=Rs1, rop2=Rs2, rop3=Rs3*/
++#define         TXCATCH0_FPUOPENC_MUZS    26 /* rop1=Rs1, rop2=Rs2, rop3=Rs3*/
++#define         TXCATCH0_FPUOPENC_RCP     27 /* rop2=Rs */
++#define         TXCATCH0_FPUOPENC_RSQ     28 /* rop2=Rs */
++
++/* For floating point exceptions TXCATCH1 is used to carry extra data */
++#define     TXCATCH1_FPUR2REG_BITS    0xF8000000
++#define     TXCATCH1_FPUR2REG_S       27
++#define     TXCATCH1_FPUR3REG_BITS    0x07C00000  /* Undefined if O3O set */
++#define     TXCATCH1_FPUR3REG_S       22
++#define     TXCATCH1_FPUIMM16_BITS    0x0000FFFF
++#define     TXCATCH1_FPUIMM16_S       0
++
++#endif /* METAC_2_1 */
++
 +/*
-+ * Allow direct access to physical memory used to implement MMU table.
++ * TXDIVTIME register used to hold the partial base address of memory i/f
++ * state dump area. Now deprecated.
++ */
++#define     TXDIVTIME_CBBASE_MASK    0x03FFFE00
++#define     TXDIVTIME_CBBASE_LINBASE 0x80000000
++#define     TXDIVTIME_CBBASE_LINBOFF 0x00000000 /* BGnd state */
++#define     TXDIVTIME_CBBASE_LINIOFF 0x00000100 /* Int  state */
++
++/*
++ * TXDIVTIME register used to indicate if the read pipeline was dirty when a
++ * thread was interrupted, halted, or generated an exception. It is invalid
++ * to attempt to issue a further pipeline read address while the read
++ * pipeline is in the dirty state.
++ */
++#define     TXDIVTIME_RPDIRTY_BIT   0x80000000
++
++/*
++ * Further bits in the TXDIVTIME register allow interrupt handling code to
++ * short-cut the discovery the most significant bit last read from TXSTATI.
 + *
-+ * Each is based on a corresponding MMCU_TnLOCAL_TABLE_PHYSn or similar
-+ *    MMCU_TnGLOBAL_TABLE_PHYSn register pair (see next).
++ * This is the bit number of the trigger line that a low level interrupt
++ * handler should acknowledge and then perhaps the index of a corresponding
++ * handler function.
 + */
-+#define LINSYSMEMT0L_BASE   0x05000000
-+#define LINSYSMEMT0L_LIMIT  0x051FFFFF
-+#define     LINSYSMEMTnX_STRIDE     0x00200000  /*  2MB Local per thread */
-+#define     LINSYSMEMTnX_STRIDE_S   21
-+#define     LINSYSMEMTXG_OFFSET     0x00800000  /* +2MB Global per thread */
-+#define     LINSYSMEMTXG_OFFSET_S   23
-+#define LINSYSMEMT1L_BASE   0x05200000
-+#define LINSYSMEMT1L_LIMIT  0x053FFFFF
-+#define LINSYSMEMT2L_BASE   0x05400000
-+#define LINSYSMEMT2L_LIMIT  0x055FFFFF
-+#define LINSYSMEMT3L_BASE   0x05600000
-+#define LINSYSMEMT3L_LIMIT  0x057FFFFF
-+#define LINSYSMEMT0G_BASE   0x05800000
-+#define LINSYSMEMT0G_LIMIT  0x059FFFFF
-+#define LINSYSMEMT1G_BASE   0x05A00000
-+#define LINSYSMEMT1G_LIMIT  0x05BFFFFF
-+#define LINSYSMEMT2G_BASE   0x05C00000
-+#define LINSYSMEMT2G_LIMIT  0x05DFFFFF
-+#define LINSYSMEMT3G_BASE   0x05E00000
-+#define LINSYSMEMT3G_LIMIT  0x05FFFFFF
++#define     TXDIVTIME_IRQENC_BITS   0x0F000000
++#define     TXDIVTIME_IRQENC_S      24
 +
 +/*
-+ * Extended MMU table functionality allows a sparse or flat table to be
-+ * described much more efficiently than before.
++ * If TXDIVTIME_RPVALID_BIT is set the read pipeline contained significant
++ * information when the thread was interrupted|halted|exceptioned. Each slot
++ * containing data is indicated by a one bit in the corresponding
++ * TXDIVTIME_RPMASK_BITS bit (least significance bit relates to first
++ * location in read pipeline - most likely to have the 1 state). Empty slots
++ * contain zeroes with no interlock applied on reads if RPDIRTY is currently
++ * set with RPMASK itself being read-only state.
 + */
-+#define MMCU_T0LOCAL_TABLE_PHYS0    0x04830700
-+#define   MMCU_TnX_TABLE_PHYSX_STRIDE    0x20   /* Offset per thread */
-+#define   MMCU_TnX_TABLE_PHYSX_STRIDE_S  5
-+#define   MMCU_TXG_TABLE_PHYSX_OFFSET    0x10   /* Global versus local */
-+#define   MMCU_TXG_TABLE_PHYSX_OFFSET_S  4
-+#define     MMCU_TBLPHYS0_DCCTRL_BITS       0x000000DF  /* DC controls  */
-+#define     MMCU_TBLPHYS0_ENTLB_BIT         0x00000020  /* Cache in TLB */
-+#define     MMCU_TBLPHYS0_TBLSZ_BITS        0x00000F00  /* Area supported */
-+#define     MMCU_TBLPHYS0_TBLSZ_S           8
-+#define         MMCU_TBLPHYS0_TBLSZ0_POWER      22  /* 0 -> 4M */
-+#define         MMCU_TBLPHYS0_TBLSZ_MAX         9   /* 9 -> 2G */
-+#define     MMCU_TBLPHYS0_LINBASE_BITS      0xFFC00000  /* Linear base */
-+#define     MMCU_TBLPHYS0_LINBASE_S         22
-+
-+#define MMCU_T0LOCAL_TABLE_PHYS1    0x04830708
-+#define     MMCU_TBLPHYS1_ADDR_BITS         0xFFFFFFFC  /* Physical base */
-+#define     MMCU_TBLPHYS1_ADDR_S            2
-+
-+#define MMCU_T0GLOBAL_TABLE_PHYS0   0x04830710
-+#define MMCU_T0GLOBAL_TABLE_PHYS1   0x04830718
-+#define MMCU_T1LOCAL_TABLE_PHYS0    0x04830720
-+#define MMCU_T1LOCAL_TABLE_PHYS1    0x04830728
-+#define MMCU_T1GLOBAL_TABLE_PHYS0   0x04830730
-+#define MMCU_T1GLOBAL_TABLE_PHYS1   0x04830738
-+#define MMCU_T2LOCAL_TABLE_PHYS0    0x04830740
-+#define MMCU_T2LOCAL_TABLE_PHYS1    0x04830748
-+#define MMCU_T2GLOBAL_TABLE_PHYS0   0x04830750
-+#define MMCU_T2GLOBAL_TABLE_PHYS1   0x04830758
-+#define MMCU_T3LOCAL_TABLE_PHYS0    0x04830760
-+#define MMCU_T3LOCAL_TABLE_PHYS1    0x04830768
-+#define MMCU_T3GLOBAL_TABLE_PHYS0   0x04830770
-+#define MMCU_T3GLOBAL_TABLE_PHYS1   0x04830778
-+
-+#define MMCU_T0EBWCCTRL             0x04830640
-+#define     MMCU_TnEBWCCTRL_BITS    0x00000007
-+#define     MMCU_TnEBWCCTRL_S       0
-+#define         MMCU_TnEBWCCCTRL_DISABLE_ALL 0
-+#define         MMCU_TnEBWCCCTRL_ABIT25      1
-+#define         MMCU_TnEBWCCCTRL_ABIT26      2
-+#define         MMCU_TnEBWCCCTRL_ABIT27      3
-+#define         MMCU_TnEBWCCCTRL_ABIT28      4
-+#define         MMCU_TnEBWCCCTRL_ABIT29      5
-+#define         MMCU_TnEBWCCCTRL_ABIT30      6
-+#define         MMCU_TnEBWCCCTRL_ENABLE_ALL  7
-+#define MMCU_TnEBWCCTRL_STRIDE      8
-+
-+#endif /* METAC_2_1 */
-+
-+
-+/* Registers within the SYSC register region */
-+#define METAC_ID                0x04830000
-+#define     METAC_ID_MAJOR_BITS     0xFF000000
-+#define     METAC_ID_MAJOR_S        24
-+#define     METAC_ID_MINOR_BITS     0x00FF0000
-+#define     METAC_ID_MINOR_S        16
-+#define     METAC_ID_REV_BITS       0x0000FF00
-+#define     METAC_ID_REV_S          8
-+#define     METAC_ID_MAINT_BITS     0x000000FF
-+#define     METAC_ID_MAINT_S        0
-+
-+#ifdef METAC_2_1
-+/* Use of this section is strongly deprecated */
-+#define METAC_ID2               0x04830008
-+#define     METAC_ID2_DESIGNER_BITS 0xFFFF0000  /* Modified by customer */
-+#define     METAC_ID2_DESIGNER_S    16
-+#define     METAC_ID2_MINOR2_BITS   0x00000F00  /* 3rd digit of prod rev */
-+#define     METAC_ID2_MINOR2_S      8
-+#define     METAC_ID2_CONFIG_BITS   0x000000FF  /* Wrapper configuration */
-+#define     METAC_ID2_CONFIG_S      0
-+
-+/* Primary core identification and configuration information */
-+#define METAC_CORE_ID           0x04831000
-+#define     METAC_COREID_GROUP_BITS   0xFF000000
-+#define     METAC_COREID_GROUP_S      24
-+#define         METAC_COREID_GROUP_METAG  0x14
-+#define     METAC_COREID_ID_BITS      0x00FF0000
-+#define     METAC_COREID_ID_S         16
-+#define         METAC_COREID_ID_W32       0x10   /* >= for 32-bit pipeline */
-+#define     METAC_COREID_CONFIG_BITS  0x0000FFFF
-+#define     METAC_COREID_CONFIG_S     0
-+#define       METAC_COREID_CFGCACHE_BITS    0x0007
-+#define       METAC_COREID_CFGCACHE_S       0
-+#define           METAC_COREID_CFGCACHE_NOM       0
-+#define           METAC_COREID_CFGCACHE_TYPE0     1
-+#define           METAC_COREID_CFGCACHE_NOMMU     1 /* Alias for TYPE0 */
-+#define           METAC_COREID_CFGCACHE_NOCACHE   2
-+#define           METAC_COREID_CFGCACHE_PRIVNOMMU 3
-+#define       METAC_COREID_CFGDSP_BITS      0x0038
-+#define       METAC_COREID_CFGDSP_S         3
-+#define           METAC_COREID_CFGDSP_NOM       0
-+#define           METAC_COREID_CFGDSP_MIN       1
-+#define       METAC_COREID_NOFPACC_BIT      0x0040 /* Set if no FPU accum */
-+#define       METAC_COREID_CFGFPU_BITS      0x0180
-+#define       METAC_COREID_CFGFPU_S         7
-+#define           METAC_COREID_CFGFPU_NOM       0
-+#define           METAC_COREID_CFGFPU_SNGL      1
-+#define           METAC_COREID_CFGFPU_DBL       2
-+#define       METAC_COREID_NOAMA_BIT        0x0200 /* Set if no AMA present */
-+#define       METAC_COREID_NOCOH_BIT        0x0400 /* Set if no Gbl coherency */
-+
-+/* Core revision information */
-+#define METAC_CORE_REV          0x04831008
-+#define     METAC_COREREV_DESIGN_BITS   0xFF000000
-+#define     METAC_COREREV_DESIGN_S      24
-+#define     METAC_COREREV_MAJOR_BITS    0x00FF0000
-+#define     METAC_COREREV_MAJOR_S       16
-+#define     METAC_COREREV_MINOR_BITS    0x0000FF00
-+#define     METAC_COREREV_MINOR_S       8
-+#define     METAC_COREREV_MAINT_BITS    0x000000FF
-+#define     METAC_COREREV_MAINT_S       0
-+
-+/* Configuration information control outside the core */
-+#define METAC_CORE_DESIGNER1    0x04831010      /* Arbitrary value */
-+#define METAC_CORE_DESIGNER2    0x04831018      /* Arbitrary value */
-+
-+/* Configuration information covering presence/number of various features */
-+#define METAC_CORE_CONFIG2      0x04831020
-+#define     METAC_CORECFG2_COREDBGTYPE_BITS 0x60000000   /* Core debug type */
-+#define     METAC_CORECFG2_COREDBGTYPE_S    29
-+#define     METAC_CORECFG2_DCSMALL_BIT      0x04000000   /* Data cache small */
-+#define     METAC_CORECFG2_ICSMALL_BIT      0x02000000   /* Inst cache small */
-+#define     METAC_CORECFG2_DCSZNP_BITS      0x01C00000   /* Data cache size np */
-+#define     METAC_CORECFG2_DCSZNP_S         22
-+#define     METAC_CORECFG2_ICSZNP_BITS      0x00380000  /* Inst cache size np */
-+#define     METAC_CORECFG2_ICSZNP_S         19
-+#define     METAC_CORECFG2_DCSZ_BITS        0x00070000   /* Data cache size */
-+#define     METAC_CORECFG2_DCSZ_S           16
-+#define         METAC_CORECFG2_xCSZ_4K          0        /* Allocated values */
-+#define         METAC_CORECFG2_xCSZ_8K          1
-+#define         METAC_CORECFG2_xCSZ_16K         2
-+#define         METAC_CORECFG2_xCSZ_32K         3
-+#define         METAC_CORECFG2_xCSZ_64K         4
-+#define     METAC_CORE_C2ICSZ_BITS          0x0000E000   /* Inst cache size */
-+#define     METAC_CORE_C2ICSZ_S             13
-+#define     METAC_CORE_GBLACC_BITS          0x00001800   /* Number of Global Acc */
-+#define     METAC_CORE_GBLACC_S             11
-+#define     METAC_CORE_GBLDXR_BITS          0x00000700   /* 0 -> 0, R -> 2^(R-1) */
-+#define     METAC_CORE_GBLDXR_S             8
-+#define     METAC_CORE_GBLAXR_BITS          0x000000E0   /* 0 -> 0, R -> 2^(R-1) */
-+#define     METAC_CORE_GBLAXR_S             5
-+#define     METAC_CORE_RTTRACE_BIT          0x00000010
-+#define     METAC_CORE_WATCHN_BITS          0x0000000C   /* 0 -> 0, N -> 2^N */
-+#define     METAC_CORE_WATCHN_S             2
-+#define     METAC_CORE_BREAKN_BITS          0x00000003   /* 0 -> 0, N -> 2^N */
-+#define     METAC_CORE_BREAKN_S             0
-+
-+/* Configuration information covering presence/number of various features */
-+#define METAC_CORE_CONFIG3      0x04831028
-+#define     METAC_CORECFG3_L2C_REV_ID_BITS          0x000F0000   /* Revision of L2 cache */
-+#define     METAC_CORECFG3_L2C_REV_ID_S             16
-+#define     METAC_CORECFG3_L2C_LINE_SIZE_BITS       0x00003000   /* L2 line size */
-+#define     METAC_CORECFG3_L2C_LINE_SIZE_S          12
-+#define         METAC_CORECFG3_L2C_LINE_SIZE_64B    0x0          /* 64 bytes */
-+#define     METAC_CORECFG3_L2C_NUM_WAYS_BITS        0x00000F00   /* L2 number of ways (2^n) */
-+#define     METAC_CORECFG3_L2C_NUM_WAYS_S           8
-+#define     METAC_CORECFG3_L2C_SIZE_BITS            0x000000F0   /* L2 size (2^n) */
-+#define     METAC_CORECFG3_L2C_SIZE_S               4
-+#define     METAC_CORECFG3_L2C_UNIFIED_BIT          0x00000004   /* Unified cache: */
-+#define     METAC_CORECFG3_L2C_UNIFIED_S            2
-+#define       METAC_CORECFG3_L2C_UNIFIED_UNIFIED    1            /* - Unified D/I cache */
-+#define       METAC_CORECFG3_L2C_UNIFIED_SEPARATE   0            /* - Separate D/I cache */
-+#define     METAC_CORECFG3_L2C_MODE_BIT             0x00000002   /* Cache Mode: */
-+#define     METAC_CORECFG3_L2C_MODE_S               1
-+#define       METAC_CORECFG3_L2C_MODE_WRITE_BACK    1            /* - Write back */
-+#define       METAC_CORECFG3_L2C_MODE_WRITE_THROUGH 0            /* - Write through */
-+#define     METAC_CORECFG3_L2C_HAVE_L2C_BIT         0x00000001   /* Have L2C */
-+#define     METAC_CORECFG3_L2C_HAVE_L2C_S           0
-+
-+#endif /* METAC_2_1 */
-+
-+#define SYSC_CACHE_MMU_CONFIG       0x04830028
-+#ifdef METAC_2_1
-+#define     SYSC_CMMUCFG_DCSKEWABLE_BIT 0x00000040
-+#define     SYSC_CMMUCFG_ICSKEWABLE_BIT 0x00000020
-+#define     SYSC_CMMUCFG_DCSKEWOFF_BIT  0x00000010  /* Skew association override  */
-+#define     SYSC_CMMUCFG_ICSKEWOFF_BIT  0x00000008  /* -> default 0 on if present */
-+#define     SYSC_CMMUCFG_MODE_BITS      0x00000007  /* Access to old state */
-+#define     SYSC_CMMUCFG_MODE_S         0
-+#define         SYSC_CMMUCFG_ON             0x7
-+#define         SYSC_CMMUCFG_EBYPASS        0x6   /* Enhanced by-pass mode */
-+#define         SYSC_CMMUCFG_EBYPASSIC      0x4   /* EB just inst cache */
-+#define         SYSC_CMMUCFG_EBYPASSDC      0x2   /* EB just data cache */
-+#endif /* METAC_2_1 */
-+/* Old definitions, Keep them for now */
-+#define         SYSC_CMMUCFG_MMU_ON_BIT     0x1
-+#define         SYSC_CMMUCFG_DC_ON_BIT      0x2
-+#define         SYSC_CMMUCFG_IC_ON_BIT      0x4
-+
-+#define SYSC_JTAG_THREAD            0x04830030
-+#define     SYSC_JTAG_TX_BITS           0x00000003 /* Read only bits! */
-+#define     SYSC_JTAG_TX_S              0
-+#define     SYSC_JTAG_PRIV_BIT          0x00000004
-+#ifdef METAC_2_1
-+#define     SYSC_JTAG_SLAVETX_BITS      0x00000018
-+#define     SYSC_JTAG_SLAVETX_S         3
-+#endif /* METAC_2_1 */
-+
-+#define SYSC_DCACHE_FLUSH           0x04830038
-+#define SYSC_ICACHE_FLUSH           0x04830040
-+#define  SYSC_xCACHE_FLUSH_INIT     0x1
-+#define MMCU_DIRECTMAP0_ADDR        0x04830080 /* LINSYSDIRECT_BASE -> */
-+#define     MMCU_DIRECTMAPn_STRIDE      0x00000010 /* 4 Region settings */
-+#define     MMCU_DIRECTMAPn_S           4
-+#define         MMCU_DIRECTMAPn_ADDR_BITS       0xFF800000
-+#define         MMCU_DIRECTMAPn_ADDR_S          23
-+#define         MMCU_DIRECTMAPn_ADDR_SCALE      0x00800000 /* 8M Regions */
-+#ifdef METAC_2_1
-+/*
-+ * These fields in the above registers provide MMCU_ENTRY_* values
-+ *   for each direct mapped region to enable optimisation of these areas.
-+ *       (LSB similar to VALID must be set for enhancments to be active)
-+ */
-+#define         MMCU_DIRECTMAPn_ENHANCE_BIT     0x00000001 /* 0 = no optim */
-+#define         MMCU_DIRECTMAPn_DCCTRL_BITS     0x000000DF /* Get DC Ctrl */
-+#define         MMCU_DIRECTMAPn_DCCTRL_S        0
-+#define         MMCU_DIRECTMAPn_ICCTRL_BITS     0x0000C000 /* Get IC Ctrl */
-+#define         MMCU_DIRECTMAPn_ICCTRL_S        8
-+#define         MMCU_DIRECTMAPn_ENTLB_BIT       0x00000020 /* Cache in TLB */
-+#define         MMCU_DIRECTMAPn_ICCWIN_BITS     0x0000C000 /* Get IC Win Bits */
-+#define         MMCU_DIRECTMAPn_ICCWIN_S        14
-+#endif /* METAC_2_1 */
-+
-+#define MMCU_DIRECTMAP1_ADDR        0x04830090
-+#define MMCU_DIRECTMAP2_ADDR        0x048300a0
-+#define MMCU_DIRECTMAP3_ADDR        0x048300b0
++#define     TXDIVTIME_RPMASK_BITS 0x003F0000   /* -> Full (1) Empty (0) */
++#define     TXDIVTIME_RPMASK_S    16
 +
 +/*
-+ * These bits partion each threads use of data cache or instruction cache
-+ * resource by modifying the top 4 bits of the address within the cache
-+ * storage area.
++ * TXPRIVEXT register can be used to single step thread execution and
++ * enforce synchronous memory i/f address checking for debugging purposes.
 + */
-+#define SYSC_DCPART0 0x04830200
-+#define     SYSC_xCPARTn_STRIDE   0x00000008
-+#define     SYSC_xCPARTL_AND_BITS 0x0000000F /* Masks top 4 bits */
-+#define     SYSC_xCPARTL_AND_S    0
-+#define     SYSC_xCPARTG_AND_BITS 0x00000F00 /* Masks top 4 bits */
-+#define     SYSC_xCPARTG_AND_S    8
-+#define     SYSC_xCPARTL_OR_BITS  0x000F0000 /* Ors into top 4 bits */
-+#define     SYSC_xCPARTL_OR_S     16
-+#define     SYSC_xCPARTG_OR_BITS  0x0F000000 /* Ors into top 4 bits */
-+#define     SYSC_xCPARTG_OR_S     24
-+#define     SYSC_CWRMODE_BIT      0x80000000 /* Write cache mode bit */
-+
-+#define SYSC_DCPART1 0x04830208
-+#define SYSC_DCPART2 0x04830210
-+#define SYSC_DCPART3 0x04830218
-+#define SYSC_ICPART0 0x04830220
-+#define SYSC_ICPART1 0x04830228
-+#define SYSC_ICPART2 0x04830230
-+#define SYSC_ICPART3 0x04830238
++#define     TXPRIVEXT_TXSTEP_BIT    0x00000004
++#define     TXPRIVEXT_MEMCHECK_BIT  0x00000002
 +
 +/*
-+ * META Core Memory and Cache Update registers
++ * TXINTERNx registers holds internal state information for H/W debugging only
 + */
-+#define SYSC_MCMDATAX  0x04830300   /* 32-bit read/write data register */
-+#define SYSC_MCMDATAT  0x04830308   /* Read or write data triggers oper */
-+#define SYSC_MCMGCTRL  0x04830310   /* Control register */
-+#define     SYSC_MCMGCTRL_READ_BIT  0x00000001 /* Set to issue 1st read */
-+#define     SYSC_MCMGCTRL_AINC_BIT  0x00000002 /* Set for auto-increment */
-+#define     SYSC_MCMGCTRL_ADDR_BITS 0x000FFFFC /* Address or index */
-+#define     SYSC_MCMGCTRL_ADDR_S    2
-+#define     SYSC_MCMGCTRL_ID_BITS   0x0FF00000 /* Internal memory block Id */
-+#define     SYSC_MCMGCTRL_ID_S      20
-+#define         SYSC_MCMGID_NODEV       0xFF /* No Device Selected */
-+#define         SYSC_MCMGID_DSPRAM0A    0x04 /* DSP RAM D0 block A access */
-+#define         SYSC_MCMGID_DSPRAM0B    0x05 /* DSP RAM D0 block B access */
-+#define         SYSC_MCMGID_DSPRAM1A    0x06 /* DSP RAM D1 block A access */
-+#define         SYSC_MCMGID_DSPRAM1B    0x07 /* DSP RAM D1 block B access */
-+#define         SYSC_MCMGID_DCACHEL     0x08 /* DCACHE lines (64-bytes/line) */
-+#ifdef METAC_2_1
-+#define         SYSC_MCMGID_DCACHETLB   0x09 /* DCACHE TLB ( Read Only )     */
-+#endif /* METAC_2_1 */
-+#define         SYSC_MCMGID_DCACHET     0x0A /* DCACHE tags (32-bits/line)   */
-+#define         SYSC_MCMGID_DCACHELRU   0x0B /* DCACHE LRU (8-bits/line)     */
-+#define         SYSC_MCMGID_ICACHEL     0x0C /* ICACHE lines (64-bytes/line  */
-+#ifdef METAC_2_1
-+#define         SYSC_MCMGID_ICACHETLB   0x0D /* ICACHE TLB (Read Only )     */
-+#endif /* METAC_2_1 */
-+#define         SYSC_MCMGID_ICACHET     0x0E /* ICACHE Tags (32-bits/line)   */
-+#define         SYSC_MCMGID_ICACHELRU   0x0F /* ICACHE LRU (8-bits/line )    */
-+#define         SYSC_MCMGID_COREIRAM0   0x10 /* Core code mem id 0 */
-+#define         SYSC_MCMGID_COREIRAMn   0x17
-+#define         SYSC_MCMGID_COREDRAM0   0x18 /* Core data mem id 0 */
-+#define         SYSC_MCMGID_COREDRAMn   0x1F
-+#ifdef METAC_2_1
-+#define         SYSC_MCMGID_DCACHEST    0x20 /* DCACHE ST ( Read Only )      */
-+#define         SYSC_MCMGID_ICACHEST    0x21 /* ICACHE ST ( Read Only )      */
-+#define         SYSC_MCMGID_DCACHETLBLRU 0x22 /* DCACHE TLB LRU ( Read Only )*/
-+#define         SYSC_MCMGID_ICACHETLBLRU 0x23 /* ICACHE TLB LRU( Read Only ) */
-+#define         SYSC_MCMGID_DCACHESTLRU 0x24 /* DCACHE ST LRU ( Read Only )  */
-+#define         SYSC_MCMGID_ICACHESTLRU 0x25 /* ICACHE ST LRU ( Read Only )  */
-+#define         SYSC_MCMGID_DEBUGTLB    0x26 /* DEBUG TLB ( Read Only )      */
-+#define         SYSC_MCMGID_DEBUGST     0x27 /* DEBUG ST ( Read Only )       */
-+#define         SYSC_MCMGID_L2CACHEL    0x30 /* L2 Cache Lines (64-bytes/line) */
-+#define         SYSC_MCMGID_L2CACHET    0x31 /* L2 Cache Tags (32-bits/line) */
-+#define         SYSC_MCMGID_COPROX0     0x70 /* Coprocessor port id 0 */
-+#define         SYSC_MCMGID_COPROXn     0x77
-+#endif /* METAC_2_1 */
-+#define     SYSC_MCMGCTRL_TR31_BIT  0x80000000 /* Trigger 31 on completion */
-+#define SYSC_MCMSTATUS 0x04830318   /* Status read only */
-+#define     SYSC_MCMSTATUS_IDLE_BIT 0x00000001
-+
-+/* META System Events */
-+#define SYSC_SYS_EVENT            0x04830400
-+#define     SYSC_SYSEVT_ATOMIC_BIT      0x00000001
-+#define     SYSC_SYSEVT_CACHEX_BIT      0x00000002
-+#define SYSC_ATOMIC_LOCK          0x04830408
-+#define     SYSC_ATOMIC_STATE_TX_BITS 0x0000000F
-+#define     SYSC_ATOMIC_STATE_TX_S    0
-+#ifdef METAC_1_2
-+#define     SYSC_ATOMIC_STATE_DX_BITS 0x000000F0
-+#define     SYSC_ATOMIC_STATE_DX_S    4
-+#else /* METAC_1_2 */
-+#define     SYSC_ATOMIC_SOURCE_BIT    0x00000010
-+#endif /* !METAC_1_2 */
-+
-+
-+#ifdef METAC_2_1
-+
-+/* These definitions replace the EXPAND_TIMER_DIV register defines which are to
-+ * be deprecated.
-+ */
-+#define SYSC_TIMER_DIV            0x04830140
-+#define     SYSC_TIMDIV_BITS      0x000000FF
-+#define     SYSC_TIMDIV_S         0
-+
-+/* META Enhanced by-pass control for local and global region */
-+#define MMCU_LOCAL_EBCTRL   0x04830600
-+#define MMCU_GLOBAL_EBCTRL  0x04830608
-+#define     MMCU_EBCTRL_SINGLE_BIT      0x00000020 /* TLB Uncached */
-+/*
-+ * These fields in the above registers provide MMCU_ENTRY_* values
-+ *   for each direct mapped region to enable optimisation of these areas.
-+ */
-+#define     MMCU_EBCTRL_DCCTRL_BITS     0x000000C0 /* Get DC Ctrl */
-+#define     MMCU_EBCTRL_DCCTRL_S        0
-+#define     MMCU_EBCTRL_ICCTRL_BITS     0x0000C000 /* Get DC Ctrl */
-+#define     MMCU_EBCTRL_ICCTRL_S        8
-+
-+/* META Cached Core Mode Registers */
-+#define MMCU_T0CCM_ICCTRL   0x04830680     /* Core cached code control */
-+#define     MMCU_TnCCM_xxCTRL_STRIDE    8
-+#define     MMCU_TnCCM_xxCTRL_STRIDE_S  3
-+#define MMCU_T1CCM_ICCTRL   0x04830688
-+#define MMCU_T2CCM_ICCTRL   0x04830690
-+#define MMCU_T3CCM_ICCTRL   0x04830698
-+#define MMCU_T0CCM_DCCTRL   0x048306C0     /* Core cached data control */
-+#define MMCU_T1CCM_DCCTRL   0x048306C8
-+#define MMCU_T2CCM_DCCTRL   0x048306D0
-+#define MMCU_T3CCM_DCCTRL   0x048306D8
-+#define     MMCU_TnCCM_ENABLE_BIT       0x00000001
-+#define     MMCU_TnCCM_WIN3_BIT         0x00000002
-+#define     MMCU_TnCCM_DCWRITE_BIT      0x00000004  /* In DCCTRL only */
-+#define     MMCU_TnCCM_REGSZ_BITS       0x00000F00
-+#define     MMCU_TnCCM_REGSZ_S          8
-+#define         MMCU_TnCCM_REGSZ0_POWER      12     /* RegSz 0 -> 4K */
-+#define         MMCU_TnCCM_REGSZ_MAXBYTES    0x00080000  /* 512K max */
-+#define     MMCU_TnCCM_ADDR_BITS        0xFFFFF000
-+#define     MMCU_TnCCM_ADDR_S           12
-+
-+#endif /* METAC_2_1 */
++#define TXINTERN0_REGNUM 23
++#define     TXINTERN0_LOCK2_BITS  0xF0000000
++#define     TXINTERN0_LOCK2_S     28
++#define     TXINTERN0_LOCK1_BITS  0x0F000000
++#define     TXINTERN0_LOCK1_S     24
++#define     TXINTERN0_TIFDF_BITS  0x0000F000
++#define     TXINTERN0_TIFDF_S     12
++#define     TXINTERN0_TIFIB_BITS  0x00000F00
++#define     TXINTERN0_TIFIB_S     8
++#define     TXINTERN0_TIFAF_BITS  0x000000F0
++#define     TXINTERN0_TIFAF_S     4
++#define     TXINTERN0_MSTATE_BITS 0x0000000F
++#define     TXINTERN0_MSTATE_S    0
 +
 +/*
-+ * Hardware performance counter registers
-+ * --------------------------------------
++ * TXSTAT, TXMASK, TXPOLL, TXSTATI, TXMASKI, TXPOLLI registers from trigger
++ * bank all have similar contents (upper kick count bits not in MASK regs)
 + */
-+#ifdef METAC_2_1
-+/* Two Performance Counter Internal Core Events Control registers */
-+#define PERF_ICORE0   0x0480FFD0
-+#define PERF_ICORE1   0x0480FFD8
-+#define     PERFI_CTRL_BITS    0x0000000F
-+#define     PERFI_CTRL_S       0
-+#define         PERFI_CAH_DMISS    0x0  /* Dcache Misses in cache (TLB Hit) */
-+#define         PERFI_CAH_IMISS    0x1  /* Icache Misses in cache (TLB Hit) */
-+#define         PERFI_TLB_DMISS    0x2  /* Dcache Misses in per-thread TLB */
-+#define         PERFI_TLB_IMISS    0x3  /* Icache Misses in per-thread TLB */
-+#define         PERFI_TLB_DWRHITS  0x4  /* DC Write-Hits in per-thread TLB */
-+#define         PERFI_TLB_DWRMISS  0x5  /* DC Write-Miss in per-thread TLB */
-+#define         PERFI_CAH_DLFETCH  0x8  /* DC Read cache line fetch */
-+#define         PERFI_CAH_ILFETCH  0x9  /* DC Read cache line fetch */
-+#define         PERFI_CAH_DWFETCH  0xA  /* DC Read cache word fetch */
-+#define         PERFI_CAH_IWFETCH  0xB  /* DC Read cache word fetch */
-+#endif /* METAC_2_1 */
++#define TXSTAT_REGNUM  0
++#define     TXSTAT_TIMER_BIT    0x00000001
++#define     TXSTAT_TIMER_S      0
++#define     TXSTAT_KICK_BIT     0x00000002
++#define     TXSTAT_KICK_S       1
++#define     TXSTAT_DEFER_BIT    0x00000008
++#define     TXSTAT_DEFER_S      3
++#define     TXSTAT_EXTTRIG_BITS 0x0000FFF0
++#define     TXSTAT_EXTTRIG_S    4
++#define     TXSTAT_FPE_BITS     0x003F0000
++#define     TXSTAT_FPE_S        16
++#define     TXSTAT_FPE_DENORMAL_BIT    0x00200000
++#define     TXSTAT_FPE_DENORMAL_S      21
++#define     TXSTAT_FPE_INVALID_BIT     0x00100000
++#define     TXSTAT_FPE_INVALID_S       20
++#define     TXSTAT_FPE_DIVBYZERO_BIT   0x00080000
++#define     TXSTAT_FPE_DIVBYZERO_S     19
++#define     TXSTAT_FPE_OVERFLOW_BIT    0x00040000
++#define     TXSTAT_FPE_OVERFLOW_S      18
++#define     TXSTAT_FPE_UNDERFLOW_BIT   0x00020000
++#define     TXSTAT_FPE_UNDERFLOW_S     17
++#define     TXSTAT_FPE_INEXACT_BIT     0x00010000
++#define     TXSTAT_FPE_INEXACT_S       16
++#define     TXSTAT_BUSERR_BIT          0x00800000   /* Set if bus error/ack state */
++#define     TXSTAT_BUSERR_S            23
++#define         TXSTAT_BUSSTATE_BITS     0xFF000000 /* Read only */
++#define         TXSTAT_BUSSTATE_S        24
++#define     TXSTAT_KICKCNT_BITS 0xFFFF0000
++#define     TXSTAT_KICKCNT_S    16
++#define TXMASK_REGNUM  1
++#define TXSTATI_REGNUM 2
++#define     TXSTATI_BGNDHALT_BIT    0x00000004
++#define TXMASKI_REGNUM 3
++#define TXPOLL_REGNUM  4
++#define TXPOLLI_REGNUM 6
 +
-+/* Two memory-mapped hardware performance counter registers */
-+#define PERF_COUNT0 0x0480FFE0
-+#define PERF_COUNT1 0x0480FFE8
-+
-+/* Fields in PERF_COUNTn registers */
-+#define PERF_COUNT_BITS  0x00ffffff /* Event count value */
-+
-+#define PERF_THREAD_BITS 0x0f000000 /* Thread mask selects threads */
-+#define PERF_THREAD_S    24
-+
-+#define PERF_CTRL_BITS   0xf0000000 /* Event filter control */
-+#define PERF_CTRL_S      28
-+
-+#define    PERFCTRL_SUPER   0  /* Superthread cycles */
-+#define    PERFCTRL_REWIND  1  /* Rewinds due to Dcache Misses */
-+#ifdef METAC_2_1
-+#define    PERFCTRL_SUPREW  2  /* Rewinds of superthreaded cycles (no mask) */
-+
-+#define    PERFCTRL_CYCLES  3  /* Counts all cycles (no mask) */
-+
-+#define    PERFCTRL_PREDBC  4  /* Conditional branch predictions */
-+#define    PERFCTRL_MISPBC  5  /* Conditional branch mispredictions */
-+#define    PERFCTRL_PREDRT  6  /* Return predictions */
-+#define    PERFCTRL_MISPRT  7  /* Return mispredictions */
-+#endif /* METAC_2_1 */
-+
-+#define    PERFCTRL_DHITS   8  /* Dcache Hits */
-+#define    PERFCTRL_IHITS   9  /* Icache Hits */
-+#define    PERFCTRL_IMISS   10 /* Icache Misses in cache or TLB */
-+#ifdef METAC_2_1
-+#define    PERFCTRL_DCSTALL 11 /* Dcache+TLB o/p delayed (per-thread) */
-+#define    PERFCTRL_ICSTALL 12 /* Icache+TLB o/p delayed (per-thread) */
-+
-+#define    PERFCTRL_INT     13 /* Internal core delailed events (see next) */
-+#define    PERFCTRL_EXT     15 /* External source in core periphery */
-+#endif /* METAC_2_1 */
-+
-+#ifdef METAC_2_1
-+/* These definitions replace the EXPAND_PERFCHANx register defines which are to
-+ * be deprecated.
++/*
++ * TXDRCTRL register can be used to partition the DSP RAM space available to
++ * this thread at startup. This is achieved by offsetting the region allocated
++ * to each thread.
 + */
-+#define PERF_CHAN0 0x04830150
-+#define PERF_CHAN1 0x04830158
-+#define     PERF_CHAN_BITS    0x0000000F
-+#define     PERF_CHAN_S       0
-+#define         PERFCHAN_WRC_WRBURST   0x0   /* Write combiner write burst */
-+#define         PERFCHAN_WRC_WRITE     0x1   /* Write combiner write       */
-+#define         PERFCHAN_WRC_RDBURST   0x2   /* Write combiner read burst  */
-+#define         PERFCHAN_WRC_READ      0x3   /* Write combiner read        */
-+#define         PERFCHAN_PREARB_DELAY  0x4   /* Pre-arbiter delay cycle    */
-+					     /* Cross-bar hold-off cycle:  */
-+#define         PERFCHAN_XBAR_HOLDWRAP 0x5   /*    wrapper register        */
-+#define         PERFCHAN_XBAR_HOLDSBUS 0x6   /*    system bus (ATP only)   */
-+#define         PERFCHAN_XBAR_HOLDCREG 0x9   /*    core registers          */
-+#define         PERFCHAN_L2C_MISS      0x6   /* L2 Cache miss              */
-+#define         PERFCHAN_L2C_HIT       0x7   /* L2 Cache hit               */
-+#define         PERFCHAN_L2C_WRITEBACK 0x8   /* L2 Cache writeback         */
-+					     /* Admission delay cycle:     */
-+#define         PERFCHAN_INPUT_CREG    0xB   /*    core registers          */
-+#define         PERFCHAN_INPUT_INTR    0xC   /*    internal ram            */
-+#define         PERFCHAN_INPUT_WRC     0xD   /*    write combiners(memory) */
++#define     TXDRCTRL_D1PARTOR_BITS  0x00000F00  /* OR's into top 4 bits */
++#define     TXDRCTRL_D1PARTOR_S     8
++#define     TXDRCTRL_D0PARTOR_BITS  0x0000000F  /* OR's into top 4 bits */
++#define     TXDRCTRL_D0PARTOR_S     0
++/* Given extracted Pow and Or fields this is threads base within DSP RAM */
++#define     TXDRCTRL_DXBASE(Pow, Or)  ((Or)<<((Pow)-4))
 +
-+/* Should following be removed as not in TRM anywhere? */
-+#define         PERFCHAN_XBAR_HOLDINTR 0x8   /*    internal ram            */
-+#define         PERFCHAN_INPUT_SBUS    0xA   /*    register port           */
-+/* End of remove section. */
++/*****************************************************************************
++ *                      RUN TIME TRACE CONTROL REGISTERS
++ ****************************************************************************/
++/*
++ * The following values are only relevant to code that implements run-time
++ *  trace features within the META Core
++ */
++#define TTEXEC      TT.0
++#define TTCTRL      TT.1
++#define TTMARK      TT.2
++#define TTREC       TT.3
++#define GTEXEC      TT.4
 +
-+#define         PERFCHAN_MAINARB_DELAY 0xF   /* Main arbiter delay cycle   */
++#define TTEXEC_REGNUM               0
++#define     TTEXEC_EXTTRIGAND_BITS      0x7F000000
++#define     TTEXEC_EXTTRIGAND_S         24
++#define     TTEXEC_EXTTRIGEN_BIT        0x00008000
++#define     TTEXEC_EXTTRIGMATCH_BITS    0x00007F00
++#define     TTEXEC_EXTTRIGMATCH_S       8
++#define     TTEXEC_TCMODE_BITS          0x00000003
++#define     TTEXEC_TCMODE_S             0
++
++#define TTCTRL_REGNUM               1
++#define     TTCTRL_TRACETT_BITS         0x00008000
++#define     TTCTRL_TRACETT_S            15
++#define     TTCTRL_TRACEALL_BITS        0x00002000
++#define     TTCTRL_TRACEALL_S           13
++#ifdef METAC_2_1
++#define     TTCTRL_TRACEALLTAG_BITS     0x00000400
++#define     TTCTRL_TRACEALLTAG_S        10
++#endif /* METAC_2_1 */
++#define     TTCTRL_TRACETAG_BITS        0x00000200
++#define     TTCTRL_TRACETAG_S           9
++#define     TTCTRL_TRACETTPC_BITS       0x00000080
++#define     TTCTRL_TRACETTPC_S          7
++#define     TTCTRL_TRACEMPC_BITS        0x00000020
++#define     TTCTRL_TRACEMPC_S           5
++#define     TTCTRL_TRACEEN_BITS         0x00000008
++#define     TTCTRL_TRACEEN_S            3
++#define     TTCTRL_TRACEEN1_BITS        0x00000004
++#define     TTCTRL_TRACEEN1_S           2
++#define     TTCTRL_TRACEPC_BITS         0x00000002
++#define     TTCTRL_TRACEPC_S            1
++
++#ifdef METAC_2_1
++#define TTMARK_REGNUM   2
++#define TTMARK_BITS                 0xFFFFFFFF
++#define TTMARK_S                    0x0
++
++#define TTREC_REGNUM    3
++#define TTREC_BITS                  0xFFFFFFFFFFFFFFFF
++#define TTREC_S                     0x0
++#endif /* METAC_2_1 */
++
++#define GTEXEC_REGNUM               4
++#define     GTEXEC_DCRUN_BITS           0x80000000
++#define     GTEXEC_DCRUN_S              31
++#define     GTEXEC_ICMODE_BITS          0x0C000000
++#define     GTEXEC_ICMODE_S             26
++#define     GTEXEC_TCMODE_BITS          0x03000000
++#define     GTEXEC_TCMODE_S             24
++#define     GTEXEC_PERF1CMODE_BITS      0x00040000
++#define     GTEXEC_PERF1CMODE_S         18
++#define     GTEXEC_PERF0CMODE_BITS      0x00010000
++#define     GTEXEC_PERF0CMODE_S         16
++#define     GTEXEC_REFMSEL_BITS         0x0000F000
++#define     GTEXEC_REFMSEL_S            12
++#define     GTEXEC_METRICTH_BITS        0x000003FF
++#define     GTEXEC_METRICTH_S           0
++
++#ifdef METAC_2_1
++/*
++ * Clock Control registers
++ * -----------------------
++ */
++#define TXCLKCTRL_REGNUM        22
++
++/*
++ * Default setting is with clocks always on (DEFON), turning all clocks off
++ * can only be done from external devices (OFF), enabling automatic clock
++ * gating will allow clocks to stop as units fall idle.
++ */
++#define TXCLKCTRL_ALL_OFF       0x02222222
++#define TXCLKCTRL_ALL_DEFON     0x01111111
++#define TXCLKCTRL_ALL_AUTO      0x02222222
++
++/*
++ * Individual fields control caches, floating point and main data/addr units
++ */
++#define TXCLKCTRL_CLOCKIC_BITS  0x03000000
++#define TXCLKCTRL_CLOCKIC_S     24
++#define TXCLKCTRL_CLOCKDC_BITS  0x00300000
++#define TXCLKCTRL_CLOCKDC_S     20
++#define TXCLKCTRL_CLOCKFP_BITS  0x00030000
++#define TXCLKCTRL_CLOCKFP_S     16
++#define TXCLKCTRL_CLOCKD1_BITS  0x00003000
++#define TXCLKCTRL_CLOCKD1_S     12
++#define TXCLKCTRL_CLOCKD0_BITS  0x00000300
++#define TXCLKCTRL_CLOCKD0_S     8
++#define TXCLKCTRL_CLOCKA1_BITS  0x00000030
++#define TXCLKCTRL_CLOCKA1_S     4
++#define TXCLKCTRL_CLOCKA0_BITS  0x00000003
++#define TXCLKCTRL_CLOCKA0_S     0
++
++/*
++ * Individual settings for each field are common
++ */
++#define TXCLKCTRL_CLOCKxx_OFF   0
++#define TXCLKCTRL_CLOCKxx_DEFON 1
++#define TXCLKCTRL_CLOCKxx_AUTO  2
 +
 +#endif /* METAC_2_1 */
 +
 +#ifdef METAC_2_1
 +/*
-+ * Write combiner registers
-+ * ------------------------
-+ *
-+ * These replace the EXPAND_T0WRCOMBINE register defines, which will be
-+ * deprecated.
++ * Fast interrupt new bits
++ * ------------------------------------
 + */
-+#define WRCOMB_CONFIG0             0x04830100
-+#define     WRCOMB_LFFEn_BIT           0x00004000  /* Enable auto line full flush */
-+#define     WRCOMB_ENABLE_BIT          0x00002000  /* Enable write combiner */
-+#define     WRCOMB_TIMEOUT_ENABLE_BIT  0x00001000  /* Timeout flush enable */
-+#define     WRCOMB_TIMEOUT_COUNT_BITS  0x000003FF
-+#define     WRCOMB_TIMEOUT_COUNT_S     0
-+#define WRCOMB_CONFIG4             0x04830180
-+#define     WRCOMB_PARTALLOC_BITS      0x000000C0
-+#define     WRCOMB_PARTALLOC_S         64
-+#define     WRCOMB_PARTSIZE_BITS       0x00000030
-+#define     WRCOMB_PARTSIZE_S          4
-+#define     WRCOMB_PARTOFFSET_BITS     0x0000000F
-+#define     WRCOMB_PARTOFFSET_S        0
-+#define WRCOMB_CONFIG_STRIDE       8
-+#endif /* METAC_2_1 */
++#define TXSTATUS_IPTOGGLE_BIT           0x80000000 /* Prev PToggle of TXPRIVEXT */
++#define TXSTATUS_ISTATE_BIT             0x40000000 /* IState bit */
++#define TXSTATUS_IWAIT_BIT              0x20000000 /* wait indefinitely in decision step*/
++#define TXSTATUS_IEXCEPT_BIT            0x10000000 /* Indicate an exception occured */
++#define TXSTATUS_IRPCOUNT_BITS          0x0E000000 /* Number of 'dirty' date entries*/
++#define TXSTATUS_IRPCOUNT_S             25
++#define TXSTATUS_IRQSTAT_BITS           0x0000F000 /* IRQEnc bits, trigger or interrupts */
++#define TXSTATUS_IRQSTAT_S              12
++#define TXSTATUS_LNKSETOK_BIT           0x00000020 /* LNKSetOK bit, successful LNKSET */
 +
-+#ifdef METAC_2_1
-+/*
-+ * Thread arbiter registers
-+ * ------------------------
-+ *
-+ * These replace the EXPAND_T0ARBITER register defines, which will be
-+ * deprecated.
-+ */
-+#define ARBITER_ARBCONFIG0       0x04830120
-+#define     ARBCFG_BPRIORITY_BIT     0x02000000
-+#define     ARBCFG_IPRIORITY_BIT     0x01000000
-+#define     ARBCFG_PAGE_BITS         0x00FF0000
-+#define     ARBCFG_PAGE_S            16
-+#define     ARBCFG_BBASE_BITS        0x0000FF00
-+#define     ARGCFG_BBASE_S           8
-+#define     ARBCFG_IBASE_BITS        0x000000FF
-+#define     ARBCFG_IBASE_S           0
-+#define ARBITER_TTECONFIG0       0x04820160
-+#define     ARBTTE_IUPPER_BITS       0xFF000000
-+#define     ARBTTE_IUPPER_S          24
-+#define     ARBTTE_ILOWER_BITS       0x00FF0000
-+#define     ARBTTE_ILOWER_S          16
-+#define     ARBTTE_BUPPER_BITS       0x0000FF00
-+#define     ARBTTE_BUPPER_S          8
-+#define     ARBTTE_BLOWER_BITS       0x000000FF
-+#define     ARBTTE_BLOWER_S          0
-+#define ARBITER_STRIDE           8
-+#endif /* METAC_2_1 */
++/* New fields in TXDE for fast interrupt system */
++#define TXDIVTIME_IACTIVE_BIT           0x00008000 /* Enable new interrupt system */
++#define TXDIVTIME_INONEST_BIT           0x00004000 /* Gate nested interrupt */
++#define TXDIVTIME_IREGIDXGATE_BIT       0x00002000 /* gate of the IRegIdex field */
++#define TXDIVTIME_IREGIDX_BITS          0x00001E00 /* Index of A0.0/1 replaces */
++#define TXDIVTIME_IREGIDX_S             9
++#define TXDIVTIME_NOST_BIT              0x00000100 /* disable superthreading bit */
++#endif
 +
-+/*
-+ * Expansion area registers
-+ * --------------------------------------
-+ */
-+
-+/* These defines are to be deprecated. See above instead. */
-+#define EXPAND_T0WRCOMBINE         0x03000000
-+#ifdef METAC_2_1
-+#define     EXPWRC_LFFEn_BIT           0x00004000  /* Enable auto line full flush */
-+#endif /* METAC_2_1 */
-+#define     EXPWRC_ENABLE_BIT          0x00002000  /* Enable write combiner */
-+#define     EXPWRC_TIMEOUT_ENABLE_BIT  0x00001000  /* Timeout flush enable */
-+#define     EXPWRC_TIMEOUT_COUNT_BITS  0x000003FF
-+#define     EXPWRC_TIMEOUT_COUNT_S     0
-+#define EXPAND_TnWRCOMBINE_STRIDE  0x00000008
-+
-+/* These defines are to be deprecated. See above instead. */
-+#define EXPAND_T0ARBITER         0x03000020
-+#define     EXPARB_BPRIORITY_BIT 0x02000000
-+#define     EXPARB_IPRIORITY_BIT 0x01000000
-+#define     EXPARB_PAGE_BITS     0x00FF0000
-+#define     EXPARB_PAGE_S        16
-+#define     EXPARB_BBASE_BITS    0x0000FF00
-+#define     EXPARB_BBASE_S       8
-+#define     EXPARB_IBASE_BITS    0x000000FF
-+#define     EXPARB_IBASE_S       0
-+#define EXPAND_TnARBITER_STRIDE  0x00000008
-+
-+/* These definitions are to be deprecated. See above instead. */
-+#define EXPAND_TIMER_DIV   0x03000040
-+#define     EXPTIM_DIV_BITS      0x000000FF
-+#define     EXPTIM_DIV_S         0
-+
-+/* These definitions are to be deprecated. See above instead. */
-+#define EXPAND_PERFCHAN0   0x03000050
-+#define EXPAND_PERFCHAN1   0x03000058
-+#define     EXPPERF_CTRL_BITS    0x0000000F
-+#define     EXPPERF_CTRL_S       0
-+#define         EXPPERF_WRC_WRBURST   0x0   /* Write combiner write burst */
-+#define         EXPPERF_WRC_WRITE     0x1   /* Write combiner write       */
-+#define         EXPPERF_WRC_RDBURST   0x2   /* Write combiner read burst  */
-+#define         EXPPERF_WRC_READ      0x3   /* Write combiner read        */
-+#define         EXPPERF_PREARB_DELAY  0x4   /* Pre-arbiter delay cycle    */
-+					    /* Cross-bar hold-off cycle:  */
-+#define         EXPPERF_XBAR_HOLDWRAP 0x5   /*    wrapper register        */
-+#define         EXPPERF_XBAR_HOLDSBUS 0x6   /*    system bus              */
-+#ifdef METAC_1_2
-+#define         EXPPERF_XBAR_HOLDLBUS 0x7   /*    local bus               */
-+#else /* METAC_1_2 */
-+#define         EXPPERF_XBAR_HOLDINTR 0x8   /*    internal ram            */
-+#define         EXPPERF_XBAR_HOLDCREG 0x9   /*    core registers          */
-+					    /* Admission delay cycle:     */
-+#define         EXPPERF_INPUT_SBUS    0xA   /*    register port           */
-+#define         EXPPERF_INPUT_CREG    0xB   /*    core registers          */
-+#define         EXPPERF_INPUT_INTR    0xC   /*    internal ram            */
-+#define         EXPPERF_INPUT_WRC     0xD   /*    write combiners(memory) */
-+#endif /* !METAC_1_2 */
-+#define         EXPPERF_MAINARB_DELAY 0xF   /* Main arbiter delay cycle   */
-+
-+/*
-+ * Debug port registers
-+ * --------------------------------------
-+ */
-+
-+/* Data Exchange Register */
-+#define DBGPORT_MDBGDATAX                    0x0
-+
-+/* Data Transfer register */
-+#define DBGPORT_MDBGDATAT                    0x4
-+
-+/* Control Register 0 */
-+#define DBGPORT_MDBGCTRL0                    0x8
-+#define     DBGPORT_MDBGCTRL0_ADDR_BITS      0xFFFFFFFC
-+#define     DBGPORT_MDBGCTRL0_ADDR_S         2
-+#define     DBGPORT_MDBGCTRL0_AUTOINCR_BIT   0x00000002
-+#define     DBGPORT_MDBGCTRL0_RD_BIT         0x00000001
-+
-+/* Control Register 1 */
-+#define DBGPORT_MDBGCTRL1                    0xC
-+#ifdef METAC_2_1
-+#define    DBGPORT_MDBGCTRL1_DEFERRTHREAD_BITS      0xC0000000
-+#define    DBGPORT_MDBGCTRL1_DEFERRTHREAD_S         30
-+#endif /* METAC_2_1 */
-+#define     DBGPORT_MDBGCTRL1_LOCK2_INTERLOCK_BIT   0x20000000
-+#define     DBGPORT_MDBGCTRL1_ATOMIC_INTERLOCK_BIT  0x10000000
-+#define     DBGPORT_MDBGCTRL1_TRIGSTATUS_BIT        0x08000000
-+#define     DBGPORT_MDBGCTRL1_GBLPORT_IDLE_BIT      0x04000000
-+#define     DBGPORT_MDBGCTRL1_COREMEM_IDLE_BIT      0x02000000
-+#define     DBGPORT_MDBGCTRL1_READY_BIT             0x01000000
-+#ifdef METAC_2_1
-+#define     DBGPORT_MDBGCTRL1_DEFERRID_BITS         0x00E00000
-+#define     DBGPORT_MDBGCTRL1_DEFERRID_S            21
-+#define     DBGPORT_MDBGCTRL1_DEFERR_BIT            0x00100000
-+#endif /* METAC_2_1 */
-+#define     DBGPORT_MDBGCTRL1_WR_ACTIVE_BIT         0x00040000
-+#define     DBGPORT_MDBGCTRL1_COND_LOCK2_BIT        0x00020000
-+#define     DBGPORT_MDBGCTRL1_LOCK2_BIT             0x00010000
-+#define     DBGPORT_MDBGCTRL1_DIAGNOSE_BIT          0x00008000
-+#define     DBGPORT_MDBGCTRL1_FORCEDIAG_BIT         0x00004000
-+#define     DBGPORT_MDBGCTRL1_MEMFAULT_BITS         0x00003000
-+#define     DBGPORT_MDBGCTRL1_MEMFAULT_S            12
-+#define     DBGPORT_MDBGCTRL1_TRIGGER_BIT           0x00000100
-+#ifdef METAC_2_1
-+#define     DBGPORT_MDBGCTRL1_INTSPECIAL_BIT        0x00000080
-+#define     DBGPORT_MDBGCTRL1_INTRUSIVE_BIT         0x00000040
-+#endif /* METAC_2_1 */
-+#define     DBGPORT_MDBGCTRL1_THREAD_BITS           0x00000030 /* Thread mask selects threads */
-+#define     DBGPORT_MDBGCTRL1_THREAD_S              4
-+#define     DBGPORT_MDBGCTRL1_TRANS_SIZE_BITS       0x0000000C
-+#define     DBGPORT_MDBGCTRL1_TRANS_SIZE_S          2
-+#define         DBGPORT_MDBGCTRL1_TRANS_SIZE_32_BIT 0x00000000
-+#define         DBGPORT_MDBGCTRL1_TRANS_SIZE_16_BIT 0x00000004
-+#define         DBGPORT_MDBGCTRL1_TRANS_SIZE_8_BIT  0x00000008
-+#define     DBGPORT_MDBGCTRL1_BYTE_ROUND_BITS       0x00000003
-+#define     DBGPORT_MDBGCTRL1_BYTE_ROUND_S          0
-+#define         DBGPORT_MDBGCTRL1_BYTE_ROUND_8_BIT  0x00000001
-+#define         DBGPORT_MDBGCTRL1_BYTE_ROUND_16_BIT 0x00000002
-+
-+
-+/* L2 Cache registers */
-+#define SYSC_L2C_INIT              0x048300C0
-+#define SYSC_L2C_INIT_INIT                  1
-+#define SYSC_L2C_INIT_IN_PROGRESS           0
-+#define SYSC_L2C_INIT_COMPLETE              1
-+
-+#define SYSC_L2C_ENABLE            0x048300D0
-+#define SYSC_L2C_ENABLE_ENABLE_BIT     0x00000001
-+#define SYSC_L2C_ENABLE_PFENABLE_BIT   0x00000002
-+
-+#define SYSC_L2C_PURGE             0x048300C8
-+#define SYSC_L2C_PURGE_PURGE                1
-+#define SYSC_L2C_PURGE_IN_PROGRESS          0
-+#define SYSC_L2C_PURGE_COMPLETE             1
-+
-+#endif /* _ASM_METAG_MEM_H_ */
++#endif /* _ASM_METAG_REGS_H_ */
 -- 
 1.7.7.6
 
