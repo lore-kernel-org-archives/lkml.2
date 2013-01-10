@@ -1,255 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab3AJCE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 21:04:56 -0500
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:39104 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757582Ab3AJCEy (ORCPT
+	id S1758112Ab3AJCRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 21:17:39 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41428 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755289Ab3AJCRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 21:04:54 -0500
-From: Colin Cross <ccross@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>
-Subject: [PATCH] hardlockup: detect hard lockups without NMIs using secondary cpus
-Date: Wed,  9 Jan 2013 17:57:39 -0800
-Message-Id: <1357783059-13923-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 9 Jan 2013 21:17:38 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50EE247B.6090405@jp.fujitsu.com>
+Date: Thu, 10 Jan 2013 11:16:27 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Sha Zhengju <handai.szj@gmail.com>
+CC: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
+        dchinner@redhat.com, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 4/8] memcg: add per cgroup dirty pages accounting
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com> <1356456367-14660-1-git-send-email-handai.szj@taobao.com> <20130102104421.GC22160@dhcp22.suse.cz> <CAFj3OHXKyMO3gwghiBAmbowvqko-JqLtKroX2kzin1rk=q9tZg@mail.gmail.com> <50EA7860.6030300@jp.fujitsu.com> <CAFj3OHXMgRG6u2YoM7y5WuPo2ZNA1yPmKRV29FYj9B6Wj_c6Lw@mail.gmail.com>
+In-Reply-To: <CAFj3OHXMgRG6u2YoM7y5WuPo2ZNA1yPmKRV29FYj9B6Wj_c6Lw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Emulate NMIs on systems where they are not available by using timer
-interrupts on other cpus.  Each cpu will use its softlockup hrtimer
-to check that the next cpu is processing hrtimer interrupts by
-verifying that a counter is increasing.
+(2013/01/10 0:02), Sha Zhengju wrote:
+> On Mon, Jan 7, 2013 at 3:25 PM, Kamezawa Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> (2013/01/05 13:48), Sha Zhengju wrote:
+>>>
+>>> On Wed, Jan 2, 2013 at 6:44 PM, Michal Hocko <mhocko@suse.cz> wrote:
+>>>>
+>>>> On Wed 26-12-12 01:26:07, Sha Zhengju wrote:
+>>>>>
+>>>>> From: Sha Zhengju <handai.szj@taobao.com>
+>>>>>
+>>>>> This patch adds memcg routines to count dirty pages, which allows memory
+>>>>> controller
+>>>>> to maintain an accurate view of the amount of its dirty memory and can
+>>>>> provide some
+>>>>> info for users while cgroup's direct reclaim is working.
+>>>>
+>>>>
+>>>> I guess you meant targeted resp. (hard/soft) limit reclaim here,
+>>>> right? It is true that this is direct reclaim but it is not clear to me
+>>>
+>>>
+>>> Yes, I meant memcg hard/soft reclaim here which is triggered directly
+>>> by allocation and is distinct from background kswapd reclaim (global).
+>>>
+>>>> why the usefulnes should be limitted to the reclaim for users. I would
+>>>> understand this if the users was in fact in-kernel users.
+>>>>
+>>>
+>>> One of the reasons I'm trying to accounting the dirty pages is to get a
+>>> more board overall view of memory usages because memcg hard/soft
+>>> reclaim may have effect on response time of user application.
+>>> Yeah, the beneficiary can be application administrator or kernel users.
+>>> :P
+>>>
+>>>> [...]
+>>>>>
+>>>>> To prevent AB/BA deadlock mentioned by Greg Thelen in previous version
+>>>>> (https://lkml.org/lkml/2012/7/30/227), we adjust the lock order:
+>>>>> ->private_lock --> mapping->tree_lock --> memcg->move_lock.
+>>>>> So we need to make mapping->tree_lock ahead of TestSetPageDirty in
+>>>>> __set_page_dirty()
+>>>>> and __set_page_dirty_nobuffers(). But in order to avoiding useless
+>>>>> spinlock contention,
+>>>>> a prepare PageDirty() checking is added.
+>>>>
+>>>>
+>>>> But there is another AA deadlock here I believe.
+>>>> page_remove_rmap
+>>>>     mem_cgroup_begin_update_page_stat             <<< 1
+>>>>     set_page_dirty
+>>>>       __set_page_dirty_buffers
+>>>>         __set_page_dirty
+>>>>           mem_cgroup_begin_update_page_stat       <<< 2
+>>>>             move_lock_mem_cgroup
+>>>>               spin_lock_irqsave(&memcg->move_lock, *flags);
+>>>>
+>>>> mem_cgroup_begin_update_page_stat is not recursive wrt. locking AFAICS
+>>>> because we might race with the moving charges:
+>>>>           CPU0                                            CPU1
+>>>> page_remove_rmap
+>>>>                                                   mem_cgroup_can_attach
+>>>>     mem_cgroup_begin_update_page_stat (1)
+>>>>       rcu_read_lock
+>>>>                                                     mem_cgroup_start_move
+>>>>
+>>>> atomic_inc(&memcg_moving)
+>>>>
+>>>> atomic_inc(&memcg->moving_account)
+>>>>                                                       synchronize_rcu
+>>>>       __mem_cgroup_begin_update_page_stat
+>>>>         mem_cgroup_stolen <<< TRUE
+>>>>         move_lock_mem_cgroup
+>>>>     [...]
+>>>>           mem_cgroup_begin_update_page_stat (2)
+>>>>             __mem_cgroup_begin_update_page_stat
+>>>>               mem_cgroup_stolen     <<< still TRUE
+>>>>               move_lock_mem_cgroup  <<< DEADLOCK
+>>>>     [...]
+>>>>     mem_cgroup_end_update_page_stat
+>>>>       rcu_unlock
+>>>>                                                     # wake up from
+>>>> synchronize_rcu
+>>>>                                                   [...]
+>>>>                                                   mem_cgroup_move_task
+>>>>                                                     mem_cgroup_move_charge
+>>>>                                                       walk_page_range
+>>>>
+>>>> mem_cgroup_move_account
+>>>>
+>>>> move_lock_mem_cgroup
+>>>>
+>>>>
+>>>> Maybe I have missed some other locking which would prevent this from
+>>>> happening but the locking relations are really complicated in this area
+>>>> so if mem_cgroup_{begin,end}_update_page_stat might be called
+>>>> recursively then we need a fat comment which justifies that.
+>>>>
+>>>
+>>> Ohhh...good catching!  I didn't notice there is a recursive call of
+>>> mem_cgroup_{begin,end}_update_page_stat in page_remove_rmap().
+>>> The mem_cgroup_{begin,end}_update_page_stat() design has depressed
+>>> me a lot recently as the lock granularity is a little bigger than I
+>>> thought.
+>>> Not only the resource but also some code logic is in the range of locking
+>>> which may be deadlock prone. The problem still exists if we are trying to
+>>> add stat account of other memcg page later, may I make bold to suggest
+>>> that we dig into the lock again...
+>>>
+>>> But with regard to the current lock implementation, I doubt if we can we
+>>> can
+>>> account MEM_CGROUP_STAT_FILE_{MAPPED, DIRTY} in one breath and just
+>>> try to get move_lock once in the beginning. IMHO we can make
+>>> mem_cgroup_{begin,end}_update_page_stat() to recursive aware and what I'm
+>>> thinking now is changing memcg->move_lock to rw-spinlock from the
+>>> original spinlock:
+>>> mem_cgroup_{begin,end}_update_page_stat() try to get the read lock which
+>>> make it
+>>> reenterable and memcg moving task side try to get the write spinlock.
+>>> Then the race may be following:
+>>>
+>>>           CPU0                                            CPU1
+>>> page_remove_rmap
+>>>                                                   mem_cgroup_can_attach
+>>>     mem_cgroup_begin_update_page_stat (1)
+>>>       rcu_read_lock
+>>>                                                     mem_cgroup_start_move
+>>>
+>>> atomic_inc(&memcg_moving)
+>>>
+>>> atomic_inc(&memcg->moving_account)
+>>>                                                       synchronize_rcu
+>>>       __mem_cgroup_begin_update_page_stat
+>>>         mem_cgroup_stolen   <<< TRUE
+>>>         move_lock_mem_cgroup   <<<< read-spinlock success
+>>>     [...]
+>>>        mem_cgroup_begin_update_page_stat (2)
+>>>             __mem_cgroup_begin_update_page_stat
+>>>               mem_cgroup_stolen     <<< still TRUE
+>>>               move_lock_mem_cgroup  <<<< read-spinlock success
+>>>
+>>>     [...]
+>>>     mem_cgroup_end_update_page_stat     <<< locked = true, unlock
+>>>       rcu_unlock
+>>>                                                     # wake up from
+>>> synchronize_rcu
+>>>                                                   [...]
+>>>                                                   mem_cgroup_move_task
+>>>                                                     mem_cgroup_move_charge
+>>>                                                       walk_page_range
+>>>
+>>> mem_cgroup_move_account
+>>>
+>>> move_lock_mem_cgroup    <<< write-spinlock
+>>>
+>>>
+>>> AFAICS, the deadlock seems to be avoided by both the rcu and rwlock.
+>>> Is there anything I lost?
+>>>
+>>
+>> rwlock will work with the nest but it seems ugly do updates under read-lock.
+>>
+>> How about this straightforward ?
+>> ==
+>> /*
+>>   * Once a thread takes memcg_move_lock() on a memcg, it can take the lock on
+>>   * the memcg again for nesting calls
+>>   */
+>> static void move_lock_mem_cgroup(memcg, flags);
+>> {
+>>          current->memcg_move_lock_nested += 1;
+>>          if (current->memcg_move_lock_nested > 1) {
+>>                  VM_BUG_ON(current->move_locked_memcg != memcg);
+>>                  return;
+>>          }
+>>          spin_lock_irqsave(&memcg_move_lock, &flags);
+>>          current->move_lockdev_memcg = memcg;
+>> }
+>>
+>> static void move_unlock_mem_cgroup(memcg, flags)
+>> {
+>>          current->memcg_move_lock_nested -= 1;
+>>          if (!current->memcg_move_lock_nested) {
+>>                  current->move_locked_memcg = NULL;
+>>                  spin_unlock_irqrestore(&memcg_move_lock,flags);
+>>          }
+>> }
+>>
+> Does we need to add two
+> fields(current->memcg_move_lock_nested/move_locked_memcg) to 'struct
+> task'? Is it feasible?
+>
+> Now I'm thinking about another synchronization proposal for memcg page
+> stat updater and move_account, which seems to deal with recursion
+> issue and deadlock:
+>
+>               CPU A                                               CPU B
+>
+>    move_lock_mem_cgroup
+>    old_memcg = pc->mem_cgroup
+>    TestSetPageDirty(page)
+>    move_unlock_mem_cgroup
+>                                                           move_lock_mem_cgroup
+>                                                           if (PageDirty)
+>
+> old_memcg->nr_dirty --
+>
+> new_memcg->nr_dirty ++
+>
+> pc->mem_cgroup = new_memcgy
+>                                                           move_unlock_mem_cgroup
+>
+>    old_memcg->nr_dirty ++
+>
 
-This patch is useful on systems where the hardlockup detector is not
-available due to a lack of NMIs, for example most ARM SoCs.
-Without this patch any cpu stuck with interrupts disabled can
-cause a hardware watchdog reset with no debugging information,
-but with this patch the kernel can detect the lockup and panic,
-which can result in useful debugging info.
+I'm sorry I couldn't catch why you call TestSetPageDirty()....and what CPUA/CPUB is
+doing ? CPUA calls move_account() and CPUB updates stat ? If so, why move_account()
+is allowed to set PG_dirty ??
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- include/linux/nmi.h |    5 ++-
- kernel/watchdog.c   |   98 ++++++++++++++++++++++++++++++++++++++++++++++++---
- lib/Kconfig.debug   |   14 +++++++-
- 3 files changed, 110 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/nmi.h b/include/linux/nmi.h
-index db50840..c8f8aa0 100644
---- a/include/linux/nmi.h
-+++ b/include/linux/nmi.h
-@@ -14,8 +14,11 @@
-  * may be used to reset the timeout - for code which intentionally
-  * disables interrupts for a long time. This call is stateless.
-  */
--#if defined(CONFIG_HAVE_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR)
-+#if defined(CONFIG_HAVE_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR_NMI)
- #include <asm/nmi.h>
-+#endif
-+
-+#if defined(CONFIG_HAVE_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR)
- extern void touch_nmi_watchdog(void);
- #else
- static inline void touch_nmi_watchdog(void)
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 75a2ab3..94c231e 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -44,6 +44,11 @@
- static DEFINE_PER_CPU(bool, hard_watchdog_warn);
- static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
- static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
-+#endif
-+#ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
-+static cpumask_t __read_mostly watchdog_cpus;
-+#endif
-+#ifdef CONFIG_HARDLOCKUP_DETECTOR_NMI
- static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
- #endif
- 
-@@ -179,7 +184,7 @@ void touch_softlockup_watchdog_sync(void)
- 	__raw_get_cpu_var(watchdog_touch_ts) = 0;
- }
- 
--#ifdef CONFIG_HARDLOCKUP_DETECTOR
-+#ifdef CONFIG_HARDLOCKUP_DETECTOR_NMI
- /* watchdog detector functions */
- static int is_hardlockup(void)
- {
-@@ -193,6 +198,64 @@ static int is_hardlockup(void)
- }
- #endif
- 
-+#ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
-+static int is_hardlockup_other_cpu(int cpu)
-+{
-+	unsigned long hrint = per_cpu(hrtimer_interrupts, cpu);
-+
-+	if (per_cpu(hrtimer_interrupts_saved, cpu) == hrint)
-+		return 1;
-+
-+	per_cpu(hrtimer_interrupts_saved, cpu) = hrint;
-+	return 0;
-+}
-+
-+static void watchdog_check_hardlockup_other_cpu(void)
-+{
-+	int cpu;
-+	cpumask_t cpus = watchdog_cpus;
-+
-+	/*
-+	 * Test for hardlockups every 3 samples.  The sample period is
-+	 *  watchdog_thresh * 2 / 5, so 3 samples gets us back to slightly over
-+	 *  watchdog_thresh (over by 20%).
-+	 */
-+	if (__this_cpu_read(hrtimer_interrupts) % 3 != 0)
-+		return;
-+
-+	/* check for a hardlockup on the next cpu */
-+	cpu = cpumask_next(smp_processor_id(), &cpus);
-+	if (cpu >= nr_cpu_ids)
-+		cpu = cpumask_first(&cpus);
-+	if (cpu == smp_processor_id())
-+		return;
-+
-+	smp_rmb();
-+
-+	if (per_cpu(watchdog_nmi_touch, cpu) == true) {
-+		per_cpu(watchdog_nmi_touch, cpu) = false;
-+		return;
-+	}
-+
-+	if (is_hardlockup_other_cpu(cpu)) {
-+		/* only warn once */
-+		if (per_cpu(hard_watchdog_warn, cpu) == true)
-+			return;
-+
-+		if (hardlockup_panic)
-+			panic("Watchdog detected hard LOCKUP on cpu %d", cpu);
-+		else
-+			WARN(1, "Watchdog detected hard LOCKUP on cpu %d", cpu);
-+
-+		per_cpu(hard_watchdog_warn, cpu) = true;
-+	} else {
-+		per_cpu(hard_watchdog_warn, cpu) = false;
-+	}
-+}
-+#else
-+static inline void watchdog_check_hardlockup_other_cpu(void) { return; }
-+#endif
-+
- static int is_softlockup(unsigned long touch_ts)
- {
- 	unsigned long now = get_timestamp(smp_processor_id());
-@@ -204,7 +267,7 @@ static int is_softlockup(unsigned long touch_ts)
- 	return 0;
- }
- 
--#ifdef CONFIG_HARDLOCKUP_DETECTOR
-+#ifdef CONFIG_HARDLOCKUP_DETECTOR_NMI
- 
- static struct perf_event_attr wd_hw_attr = {
- 	.type		= PERF_TYPE_HARDWARE,
-@@ -252,7 +315,7 @@ static void watchdog_overflow_callback(struct perf_event *event,
- 	__this_cpu_write(hard_watchdog_warn, false);
- 	return;
- }
--#endif /* CONFIG_HARDLOCKUP_DETECTOR */
-+#endif /* CONFIG_HARDLOCKUP_DETECTOR_NMI */
- 
- static void watchdog_interrupt_count(void)
- {
-@@ -272,6 +335,9 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- 	/* kick the hardlockup detector */
- 	watchdog_interrupt_count();
- 
-+	/* test for hardlockups on the next cpu */
-+	watchdog_check_hardlockup_other_cpu();
-+
- 	/* kick the softlockup detector */
- 	wake_up_process(__this_cpu_read(softlockup_watchdog));
- 
-@@ -396,7 +462,7 @@ static void watchdog(unsigned int cpu)
- 	__touch_watchdog();
- }
- 
--#ifdef CONFIG_HARDLOCKUP_DETECTOR
-+#ifdef CONFIG_HARDLOCKUP_DETECTOR_NMI
- /*
-  * People like the simple clean cpu node info on boot.
-  * Reduce the watchdog noise by only printing messages
-@@ -472,9 +538,31 @@ static void watchdog_nmi_disable(unsigned int cpu)
- 	return;
- }
- #else
-+#ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
-+static int watchdog_nmi_enable(unsigned int cpu)
-+{
-+	/*
-+	 * The new cpu will be marked online before the first hrtimer interrupt
-+	 * runs on it.  If another cpu tests for a hardlockup on the new cpu
-+	 * before it has run its first hrtimer, it will get a false positive.
-+	 * Touch the watchdog on the new cpu to delay the first check for at
-+	 * least 3 sampling periods to guarantee one hrtimer has run on the new
-+	 * cpu.
-+	 */
-+	per_cpu(watchdog_nmi_touch, cpu) = true;
-+	smp_wmb();
-+	cpumask_set_cpu(cpu, &watchdog_cpus);
-+	return 0;
-+}
-+
-+static void watchdog_nmi_disable(unsigned int cpu) {
-+	cpumask_clear_cpu(cpu, &watchdog_cpus);
-+}
-+#else
- static int watchdog_nmi_enable(unsigned int cpu) { return 0; }
- static void watchdog_nmi_disable(unsigned int cpu) { return; }
--#endif /* CONFIG_HARDLOCKUP_DETECTOR */
-+#endif /* CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU */
-+#endif /* CONFIG_HARDLOCKUP_DETECTOR_NMI */
- 
- /* prepare/enable/disable routines */
- /* sysctl functions */
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index aaf8baf..f7c4859 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -191,15 +191,27 @@ config LOCKUP_DETECTOR
- 	  The overhead should be minimal.  A periodic hrtimer runs to
- 	  generate interrupts and kick the watchdog task every 4 seconds.
- 	  An NMI is generated every 10 seconds or so to check for hardlockups.
-+	  If NMIs are not available on the platform, every 12 seconds the
-+	  hrtimer interrupt on one cpu will be used to check for hardlockups
-+	  on the next cpu.
- 
- 	  The frequency of hrtimer and NMI events and the soft and hard lockup
- 	  thresholds can be controlled through the sysctl watchdog_thresh.
- 
--config HARDLOCKUP_DETECTOR
-+config HARDLOCKUP_DETECTOR_NMI
- 	def_bool y
- 	depends on LOCKUP_DETECTOR && !HAVE_NMI_WATCHDOG
- 	depends on PERF_EVENTS && HAVE_PERF_EVENTS_NMI
- 
-+config HARDLOCKUP_DETECTOR_OTHER_CPU
-+	def_bool y
-+	depends on LOCKUP_DETECTOR && SMP
-+	depends on !HARDLOCKUP_DETECTOR_NMI && !HAVE_NMI_WATCHDOG
-+
-+config HARDLOCKUP_DETECTOR
-+	def_bool y
-+	depends on HARDLOCKUP_DETECTOR_NMI || HARDLOCKUP_DETECTOR_OTHER_CPU
-+
- config BOOTPARAM_HARDLOCKUP_PANIC
- 	bool "Panic (Reboot) On Hard Lockups"
- 	depends on HARDLOCKUP_DETECTOR
--- 
-1.7.7.3
+>
+> So nr_dirty of old_memcg may be minus in a very short
+> period('old_memcg->nr_dirty --' by CPU B), but it will be revised soon
+> by CPU A. And the final figures of memcg->nr_dirty is correct.
+
+It seems both of new_memcg and old_memcg has an account for a page. Is it correct ?
+
+
+> Meanwhile the move_lock only protect saving old_memcg and
+> TestSetPageDirty in its critical section and without any irrelevant
+> logic, so the lock order or deadlock can be handled easily.
+>
+> But I'm not sure whether I've lost some race conditions, any comments
+> are welcomed. : )
+>
+
+Sorry I couldn't understand.
+
+Thanks,
+-Kame
+
 
