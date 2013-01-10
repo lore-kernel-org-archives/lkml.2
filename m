@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab3AJBzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 20:55:25 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:57431 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932555Ab3AJBzX (ORCPT
+	id S932701Ab3AJB4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 20:56:10 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:46154 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932555Ab3AJB4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 20:55:23 -0500
-Date: Wed, 9 Jan 2013 20:59:56 -0500
-From: Matt Porter <mporter@ti.com>
-To: Vinod Koul <vkoul@infradead.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        vinod.koul@intel.com, Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dan Williams <djbw@fb.com>, Chris Ball <cjb@laptop.org>
-Subject: Re: [RFC PATCH 1/3] dmaengine: add dma_get_channel_caps()
-Message-ID: <20130110015956.GA12220@beef>
-References: <1350615088-14562-1-git-send-email-mporter@ti.com>
- <1350615088-14562-2-git-send-email-mporter@ti.com>
- <CACxGe6sUrXPc2wtLfOy8_LvRMM+e=9=sSDNLkeszfe=JX_ipbw@mail.gmail.com>
- <1351048407.5263.10.camel@vkoul-udesk3>
+	Wed, 9 Jan 2013 20:56:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351048407.5263.10.camel@vkoul-udesk3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130107155544.GD29449@x1.alien8.de>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-9-git-send-email-yinghai@kernel.org>
+	<20130107155544.GD29449@x1.alien8.de>
+Date: Wed, 9 Jan 2013 17:56:07 -0800
+X-Google-Sender-Auth: NhM8-dvsNC5I2NfgbP6kzy1Syxs
+Message-ID: <CAE9FiQXcP9E-RXre_NKf-SU454nT9K39f1GsVVroV1TFxPgQ7g@mail.gmail.com>
+Subject: Re: [PATCH v7u1 08/31] x86, 64bit: early #PF handler set page table
+From: Yinghai Lu <yinghai@kernel.org>
+To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 08:43:27AM +0530, Vinod Koul wrote:
-> On Tue, 2012-10-23 at 23:49 +0100, Grant Likely wrote:
-> > > +enum dmaengine_apis {
-> > > +       DMAENGINE_MEMCPY        = 0x0001,
-> > > +       DMAENGINE_XOR           = 0x0002,
-> > > +       DMAENGINE_XOR_VAL       = 0x0004,
-> > > +       DMAENGINE_PQ            = 0x0008,
-> > > +       DMAENGINE_PQ_VAL        = 0x0010,
-> > > +       DMAENGINE_MEMSET        = 0x0020,
-> > > +       DMAENGINE_SLAVE         = 0x0040,
-> > > +       DMAENGINE_CYCLIC        = 0x0080,
-> > > +       DMAENGINE_INTERLEAVED   = 0x0100,
-> > > +       DMAENGINE_SG            = 0x0200,
-> > > +};
-> > 
-> > Actually, one more comment. Why the new enum? Why can't the
-> > dma_transaction_type enum be used directly along with dma_cap_mask_t? 
-> Some of the capabilities above are not there in dma_caps_t like DMA_SG.
-> Also DMA_INTERRUPT and DMA_PRIVATE would not make much sense here.
-> 
-> BUT would help to keep things simpler if have one definition which
-> includes all.
+On Mon, Jan 7, 2013 at 7:55 AM, Borislav Petkov <bp@alien8.de> wrote:
+> Those -vXX version lines need to go under the "---" line. Alternatively,
+> you might want to add some of them to the commit message with a proper
+> explanation since they are not that trivial at a first glance, for
+> example the -v5, -v6, -v8, -v9 with a better explanation.
 
-All good points. I think we can best eliminate this redundant set of 
-enums by using dma_cap_mask_t and noting in a comment as follows:
+mostly they are for tracking version.
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 0181887..9add5ca 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -391,14 +391,15 @@ enum dmaengine_apis {
-  * a) APIs/ops supported
-  * b) channel physical capabilities
-  *
-- * @ops: or'ed api capability
-+ * @cap_mask: api/ops capability (DMA_INTERRUPT and DMA_PRIVATE
-+ *	       are invalid api/ops and will never be set)
-  * @seg_nr: maximum number of SG segments supported on a SG/SLAVE
-  *	    channel (0 for no maximum or not a SG/SLAVE channel)
-  * @seg_len: maximum length of SG segments supported on a SG/SLAVE
-  *	     channel (0 for no maximum or not a SG/SLAVE channel)
-  */
- struct dmaengine_chan_caps {
--	enum dmaengine_apis ops;
-+	dma_cap_mask_t cap_mask;
- 	int seg_nr;
- 	int seg_len;
- };
+>
+>>
+>
+> This needs hpa's S-O-B.
 
-If that sounds good I'll send an updated series with this change.
-
--Matt
+he will add later when he put the in the tip.
