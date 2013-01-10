@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab3AJMvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 07:51:12 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:52297 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab3AJMvK (ORCPT
+	id S1754824Ab3AJMwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 07:52:05 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40475 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753765Ab3AJMwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 07:51:10 -0500
+	Thu, 10 Jan 2013 07:52:01 -0500
+Date: Thu, 10 Jan 2013 12:51:59 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, eric.y.miao@gmail.com,
+        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from
+ platform data
+Message-ID: <20130110125159.GQ20956@opensource.wolfsonmicro.com>
+References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
+ <20130110095803.GJ13897@intel.com>
+ <20130110123837.GO13897@intel.com>
+ <2921304.SsX3sQo2BU@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <1357730128-23018-2-git-send-email-fabio.porcedda@gmail.com>
-References: <1357730128-23018-1-git-send-email-fabio.porcedda@gmail.com> <1357730128-23018-2-git-send-email-fabio.porcedda@gmail.com>
-From: Fabio Porcedda <fabio.porcedda@gmail.com>
-Date: Thu, 10 Jan 2013 13:50:48 +0100
-Message-ID: <CAHkwnC8bmDxZdy=xos6AnG1vPDtGhGF6S8FYFfbdKG9vrHCnYw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] driver core: add helper macro for platform_driver_probe()
- boilerplate
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="63aIh6YiuHX+oBFP"
+Content-Disposition: inline
+In-Reply-To: <2921304.SsX3sQo2BU@vostro.rjw.lan>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-I'm sorry, In the previous email I used your wrong email address,
-in this email I've used your correct email address.
 
-Best regards
-Fabio Porcedda
+--63aIh6YiuHX+oBFP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Wed, Jan 9, 2013 at 12:15 PM, Fabio Porcedda
-<fabio.porcedda@gmail.com> wrote:
-> For simple modules that contain a single platform_driver without any
-> additional setup code then ends up being a block of duplicated
-> boilerplate.  This patch adds a new macro,
-> module_platform_driver_probe(), which replaces the
-> module_init()/module_exit() registrations with template functions.
->
-> This macro use the same idea of module_platform_driver().
->
-> This macro is useful to stop the misuse of module_platform_driver() for
-> removing the platform_driver_probe() boilerplate.
->
-> Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+On Thu, Jan 10, 2013 at 01:54:41PM +0100, Rafael J. Wysocki wrote:
+> On Thursday, January 10, 2013 02:38:37 PM Mika Westerberg wrote:
 
-Cc: Greg Kroah-Hartman (linuxfoundation.org)
+> > 	3. We make the acpi_create_platform_device() match on, lets say
+> > 	   "INT33C" (a partial match), and in such case it assumes that we are
+> >            running on Lynxpoint. It will then create platform device for 'clk-lpt'.
 
-> ---
->  include/linux/platform_device.h | 18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
->
-> diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-> index a9ded9a..c082c71 100644
-> --- a/include/linux/platform_device.h
-> +++ b/include/linux/platform_device.h
-> @@ -204,6 +204,24 @@ static inline void platform_set_drvdata(struct platform_device *pdev, void *data
->         module_driver(__platform_driver, platform_driver_register, \
->                         platform_driver_unregister)
->
-> +/* module_platform_driver_probe() - Helper macro for drivers that don't do
-> + * anything special in module init/exit.  This eliminates a lot of
-> + * boilerplate.  Each module may only use this macro once, and
-> + * calling it replaces module_init() and module_exit()
-> + */
-> +#define module_platform_driver_probe(__platform_driver, __platform_probe) \
-> +static int __init __platform_driver##_init(void) \
-> +{ \
-> +       return platform_driver_probe(&(__platform_driver), \
-> +                                    __platform_probe);    \
-> +} \
-> +module_init(__platform_driver##_init); \
-> +static void __exit __platform_driver##_exit(void) \
-> +{ \
-> +       platform_driver_unregister(&(__platform_driver)); \
-> +} \
-> +module_exit(__platform_driver##_exit);
-> +
->  extern struct platform_device *platform_create_bundle(struct platform_driver *driver,
->                                         int (*probe)(struct platform_device *),
->                                         struct resource *res, unsigned int n_res,
-> --
-> 1.8.0.3
->
+> > 	4. Now the clk-lpt driver creates the clocks.
+
+> > 	5. The SPI driver gets the clock it wants.
+
+> That sounds reasonable to me.  Mark, what do you think?
+
+Sounds sensible, yes - about what I'd expect.  Is it possible to match
+on CPUID or similar information (given that this is all in the SoC)
+instead of ACPI, that might be more robust I guess?
+
+--63aIh6YiuHX+oBFP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ7rlnAAoJELSic+t+oim9iLsP/iLfIm5S6kuvG67Ft/xztPcG
+HQXc6bMNqMejQ1kmHCJ9FFl/5VRl3qV7UMOV0SZYAmTerleChrF01otaULbFUfx0
+QKq23lZpp74BPGBgeEejEvftQ/rGz0JE4uGtFomFsy1GiXuqcpqmqQU7ANH/O07b
+n+6+N02TsxeyBMj/fY+7aAIlaAn2f+XtqlWWl5V3HcrSPpcmIMgH6KMOmv75Lo2m
+cGrkzDnhKpjMhZ++JN1Ax+qVl3Vmum9BZGZ5mHDgr8GxqDhuLFzbg502GMR1OwPB
+IXHwg85P9/394QFNgdeFThdSIWRw44LcmcP4kay1ALLqGoifx4D+Lq5lPYuVFSR5
+0ZXaw8AE4OugtL6Xw6EGFRtlYDXbABrYNxQg5qKjB4L0RpR/gyDHd+uS1HRQ+sBe
+1P7BJUGATy4fO4Kin4tH45KKTgxWG2P+AXgU0GDQW/v9U6E64AhsU6XGqEFJv9AR
+eUD3gzl3hG1IxgZZk5jrP04dnbzgynMF7x8uib+38HpUSiOe/oIHr8DcrqIwc1p4
+2reAov5jFgA1T/J8HzL6KCSrOdGSrzkiUmYojkM25oFkvmuwbu8oLuhaRkZgfGBX
+6cVQBjc301PPg+R/ujw8ngsFenBiTNYxjprKrHk0w466bGZyBy+O1Taa6T5KC4aq
+eoWt3cZChgafxPqdIcE+
+=Sed1
+-----END PGP SIGNATURE-----
+
+--63aIh6YiuHX+oBFP--
