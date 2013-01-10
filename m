@@ -1,134 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab3AJM0g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 07:26:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10284 "EHLO mx1.redhat.com"
+	id S1754457Ab3AJMfL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 07:35:11 -0500
+Received: from mga03.intel.com ([143.182.124.21]:30902 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753002Ab3AJM0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 07:26:35 -0500
-Date: Thu, 10 Jan 2013 13:26:22 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        akpm@linux-foundation.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v2 repost] sched: cputime: avoid multiplication overflow
- (in common cases)
-Message-ID: <20130110122621.GA13629@redhat.com>
-References: <20130107113144.GA7544@redhat.com>
- <20130109183248.GA8293@somewhere.redhat.com>
+	id S1754071Ab3AJMfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 07:35:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
+   d="scan'208";a="242267368"
+Date: Thu, 10 Jan 2013 14:38:37 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, eric.y.miao@gmail.com,
+        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from
+ platform data
+Message-ID: <20130110123837.GO13897@intel.com>
+References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
+ <50EC90C3.2090604@intel.com>
+ <20130109122550.GA20956@opensource.wolfsonmicro.com>
+ <4412354.TD27KzhhVJ@vostro.rjw.lan>
+ <20130110095803.GJ13897@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130109183248.GA8293@somewhere.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130110095803.GJ13897@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 07:33:03PM +0100, Frederic Weisbecker wrote:
-> On Mon, Jan 07, 2013 at 12:31:45PM +0100, Stanislaw Gruszka wrote:
-> > We scale stime, utime values based on rtime (sum_exec_runtime converted
-> > to jiffies). During scaling we multiple rtime * utime, what seems to be
-> > fine, since both values are converted to u64, but is not.
+On Thu, Jan 10, 2013 at 11:58:03AM +0200, Mika Westerberg wrote:
+> On Wed, Jan 09, 2013 at 11:07:26PM +0100, Rafael J. Wysocki wrote:
+> > We hardcode different kinds of information into the kernel anyway, but it
+> > would be good to be able to use some criteria to decide whether or not we need
+> > that information on the given system.
 > > 
-> > Let assume HZ is 1000 - 1ms tick. Process consist of 64 threads, run
-> > for 1 day, threads utilize 100% cpu on user space. Machine has 64 cpus.
+> > In this particular case, we'll only need the fixed clock rate for the SPI
+> > which is not present on other x86 systems to date.
 > > 
-> > Process rtime = utime will be 64 * 24 * 60 * 60 * 1000 jiffies, what is
-> > 0x149970000. Multiplication rtime * utime result is 0x1a855771100000000,
-> > which can not be covered in 64 bits.
-> > 
-> > Result of overflow is stall of utime values visible in user space
-> > (prev_utime in kernel), even if application still consume lot of CPU
-> > time.
-> > 
-> > Probably good fix for the problem, will be using 128 bit variable and
-> > proper mul128 and div_u128_u64 primitives. While mul128 is on it's
-> > way to kernel, there is no 128 bit division yet. I'm not sure, if we
-> > want to add it to kernel. Perhaps we could also change the way how
-> > stime and utime are calculated, but I don't know how, so I come with
-> > the below solution for the problem.
-> > 
-> > To avoid overflow patch change value we scale to min(stime, utime). This
-> > is more like workaround, but will work for processes, which perform
-> > mostly on user space or mostly on kernel space. Unfortunately processes,
-> > which perform on kernel and user space equally, and additionally utilize
-> > lot of CPU time, still will hit this overflow pretty quickly. However
-> > such processes seems to be uncommon.
-> > 
-> > Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> > Mika, do you have any idea what checks to apply to figure out whether or not
+> > the SPI clock will be necessary?
 > 
-> I can easily imagine that overflow to happen with user time on intensive
-> CPU bound loads, or may be guests.
+> I've tried to figure out them but so far I have no ideas :-/
 > 
-> But can we easily reach the same for system time? Even on intensive I/O bound
-> loads we shouldn't spend that much time in the kernel. Most of it probably goes
-> to idle.
+> If we put that behind some config option, it 1) confuses users and 2)
+> distro makers will select it anyway, so I don't see this as an option.
 > 
-> What do you think?
+> > Perhaps we can add a check into acpi_create_platform_device()?  Something like
+> > "if the device ID is present in table X, then run function Y for the device"
+> > where Y will configure the clock if the SPI is matched?
+> 
+> That would work but then we must also make sure that if the device was
+> enumerated from PCI, it gets this clock via some other means.
+> 
+> The LPSS devices can be configured to either appear on PCI or ACPI and of
+> course ACPI has the advantage because then we can enumerate the slave
+> devices behind the bus as well. However, it might be possible that we need
+> to support PCI enumeration at some point.
+> 
+> Furthermore, the SPI controller has an existing PCI glue driver
+> (spi-pxa2xx-pci.c) that needs to pass this clock as well. This is for Intel
+> CE4100 platform and we must make sure that it still works after our change.
 
-I think you are right :-)
- 
-> If that assumption is right in most cases, the following patch should solve the
-> issue:
+Here's one more proposal based on the discussion so far.
 
-I'm fine with this patch, it achives the same effect as my patch, but is simpler.
+	1. Enable CONFIG_COMMON_CLK on x86.
 
-Thanks
-Stanislaw
+	2. Create Lynxpoint specific clock driver and place it under
+	   drivers/clk/x86/clk-lpt.c. This is a platform driver for
+	   platform device named 'clk-lpt'.
 
-> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-> index 293b202..0650dd4 100644
-> --- a/kernel/sched/cputime.c
-> +++ b/kernel/sched/cputime.c
-> @@ -509,11 +509,11 @@ EXPORT_SYMBOL_GPL(vtime_account);
->  # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
->  #endif
->  
-> -static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
-> +static cputime_t scale_utime(cputime_t stime, cputime_t rtime, cputime_t total)
->  {
->  	u64 temp = (__force u64) rtime;
->  
-> -	temp *= (__force u64) utime;
-> +	temp *= (__force u64) stime;
->  
->  	if (sizeof(cputime_t) == 4)
->  		temp = div_u64(temp, (__force u32) total);
-> @@ -531,10 +531,10 @@ static void cputime_adjust(struct task_cputime *curr,
->  			   struct cputime *prev,
->  			   cputime_t *ut, cputime_t *st)
->  {
-> -	cputime_t rtime, utime, total;
-> +	cputime_t rtime, stime, total;
->  
-> -	utime = curr->utime;
-> -	total = utime + curr->stime;
-> +	stime = curr->stime;
-> +	total = stime + curr->utime;
->  
->  	/*
->  	 * Tick based cputime accounting depend on random scheduling
-> @@ -549,17 +549,17 @@ static void cputime_adjust(struct task_cputime *curr,
->  	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
->  
->  	if (total)
-> -		utime = scale_utime(utime, rtime, total);
-> +		stime = scale_stime(stime, rtime, total);
->  	else
-> -		utime = rtime;
-> +		stime = rtime;
->  
->  	/*
->  	 * If the tick based count grows faster than the scheduler one,
->  	 * the result of the scaling may go backward.
->  	 * Let's enforce monotonicity.
->  	 */
-> -	prev->utime = max(prev->utime, utime);
-> -	prev->stime = max(prev->stime, rtime - prev->utime);
-> +	prev->stime = max(prev->stime, stime);
-> +	prev->utime = max(prev->utime, rtime - prev->stime);
->  
->  	*ut = prev->utime;
->  	*st = prev->stime;
+	3. We make the acpi_create_platform_device() match on, lets say
+	   "INT33C" (a partial match), and in such case it assumes that we are
+           running on Lynxpoint. It will then create platform device for 'clk-lpt'.
+
+	4. Now the clk-lpt driver creates the clocks.
+
+	5. The SPI driver gets the clock it wants.
+
+In case of CE4100 we make drivers/clk/x86/clk-ce4100.c that exposes
+ce4100_clk_init(). This gets called from arch/x86/platform/ce4100/ce4100.c.
+
+I'm not sure about the LPSS PCI case. Maybe we can forget that for now
+(except the CE4100 case which obviously must work)? Or add similar quirk to
+the PCI side that creates the platform device for clocks.
