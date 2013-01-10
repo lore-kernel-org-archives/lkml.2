@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab3AJMfL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jan 2013 07:35:11 -0500
-Received: from mga03.intel.com ([143.182.124.21]:30902 "EHLO mga03.intel.com"
+	id S1754501Ab3AJMnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jan 2013 07:43:40 -0500
+Received: from mga03.intel.com ([143.182.124.21]:39840 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754071Ab3AJMfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jan 2013 07:35:08 -0500
+	id S1754362Ab3AJMni convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jan 2013 07:43:38 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,443,1355126400"; 
-   d="scan'208";a="242267368"
-Date: Thu, 10 Jan 2013 14:38:37 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, eric.y.miao@gmail.com,
-        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from
- platform data
-Message-ID: <20130110123837.GO13897@intel.com>
-References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
- <50EC90C3.2090604@intel.com>
- <20130109122550.GA20956@opensource.wolfsonmicro.com>
- <4412354.TD27KzhhVJ@vostro.rjw.lan>
- <20130110095803.GJ13897@intel.com>
+   d="scan'208";a="242269810"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: RE: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
+Thread-Topic: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
+Thread-Index: AQHN7Kc47pM6EnqmX0KcFhxlvJmff5g946UAgALUpnCAACfTgIABpGWA
+Date: Thu, 10 Jan 2013 12:43:16 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59258F12@BGSMSX101.gar.corp.intel.com>
+References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
+ <1357542806-20449-8-git-send-email-durgadoss.r@intel.com>
+ <20130107192414.GC4465@kroah.com>
+ <4D68720C2E767A4AA6A8796D42C8EB59257F01@BGSMSX101.gar.corp.intel.com>
+ <20130109170023.GA7068@kroah.com>
+In-Reply-To: <20130109170023.GA7068@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130110095803.GJ13897@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 11:58:03AM +0200, Mika Westerberg wrote:
-> On Wed, Jan 09, 2013 at 11:07:26PM +0100, Rafael J. Wysocki wrote:
-> > We hardcode different kinds of information into the kernel anyway, but it
-> > would be good to be able to use some criteria to decide whether or not we need
-> > that information on the given system.
-> > 
-> > In this particular case, we'll only need the fixed clock rate for the SPI
-> > which is not present on other x86 systems to date.
-> > 
-> > Mika, do you have any idea what checks to apply to figure out whether or not
-> > the SPI clock will be necessary?
+Hi Greg,
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Wednesday, January 09, 2013 10:30 PM
+> To: R, Durgadoss
+> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> eduardo.valentin@ti.com; hongbo.zhang@linaro.org; wni@nvidia.com
+> Subject: Re: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
 > 
-> I've tried to figure out them but so far I have no ideas :-/
+> On Wed, Jan 09, 2013 at 09:12:29AM +0000, R, Durgadoss wrote:
+> > Hi Greg,
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Tuesday, January 08, 2013 12:54 AM
+> > > To: R, Durgadoss
+> > > Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> > > eduardo.valentin@ti.com; hongbo.zhang@linaro.org; wni@nvidia.com
+> > > Subject: Re: [PATCH 7/9] Thermal: Make PER_ZONE values configurable
+> > >
+> > > On Mon, Jan 07, 2013 at 12:43:24PM +0530, Durgadoss R wrote:
+> > > > This patch makes MAX_SENSORS_PER_ZONE and
+> > > > MAX_CDEVS_PER_ZONE values configurable. The
+> > > > default value is 1, and range is 1-12.
+> > >
+> > > Why would we ever want to change this?  Why make this configurable at
+> > > all, how is a distro supposed to set this value?
+> > >
+> > > Shouldn't it be specified from the driver itself?
+> >
+> > These are platform level parameters, that can differ for various platforms.
+> > (Mostly due to board design and thermistor layouts). Stand-alone thermal
+> > sensor drivers are not (need not be) aware of these values.
 > 
-> If we put that behind some config option, it 1) confuses users and 2)
-> distro makers will select it anyway, so I don't see this as an option.
+> Ok, and how does anyone know how to set them properly?
 > 
-> > Perhaps we can add a check into acpi_create_platform_device()?  Something like
-> > "if the device ID is present in table X, then run function Y for the device"
-> > where Y will configure the clock if the SPI is matched?
+> > That's why these values are made configurable.
 > 
-> That would work but then we must also make sure that if the device was
-> enumerated from PCI, it gets this clock via some other means.
-> 
-> The LPSS devices can be configured to either appear on PCI or ACPI and of
-> course ACPI has the advantage because then we can enumerate the slave
-> devices behind the bus as well. However, it might be possible that we need
-> to support PCI enumeration at some point.
-> 
-> Furthermore, the SPI controller has an existing PCI glue driver
-> (spi-pxa2xx-pci.c) that needs to pass this clock as well. This is for Intel
-> CE4100 platform and we must make sure that it still works after our change.
+> Pushing work onto other people, without telling them what they need to
+> do, isn't nice.  Please, either make it auto-configurable, or don't make
+> it configurable at all.  As it is, this is useless for a distro, or any
+> "normal" user, right?
 
-Here's one more proposal based on the discussion so far.
+These values are for OEM's to configure according to their platform design.
+So, not making them configurable won't be good IMHO.
 
-	1. Enable CONFIG_COMMON_CLK on x86.
+But, as you said, for normal users, it does not matter; so they can
+leave it as it is, which will set it to the default value (i.e 1).
 
-	2. Create Lynxpoint specific clock driver and place it under
-	   drivers/clk/x86/clk-lpt.c. This is a platform driver for
-	   platform device named 'clk-lpt'.
-
-	3. We make the acpi_create_platform_device() match on, lets say
-	   "INT33C" (a partial match), and in such case it assumes that we are
-           running on Lynxpoint. It will then create platform device for 'clk-lpt'.
-
-	4. Now the clk-lpt driver creates the clocks.
-
-	5. The SPI driver gets the clock it wants.
-
-In case of CE4100 we make drivers/clk/x86/clk-ce4100.c that exposes
-ce4100_clk_init(). This gets called from arch/x86/platform/ce4100/ce4100.c.
-
-I'm not sure about the LPSS PCI case. Maybe we can forget that for now
-(except the CE4100 case which obviously must work)? Or add similar quirk to
-the PCI side that creates the platform device for clocks.
+Thanks,
+Durga
