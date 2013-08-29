@@ -1,50 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934451Ab2HWVH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Aug 2012 17:07:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45993 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934412Ab2HWVHZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Aug 2012 17:07:25 -0400
-Date: Tue, 27 Jan 2009 16:53:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: hch@infradead.org, corbet@lwn.net, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, viro@ZenIV.linux.org.uk, oleg@redhat.com,
-        linux-api@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH, RFC] Remove fasync() BKL usage, take 3325
-Message-Id: <20090127165359.d6b95b52.akpm@linux-foundation.org>
-In-Reply-To: <20090123045646.GK15750@one.firstfloor.org>
-References: <20090115153211.663df310@bike.lwn.net>
-	<20090122065104.2787df2d.akpm@linux-foundation.org>
-	<20090122203248.GA20159@infradead.org>
-	<20090123045646.GK15750@one.firstfloor.org>
-X-Mailer: Sylpheed version 2.2.4 (GTK+ 2.8.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751510Ab2H2EkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 00:40:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56938 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab2H2EkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Aug 2012 00:40:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,330,1344236400"; 
+   d="scan'208";a="215203558"
+From: xiaoyan.zhang@intel.com
+To: linux-kernel@vger.kernel.org
+Cc: xiaoyan.zhang@intel.com, joseph.cihula@intel.com, gang.wei@intel.com,
+        tpmdd-devel@lists.sourceforge.net, debora@linux.vnet.ibm.com,
+        srajiv@linux.vnet.ibm.com, m.selhorst@sirrix.com, shpedoikal@gmail.com,
+        linux-security-module@vger.kernel.org, james.l.morris@oracle.com,
+        hpa@zytor.com, linux-api@vger.kernel.org, yoder1@us.ibm.com,
+        key@linux.vnet.ibm.com, fengguang.wu@intel.com
+Subject: [PATCH] driver/char/tpm: declare internal symbols as static
+Date: Thu, 29 Aug 2013 20:39:11 +0800
+Message-Id: <1377779951-1687-1-git-send-email-xiaoyan.zhang@intel.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jan 2009 05:56:46 +0100
-Andi Kleen <andi@firstfloor.org> wrote:
+From: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
 
-> On Thu, Jan 22, 2009 at 03:32:49PM -0500, Christoph Hellwig wrote:
-> > On Thu, Jan 22, 2009 at 06:51:04AM -0800, Andrew Morton wrote:
-> > > OK, replacing a lock_kernel() with a spin_lock(&global_lock) is pretty
-> > > straightforwad.  But it's really really sad.  It basically leaves a great
-> > > big FIXME in there.  It'd be better to fix it.
-> > 
-> > 
-> > Umm, we've been discussiong this in and out a guestimated million times.
-> > 
-> > Let's go forward with Jon's patch which is on obvious improvement and
-> > if it shows problems later on we can revisit it.
-> 
-> The point was that we already have a better patch from Oleg.
-> 
+This patch declares the internal struct and functions as static to provide
+more security.
 
-Where is this patch??
+Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ drivers/char/tpm/tpm.c     |    4 ++--
+ drivers/char/tpm/tpm_ppi.c |   37 +++++++++++++++++++------------------
+ 2 files changed, 21 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index 39526c0..6724615 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -915,7 +915,7 @@ EXPORT_SYMBOL_GPL(tpm_show_pcrs);
+ 
+ #define  READ_PUBEK_RESULT_SIZE 314
+ #define TPM_ORD_READPUBEK cpu_to_be32(124)
+-struct tpm_input_header tpm_readpubek_header = {
++static struct tpm_input_header tpm_readpubek_header = {
+ 	.tag = TPM_TAG_RQU_COMMAND,
+ 	.length = cpu_to_be32(30),
+ 	.ordinal = TPM_ORD_READPUBEK
+@@ -1395,7 +1395,7 @@ EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
+  * Once all references to platform device are down to 0,
+  * release all allocated structures.
+  */
+-void tpm_dev_release(struct device *dev)
++static void tpm_dev_release(struct device *dev)
+ {
+ 	struct tpm_chip *chip = dev_get_drvdata(dev);
+ 
+diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
+index 440fa1c..f27b58c 100644
+--- a/drivers/char/tpm/tpm_ppi.c
++++ b/drivers/char/tpm/tpm_ppi.c
+@@ -53,8 +53,8 @@ static inline void ppi_assign_params(union acpi_object params[4],
+ 	params[3].package.elements = NULL;
+ }
+ 
+-ssize_t tpm_show_ppi_version(struct device *dev, struct device_attribute *attr,
+-			     char *buf)
++static ssize_t tpm_show_ppi_version(struct device *dev,
++				    struct device_attribute *attr, char *buf)
+ {
+ 	acpi_handle handle;
+ 	acpi_status status;
+@@ -82,9 +82,8 @@ ssize_t tpm_show_ppi_version(struct device *dev, struct device_attribute *attr,
+ 	return status;
+ }
+ 
+-ssize_t tpm_show_ppi_request(struct device *dev,
+-			     struct device_attribute *attr,
+-			     char *buf)
++static ssize_t tpm_show_ppi_request(struct device *dev,
++				    struct device_attribute *attr, char *buf)
+ {
+ 	acpi_handle handle;
+ 	acpi_status status;
+@@ -132,9 +131,9 @@ cleanup:
+ 	return status;
+ }
+ 
+-ssize_t tpm_store_ppi_request(struct device *dev,
+-			      struct device_attribute *attr,
+-			      const char *buf, size_t count)
++static ssize_t tpm_store_ppi_request(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
+ {
+ 	char version[PPI_VERSION_LEN + 1];
+ 	acpi_handle handle;
+@@ -207,9 +206,9 @@ ssize_t tpm_store_ppi_request(struct device *dev,
+ 	return status;
+ }
+ 
+-ssize_t tpm_show_ppi_transition_action(struct device *dev,
+-				       struct device_attribute *attr,
+-				       char *buf)
++static ssize_t tpm_show_ppi_transition_action(struct device *dev,
++					      struct device_attribute *attr,
++					      char *buf)
+ {
+ 	char version[PPI_VERSION_LEN + 1];
+ 	acpi_handle handle;
+@@ -269,9 +268,9 @@ ssize_t tpm_show_ppi_transition_action(struct device *dev,
+ 	return status;
+ }
+ 
+-ssize_t tpm_show_ppi_response(struct device *dev,
+-			      struct device_attribute *attr,
+-			      char *buf)
++static ssize_t tpm_show_ppi_response(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
+ {
+ 	acpi_handle handle;
+ 	acpi_status status;
+@@ -413,14 +412,16 @@ static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
+ 	return str - buf;
+ }
+ 
+-ssize_t tpm_show_ppi_tcg_operations(struct device *dev,
+-				   struct device_attribute *attr, char *buf)
++static ssize_t tpm_show_ppi_tcg_operations(struct device *dev,
++					   struct device_attribute *attr,
++					   char *buf)
+ {
+ 	return show_ppi_operations(buf, 0, PPI_TPM_REQ_MAX);
+ }
+ 
+-ssize_t tpm_show_ppi_vs_operations(struct device *dev,
+-				  struct device_attribute *attr, char *buf)
++static ssize_t tpm_show_ppi_vs_operations(struct device *dev,
++					  struct device_attribute *attr,
++					  char *buf)
+ {
+ 	return show_ppi_operations(buf, PPI_VS_REQ_START, PPI_VS_REQ_END);
+ }
+-- 
+1.7.7.6
+
